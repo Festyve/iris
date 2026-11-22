@@ -62,3 +62,28 @@ test('designer receives only the brief and bounded mechanism guidance, invalid o
     assert.deepEqual((await composeBrief({note,ask:async()=>response})).doc.nodes,local.doc.nodes);
   }
 });
+
+test('content figures use editable layers and fit both directions without text collisions',async()=>{
+  for (const [note,key,caption] of [
+    [loom,'cell-0-0','Sample activity'],
+    [festival,'figure','Sample programme'],
+    ['A landing page for an observatory named Night Watch','position-2','Illustrative sky track']
+  ]) {
+    for (const direction of ['spread','index']) {
+      const {doc} = await composeBrief({note,direction});
+      for (const s of Doc.compile(doc).screens) {
+        assert.ok(s.layers.some(l=>l.id===s.id+'-'+key));
+        assert.ok(s.layers.some(l=>l.text===caption));
+        for (const l of s.layers) {
+          assert.ok(l.x>=0 && l.y>=0 && l.x+l.w<=s.width+.01 && l.y+l.h<=s.height+.01,l.id+' must fit');
+        }
+        const texts=s.layers.filter(l=>l.kind==='text');
+        texts.forEach((a,i)=>{
+          for(const b of texts.slice(i+1)) {
+            assert.ok(a.x+a.w<=b.x || b.x+b.w<=a.x || a.y+a.h<=b.y || b.y+b.h<=a.y,a.id+' overlaps '+b.id);
+          }
+        });
+      }
+    }
+  }
+});
