@@ -122,7 +122,7 @@ function Studio({ initial }) {
   };
   return <>
     <header className="mast"><a className="wordmark" href="#canvas"><i aria-hidden="true"/>Second Cursor</a>
-      <nav aria-label="Workspace"><a href="#canvas">Canvas</a><a href="#library">Library</a><a href="poster.html" target="_blank" rel="noreferrer">Poster adapter ↗</a></nav></header>
+      <nav aria-label="Workspace"><a href="#canvas">Canvas</a><a href="#library">Library</a><a href="poster.html" target="_blank" rel="noreferrer">Iris adapter ↗</a></nav></header>
     <main className="workspace">
       {problem && <div className="notice" role="alert">{problem} <button onClick={() => setProblem('')}>Dismiss</button></div>}
       <section className="canvas-section" id="canvas">
@@ -147,6 +147,8 @@ function Studio({ initial }) {
             <small>{current.plan.planningMode === 'gemini' ? 'Gemini plan' : 'Rule-based plan'} · Local HTML compiler</small><ul>{current.checks.map(check => <li key={check}>{check}</li>)}</ul></details>}
           {current && <label className="version-picker">Restore saved version <select value={project.currentVersion} onChange={e => studio.restore(Number(e.target.value)).catch(error)}>
               {project.versions.map(v => <option value={v.version} key={v.version}>v{v.version} · {v.plan.title}</option>)}</select></label>}
+          {current && <details className="checks"><summary>Editable Figma screen</summary><p>Iris builds single screens from editable layers. Its local starters cover transit, a task board, and spending.</p>
+            <a href={'poster.html#studio-brief=' + encodeURIComponent(current.plan.brief)} target="_blank" rel="noreferrer">Open this brief in Iris ↗</a></details>}
           <Voice config={services} sessionKey={key} reply={plan?.mechanism || ''} onTranscript={ask}/>
         </aside></div>
         <Tasks run={project.run} onCancel={onCancel} onRetry={onRetry}/>
