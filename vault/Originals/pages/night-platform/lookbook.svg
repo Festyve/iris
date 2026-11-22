@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1440" height="900">
+<rect width="1440" height="900" fill="#152728"/>
+<text x="54" y="51" font-family="Inter,Arial,sans-serif" font-size="30" font-weight="700" fill="#F3EFDC">Night Platform</text>
+<text x="800" y="48.3" font-family="Inter,Arial,sans-serif" font-size="17" font-weight="500" fill="#F3EFDC">Collection</text>
+<text x="932" y="48.3" font-family="Inter,Arial,sans-serif" font-size="17" font-weight="500" fill="#F3EFDC">Journal</text>
+<text x="1064" y="48.3" font-family="Inter,Arial,sans-serif" font-size="17" font-weight="500" fill="#F3EFDC">About</text>
+<text x="1210" y="48.3" font-family="Inter,Arial,sans-serif" font-size="17" font-weight="700" fill="#F3EFDC">Explore routes</text>
+<rect x="54" y="79" width="1332" height="1" fill="#F3EFDC"/>
+<text x="54" y="168.3" font-family="Inter,Arial,sans-serif" font-size="67" font-weight="600" fill="#F3EFDC">Lookbook</text>
+<image x="54" y="216" width="663" height="566" preserveAspectRatio="xMidYMid slice" xlink:href="../../art/night-platform-0.png"/>
+<image x="748" y="216" width="320" height="273" preserveAspectRatio="xMidYMid slice" xlink:href="../../art/night-platform-2.png"/>
+<image x="1090" y="216" width="296" height="253" preserveAspectRatio="xMidYMid slice" xlink:href="../../art/night-platform-1.png"/>
+<text x="748" y="605.3" font-family="Inter,Arial,sans-serif" font-size="47" font-weight="500" fill="#F3EFDC">Routes after dark</text>
+<rect x="54" y="824" width="1332" height="1" fill="#F3EFDC"/>
+<text x="54" y="865.2" font-family="Inter,Arial,sans-serif" font-size="18" font-weight="600" fill="#F3EFDC">Night Platform</text>
+<text x="1200" y="865.2" font-family="Inter,Arial,sans-serif" font-size="18" font-weight="400" fill="#F3EFDC">Lookbook</text>
+</svg>

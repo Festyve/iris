@@ -28,7 +28,7 @@ test('all original page references compile with editable layers and existing art
       ids.add(f.id+'/'+role);
     }
   }
-  assert.equal(ids.size,216);
+  assert.equal(ids.size,504);
 });
 test('subjects and named briefs retrieve an original family and can add its pages',async()=>{
   const {doc}=await websiteDesign('a bouldering gym called "Crux"',new URL('../vault/',import.meta.url).pathname);

@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1440" height="900">
+<rect width="1440" height="900" fill="#E4EDEE"/>
+<text x="54" y="51" font-family="Inter,Arial,sans-serif" font-size="30" font-weight="700" fill="#203B4B">Blue Hour Ferry</text>
+<text x="800" y="48.3" font-family="Inter,Arial,sans-serif" font-size="17" font-weight="500" fill="#203B4B">Collection</text>
+<text x="932" y="48.3" font-family="Inter,Arial,sans-serif" font-size="17" font-weight="500" fill="#203B4B">Journal</text>
+<text x="1064" y="48.3" font-family="Inter,Arial,sans-serif" font-size="17" font-weight="500" fill="#203B4B">About</text>
+<text x="1210" y="48.3" font-family="Inter,Arial,sans-serif" font-size="17" font-weight="700" fill="#203B4B">See crossings</text>
+<rect x="54" y="79" width="1332" height="1" fill="#203B4B"/>
+<text x="54" y="190.60000000000002" font-family="Inter,Arial,sans-serif" font-size="74" font-weight="600" fill="#203B4B">About Blue Hour Ferry</text>
+<text x="54" y="316.8" font-family="Inter,Arial,sans-serif" font-size="42" font-weight="400" fill="#203B4B">Across the water</text>
+<rect x="54" y="402" width="232" height="56" fill="#203B4B"/>
+<text x="72" y="435.2" font-family="Inter,Arial,sans-serif" font-size="18" font-weight="600" fill="#E4EDEE">See crossings</text>
+<image x="842" y="127" width="544" height="464" preserveAspectRatio="xMidYMid slice" xlink:href="../../art/blue-hour-ferry-1.png"/>
+<rect x="54" y="684" width="418" height="1" fill="#203B4B"/>
+<text x="54" y="737" font-family="Inter,Arial,sans-serif" font-size="30" font-weight="500" fill="#203B4B">Pier Seven</text>
+<rect x="506" y="684" width="418" height="1" fill="#203B4B"/>
+<text x="506" y="737" font-family="Inter,Arial,sans-serif" font-size="30" font-weight="500" fill="#203B4B">Island Crossing</text>
+<rect x="958" y="684" width="418" height="1" fill="#203B4B"/>
+<text x="958" y="737" font-family="Inter,Arial,sans-serif" font-size="30" font-weight="500" fill="#203B4B">Evening Return</text>
+<rect x="54" y="824" width="1332" height="1" fill="#203B4B"/>
+<text x="54" y="865.2" font-family="Inter,Arial,sans-serif" font-size="18" font-weight="600" fill="#203B4B">Blue Hour Ferry</text>
+<text x="1200" y="865.2" font-family="Inter,Arial,sans-serif" font-size="18" font-weight="400" fill="#203B4B">About</text>
+</svg>

@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1440" height="900">
+<rect width="1440" height="900" fill="#EBECE6"/>
+<text x="54" y="51" font-family="Inter,Arial,sans-serif" font-size="30" font-weight="700" fill="#203B45">North Beacon</text>
+<text x="800" y="48.3" font-family="Inter,Arial,sans-serif" font-size="17" font-weight="500" fill="#203B45">Collection</text>
+<text x="932" y="48.3" font-family="Inter,Arial,sans-serif" font-size="17" font-weight="500" fill="#203B45">Journal</text>
+<text x="1064" y="48.3" font-family="Inter,Arial,sans-serif" font-size="17" font-weight="500" fill="#203B45">About</text>
+<text x="1210" y="48.3" font-family="Inter,Arial,sans-serif" font-size="17" font-weight="700" fill="#203B45">Open the chart</text>
+<rect x="54" y="79" width="1332" height="1" fill="#203B45"/>
+<text x="54" y="200.8" font-family="Inter,Arial,sans-serif" font-size="92" font-weight="600" fill="#203B45">Index</text>
+<rect x="54" y="259" width="1332" height="1" fill="#203B45"/>
+<image x="60" y="271" width="155" height="132" preserveAspectRatio="xMidYMid slice" xlink:href="../../art/north-beacon-0.png"/>
+<text x="275" y="350.2" font-family="Inter,Arial,sans-serif" font-size="48" font-weight="500" fill="#203B45">Outer Light</text>
+<text x="1230" y="334.7" font-family="Inter,Arial,sans-serif" font-size="23" font-weight="400" fill="#203B45">View ↗</text>
+<rect x="54" y="421" width="1332" height="1" fill="#203B45"/>
+<image x="60" y="433" width="155" height="132" preserveAspectRatio="xMidYMid slice" xlink:href="../../art/north-beacon-1.png"/>
+<text x="275" y="512.2" font-family="Inter,Arial,sans-serif" font-size="48" font-weight="500" fill="#203B45">West Channel</text>
+<text x="1230" y="496.7" font-family="Inter,Arial,sans-serif" font-size="23" font-weight="400" fill="#203B45">View ↗</text>
+<rect x="54" y="583" width="1332" height="1" fill="#203B45"/>
+<image x="60" y="595" width="155" height="132" preserveAspectRatio="xMidYMid slice" xlink:href="../../art/north-beacon-2.png"/>
+<text x="275" y="674.2" font-family="Inter,Arial,sans-serif" font-size="48" font-weight="500" fill="#203B45">Signal Station</text>
+<text x="1230" y="658.7" font-family="Inter,Arial,sans-serif" font-size="23" font-weight="400" fill="#203B45">View ↗</text>
+<rect x="54" y="824" width="1332" height="1" fill="#203B45"/>
+<text x="54" y="865.2" font-family="Inter,Arial,sans-serif" font-size="18" font-weight="600" fill="#203B45">North Beacon</text>
+<text x="1200" y="865.2" font-family="Inter,Arial,sans-serif" font-size="18" font-weight="400" fill="#203B45">Index</text>
+</svg>

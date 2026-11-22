@@ -4,7 +4,7 @@ New designs build locally. Claude runs when you request an edit. Every time, hun
 
 ## Build a website from the vault
 
-The [original reference index](vault/Originals/README.md) includes 24 collections, each with nine page layouts and three illustrations. Try **architecture studio called “West Fold”**, **Wild Stem Lookbook**, or **Orbit Room Programme** in the Vault website workflow.
+The [original reference index](vault/Originals/README.md) includes 42 collections, each with twelve page layouts and three illustrations. Try **architecture studio called “West Fold”**, **Wild Stem Lookbook**, or **Orbit Room Programme** in the Vault website workflow.
 
 Choose **New → Vault website**, type a subject like **poker**, choose **100**, and press **Build**. In Figma Desktop the named cursors assemble the frame on your canvas. Poker uses MetalForge’s layout for the lobby and two companion vault setups for browsing and details. Iris shows the source in Versions.
 

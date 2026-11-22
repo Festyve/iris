@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1440" height="900">
+<rect width="1440" height="900" fill="#F3F0D5"/>
+<text x="54" y="51" font-family="Inter,Arial,sans-serif" font-size="30" font-weight="700" fill="#173F39">Cross Court</text>
+<text x="800" y="48.3" font-family="Inter,Arial,sans-serif" font-size="17" font-weight="500" fill="#173F39">Collection</text>
+<text x="932" y="48.3" font-family="Inter,Arial,sans-serif" font-size="17" font-weight="500" fill="#173F39">Journal</text>
+<text x="1064" y="48.3" font-family="Inter,Arial,sans-serif" font-size="17" font-weight="500" fill="#173F39">About</text>
+<text x="1210" y="48.3" font-family="Inter,Arial,sans-serif" font-size="17" font-weight="700" fill="#173F39">Book a court</text>
+<rect x="54" y="79" width="1332" height="1" fill="#173F39"/>
+<text x="54" y="200.8" font-family="Inter,Arial,sans-serif" font-size="92" font-weight="600" fill="#173F39">Meet at the baseline</text>
+<image x="54" y="275" width="424" height="362" preserveAspectRatio="xMidYMid slice" xlink:href="../../art/cross-court-0.png"/>
+<text x="54" y="691.7" font-family="Inter,Arial,sans-serif" font-size="33" font-weight="600" fill="#173F39">Centre Court</text>
+<rect x="54" y="723" width="424" height="1" fill="#173F39"/>
+<image x="505" y="275" width="424" height="362" preserveAspectRatio="xMidYMid slice" xlink:href="../../art/cross-court-1.png"/>
+<text x="505" y="691.7" font-family="Inter,Arial,sans-serif" font-size="33" font-weight="600" fill="#173F39">Clay Session</text>
+<rect x="505" y="723" width="424" height="1" fill="#173F39"/>
+<image x="956" y="275" width="424" height="362" preserveAspectRatio="xMidYMid slice" xlink:href="../../art/cross-court-2.png"/>
+<text x="956" y="691.7" font-family="Inter,Arial,sans-serif" font-size="33" font-weight="600" fill="#173F39">Doubles Club</text>
+<rect x="956" y="723" width="424" height="1" fill="#173F39"/>
+<rect x="54" y="824" width="1332" height="1" fill="#173F39"/>
+<text x="54" y="865.2" font-family="Inter,Arial,sans-serif" font-size="18" font-weight="600" fill="#173F39">Cross Court</text>
+<text x="1200" y="865.2" font-family="Inter,Arial,sans-serif" font-size="18" font-weight="400" fill="#173F39">Collection</text>
+</svg>

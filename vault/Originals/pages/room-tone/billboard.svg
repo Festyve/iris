@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1440" height="900">
+<rect width="1440" height="900" fill="#211F30"/>
+<text x="54" y="51" font-family="Inter,Arial,sans-serif" font-size="30" font-weight="700" fill="#F5EED9">Room Tone</text>
+<text x="800" y="48.3" font-family="Inter,Arial,sans-serif" font-size="17" font-weight="500" fill="#F5EED9">Collection</text>
+<text x="932" y="48.3" font-family="Inter,Arial,sans-serif" font-size="17" font-weight="500" fill="#F5EED9">Journal</text>
+<text x="1064" y="48.3" font-family="Inter,Arial,sans-serif" font-size="17" font-weight="500" fill="#F5EED9">About</text>
+<text x="1210" y="48.3" font-family="Inter,Arial,sans-serif" font-size="17" font-weight="700" fill="#F5EED9">Tour the studio</text>
+<rect x="54" y="79" width="1332" height="1" fill="#F5EED9"/>
+<rect x="54" y="106" width="1332" height="453" fill="#F5EED9"/>
+<image x="780" y="106" width="606" height="453" preserveAspectRatio="xMidYMid slice" xlink:href="../../art/room-tone-0.png"/>
+<text x="92" y="254.8" font-family="Inter,Arial,sans-serif" font-size="82" font-weight="600" fill="#211F30">Listen closer</text>
+<text x="92" y="367.5" font-family="Inter,Arial,sans-serif" font-size="35" font-weight="400" fill="#211F30">Live Room</text>
+<rect x="93" y="437" width="218" height="53" fill="#211F30"/>
+<text x="110" y="469.3" font-family="Inter,Arial,sans-serif" font-size="17" font-weight="600" fill="#F5EED9">Tour the studio</text>
+<rect x="54" y="611" width="423" height="1" fill="#F5EED9"/>
+<text x="54" y="648.2" font-family="Inter,Arial,sans-serif" font-size="18" font-weight="400" fill="#F5EED9">01</text>
+<text x="54" y="724.8" font-family="Inter,Arial,sans-serif" font-size="42" font-weight="600" fill="#F5EED9">Live Room</text>
+<rect x="506" y="611" width="423" height="1" fill="#F5EED9"/>
+<text x="506" y="648.2" font-family="Inter,Arial,sans-serif" font-size="18" font-weight="400" fill="#F5EED9">02</text>
+<text x="506" y="724.8" font-family="Inter,Arial,sans-serif" font-size="42" font-weight="600" fill="#F5EED9">Tape Desk</text>
+<rect x="958" y="611" width="423" height="1" fill="#F5EED9"/>
+<text x="958" y="648.2" font-family="Inter,Arial,sans-serif" font-size="18" font-weight="400" fill="#F5EED9">03</text>
+<text x="958" y="724.8" font-family="Inter,Arial,sans-serif" font-size="42" font-weight="600" fill="#F5EED9">Listening Booth</text>
+<rect x="54" y="824" width="1332" height="1" fill="#F5EED9"/>
+<text x="54" y="865.2" font-family="Inter,Arial,sans-serif" font-size="18" font-weight="600" fill="#F5EED9">Room Tone</text>
+<text x="1200" y="865.2" font-family="Inter,Arial,sans-serif" font-size="18" font-weight="400" fill="#F5EED9">Billboard</text>
+</svg>

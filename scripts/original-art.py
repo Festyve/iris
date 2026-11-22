@@ -10,7 +10,58 @@ for k,row in enumerate(json.loads((root/'collections.json').read_text())):
         bg,fg,pop=['#'+c for c in [(accent,ink,paper),(ink,paper,accent),(paper,accent,ink)][v]]
         im=Image.new('RGB',(1000,850),bg)
         d=ImageDraw.Draw(im)
-        if motif in ('disc','orbit'):
+        if motif=='projector':
+            for j in range(15):
+                tip=(90+v*95,660-v*105)
+                d.polygon([tip,(1000,45*j-110),(1000,45*j-84)],fill=fg)
+            d.ellipse((80,90,340,350),fill=pop)
+            for j in range(14):d.rectangle((18+j*75,796,51+j*75,820),fill=fg)
+        elif motif=='transit':
+            for j in range(5):
+                y=85+j*118
+                pts=[(-30,y),(220+v*60,y),(372+v*60,y+150),(734,y+150),(920,y-34),(1030,y-34)]
+                d.line(pts,fill=fg if j%2==0 else pop,width=13,joint='curve')
+                for x,yy in pts[1:4]:d.ellipse((x-14,yy-14,x+14,yy+14),fill=bg,outline=fg,width=6)
+        elif motif=='dial':
+            x,y=500,425
+            for j in range(60):
+                angle=j*math.tau/60;rr=302 if j%5==0 else 327
+                pt=lambda r:(x+r*math.sin(angle),y-r*math.cos(angle))
+                d.line((pt(rr),pt(350)),fill=fg,width=11 if j%5==0 else 4)
+            angle=(v+1)*.86
+            d.line([(x-55*math.sin(angle),y+55*math.cos(angle)),pt(280)],fill=pop,width=18)
+            d.ellipse((476,401,524,449),fill=fg)
+        elif motif=='sun':
+            cx,cy=445+v*55,378
+            d.ellipse((cx-220,cy-220,cx+220,cy+220),fill=pop)
+            for j in range(40):
+                y=430+j*11
+                d.line([(-30,y+90),(360,y-55),(731,y+45),(1030,y-47)],fill=fg,width=4+j//8)
+        elif motif=='bird':
+            for j in range(4):
+                x=65+j*178;y=520-j*86+v*36
+                d.polygon([(x,y),(x+118,y-126),(x+160,y-16),(x+277,y-76),(x+178,y+49)],fill=fg)
+                d.polygon([(x+118,y-126),(x+160,y-16),(x+178,y+49)],fill=pop)
+        elif motif=='court':
+            d.rounded_rectangle((82,72,918,778),radius=55,outline=fg,width=10)
+            mid=430+v*30
+            d.line([(82,mid),(918,mid)],fill=fg,width=10)
+            d.ellipse((348,mid-150,648,mid+150),outline=pop,width=12)
+            for x in [170,830]:d.line([(x,72),(x,778)],fill=fg,width=7)
+            d.ellipse((264+v*80,218,319+v*80,273),fill=pop)
+        elif motif=='meter':
+            for j in range(31):
+                height=int(3+20*abs(math.sin(j*.16+v)*math.cos(j*.07+v*.3)))
+                for h in range(height):
+                    x=39+j*30;y=730-h*28
+                    d.rectangle((x,y,x+22,y+20),fill=pop if h>=16 else fg)
+        elif motif=='lens':
+            for j in range(7):
+                x=40+j*125;y=350+int(105*math.sin(j*.65+v))
+                d.ellipse((x-110,y-185,x+170,y+185),outline=fg,width=12)
+            x=270+v*120
+            d.ellipse((x,510,x+125,635),fill=pop)
+        elif motif in ('disc','orbit'):
             cx,cy=480+v*110,455-v*45
             for i in range(32):
                 r=428-i*13
@@ -64,7 +115,7 @@ for k,row in enumerate(json.loads((root/'collections.json').read_text())):
 # A compact, GitHub-friendly index of the artwork used by these collections.
 from PIL import ImageFont
 rows=json.loads((root/'collections.json').read_text())
-sheet=Image.new('RGB',(1120,1068),'#FAF9F5')
+sheet=Image.new('RGB',(1120,16+math.ceil(len(rows)/4)*176),'#FAF9F5')
 labels=ImageDraw.Draw(sheet)
 font=ImageFont.load_default(size=19)
 for i,row in enumerate(rows):

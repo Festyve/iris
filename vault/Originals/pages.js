@@ -1,7 +1,7 @@
 // Vault-native page compositions. A collection supplies its subject, palette,
 // artwork and copy. Each page role has its own geometry and reading order.
 const OriginalPages=(()=>{
-  const roles=['Home','Collection','Detail','Journal','Index','About','Programme','Lookbook','Contact'];
+  const roles=['Home','Collection','Detail','Journal','Index','About','Programme','Lookbook','Contact','Billboard','Atlas','Catalogue'];
   const slug=s=>s.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/-$/,'');
   const families=OriginalCollections.map(row=>{
     const [name,tags,headline,list,cta,paper,ink,accent,motif]=row;
@@ -49,6 +49,50 @@ const OriginalPages=(()=>{
       heading('Programme');f.items.forEach((v,i)=>{const y=260+i*146;rule(54,y,1332);text(['10 AM','1 PM','4 PM'][i],54,y+32,200,31);text(v,300,y+26,790,48,600);art(i,1230,y+8,148,126);});
     }else if(role==='Lookbook'){
       text('Lookbook',54,108,770,67,600);art(0,54,216,663,566);art(2,748,216,320,273);art(1,1090,216,296,253);text(f.headline,748,563,630,47,500);
+    }else if(role==='Billboard'){
+      rect('Marquee field',54,106,1332,453,f.ink);
+      art(0,780,106,606,453);
+      text(f.headline,92,181,646,82,600,f.paper);
+      text(f.items[0],92,336,625,35,400,f.paper);
+      rect('Marquee action',93,437,218,53,f.paper);
+      text(f.cta,110,454,185,17,600,f.ink);
+      f.items.forEach((item,i)=>{
+        const x=54+i*452;
+        rule(x,611,423);
+        text(String(i+1).padStart(2,'0'),x,632,54,18);
+        text(item,x,687,406,42,600);
+      });
+    }else if(role==='Atlas'){
+      text('Atlas',54,123,690,82,600);
+      text(f.headline,793,153,591,36,500);
+      rect('Map surface',54,255,811,508,f.ink);
+      for(let i=0;i<10;i++)rect('Grid meridian',84+i*82,275,1,468,f.accent);
+      for(let i=0;i<6;i++)rect('Grid parallel',72,302+i*83,775,1,f.accent);
+      const points=[[170,641],[432,472],[718,365]];
+      points.forEach(([x,y],i)=>{
+        if(i<2){
+          const [nx,ny]=points[i+1];
+          rect('Route east',x,y,nx-x,4,f.paper);
+          rect('Route north',nx,ny,4,y-ny+4,f.paper);
+        }
+      });
+      points.forEach(([x,y],i)=>{
+        rect('Stop '+(i+1),x-10,y-10,24,24,f.paper,{shape:'ellipse'});
+        text(f.items[i],x-42,y-50,181,20,600,f.paper);
+      });
+      art(1,925,259,208,177);
+      f.items.forEach((item,i)=>row(item,i,925,472+i*94,461));
+    }else if(role==='Catalogue'){
+      text('Catalogue',54,110,901,85,600);
+      text(f.headline,925,140,460,27);
+      f.items.forEach((item,i)=>{
+        const y=240+i*186;
+        rule(54,y,1332);
+        text(String(i+1).padStart(2,'0'),54,y+21,80,22);
+        art(i,174,y+14,180,153);
+        text(item,400,y+52,707,56,600);
+        text('View edition ↗',1184,y+67,202,20,500);
+      });
     }else{
       heading('Contact');text('Get in touch',54,280,675,52,500);button('Contact the studio',54,393);
       art(2,864,118,522,446);f.items.forEach((v,i)=>row(v,i,54,539+i*75,729));
