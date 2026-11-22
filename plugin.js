@@ -454,9 +454,11 @@ const Doc = (() => {
         const now = L.kind === 'text' ? L.fill : L.kind === 'icon' || L.kind === 'line' ? L.stroke : typeof L.fill === 'string' ? L.fill : null;
         if (now && color !== now) { if (n.type === 'text' || n.type === 'icon' || n.type === 'line') n.color = color; else { n.fill = color; delete n.fill2; } notes.push('recoloured ' + n.name); }
       }
-      if (Number.isFinite(r.w) && Number.isFinite(r.h) && (Math.abs(r.w - L.w) > 1 || Math.abs(r.h - L.h) > 1) && L.kind !== 'text') { n.w = Math.round(r.w); n.h = Math.round(r.h); notes.push('resized ' + n.name); }
+      // Only boxes have trustworthy sizes in Figma; lines and icons report their drawn outline.
+      const boxy = L.kind === 'rect' || L.kind === 'ellipse';
+      if (boxy && Number.isFinite(r.w) && Number.isFinite(r.h) && (Math.abs(r.w - L.w) > 1 || Math.abs(r.h - L.h) > 1)) { n.w = Math.round(r.w); n.h = Math.round(r.h); notes.push('resized ' + n.name); }
       const parent = byId.get(n.parent), inStack = n.parent && (parent ? parent.layout === 'stack' : (doc.screens.find(s => s.id === n.parent) || {}).layout === 'stack');
-      if (inStack && L.kind !== 'text' && Number.isFinite(r.x) && (Math.abs(r.x - L.x) > 1 || Math.abs(r.y - L.y) > 1)) { n.x = num(n.x, 0) + r.x - L.x; n.y = num(n.y, 0) + r.y - L.y; notes.push('moved ' + n.name); }
+      if (inStack && boxy && Number.isFinite(r.x) && (Math.abs(r.x - L.x) > 1 || Math.abs(r.y - L.y) > 1)) { n.x = num(n.x, 0) + r.x - L.x; n.y = num(n.y, 0) + r.y - L.y; notes.push('moved ' + n.name); }
     }
     return {doc: clean(doc), notes};
   }

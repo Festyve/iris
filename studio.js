@@ -67,7 +67,7 @@
 
   function setMode(m) {
     mode = m === 'edit' && doc ? 'edit' : 'new';
-    $('mode').textContent = mode === 'edit' ? 'Edit' : 'New';
+    $('mode').textContent = mode === 'edit' ? 'Edit ' + (doc.name.length > 12 ? doc.name.slice(0, 11) + '…' : doc.name) : 'New';
     $('mode').setAttribute('aria-pressed', String(mode === 'edit'));
     $('mode').title = mode === 'edit' ? 'Changing the current design. Click to start a new one.' : 'Starting a new design. Click to change the current one.';
     brief.placeholder = mode === 'edit' ? 'Describe a change, like “add a promo code field to checkout”' : 'Describe a product, like “a budgeting app called Penny”';
@@ -132,9 +132,19 @@
   };
 
   /* ---------- designing and editing ---------- */
+  // While Claude works, the headline counts the seconds so it's clear something is happening.
+  let busyTimer = 0, busyHead = '';
   function setBusy(on, head, sub) {
     busy = on; $('build').disabled = on; document.body.classList.toggle('thinking', on);
-    if (head) setHead(head, sub || '');
+    clearInterval(busyTimer);
+    if (head) { busyHead = head; setHead(head, sub || ''); }
+    if (on) {
+      const t0 = Date.now();
+      busyTimer = setInterval(() => {
+        const s = Math.round((Date.now() - t0) / 1000);
+        $('headline').textContent = busyHead + ' ' + (s < 60 ? s + 's' : Math.floor(s / 60) + 'm ' + String(s % 60).padStart(2, '0') + 's');
+      }, 1000);
+    }
   }
   async function go() {
     if (busy) return;
@@ -145,7 +155,7 @@
     try {
       let next;
       if (canDesign()) {
-        setBusy(true, 'Claude is designing…', 'Opus 5.5 is planning screens, layout and copy for your brief. This usually takes a minute or two.');
+        setBusy(true, 'Claude is designing…', 'Opus 5.5 is planning screens, layout and copy for your brief. This usually takes one to three minutes.');
         next = Doc.clean((await call('/board', JSON.stringify({note: prompt}))).doc);
       } else next = Doc.fromBoard(Screens.checkBoard(Kit.build(prompt)));
       setBusy(false);
@@ -160,13 +170,13 @@
       $('settings').hidden = false; return;
     }
     try {
-      setBusy(true, 'Claude is planning the change…', '“' + text + '”');
+      setBusy(true, 'Claude is changing ' + doc.name + '…', '“' + text + '” · Small changes take about 20 seconds; reworking a whole design can take a few minutes.');
       let base = doc, baseBoard = board;
       if (isPlugin) {
         const read = await readback();
         if (read) {
           const m = Doc.merge(doc, board, read);
-          if (m.notes.length) { base = m.doc; baseBoard = Screens.checkBoard(Doc.compile(base), true); setHead('Claude is planning the change…', 'Including your edits in Figma: ' + m.notes.slice(0, 3).join(', ') + (m.notes.length > 3 ? '…' : '')); }
+          if (m.notes.length) { base = m.doc; baseBoard = Screens.checkBoard(Doc.compile(base), true); setHead(busyHead, 'Including your edits in Figma: ' + m.notes.slice(0, 3).join(', ') + (m.notes.length > 3 ? '…' : '')); }
         }
       }
       const r = await call('/edit', JSON.stringify({doc: base, note: text}));
