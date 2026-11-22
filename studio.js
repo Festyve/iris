@@ -52,7 +52,7 @@
   const sugg = $('suggest'), brief = $('brief');
   const dots = ['#6E56F8', '#FF5A4E', '#2D6BFF', '#C5F23A', '#EA7212', '#0E9F6E', '#E13F7A'];
   const edits = ['Set accent to #146C94', 'Change headline to Field Notes'];
-  const samples = ['A coffee shop called “Daybreak”','A Tokyo travel planner','Last Showing Billboard', 'Night Platform Atlas', 'Second Sweep Catalogue', 'A poker website called “River Room”', ...Kit.samples];
+  const samples = ['A coffee shop called “Daybreak”','A Tokyo travel planner','An agency called “West Fold”', 'A developer handbook called “Fieldwork”', 'A product called “Northline”', 'A poker website called “River Room”', ...Kit.samples];
   function fillSuggestions() {
     const list = mode === 'edit' ? edits : samples;
     sugg.innerHTML = '<div class="hint">' + (mode === 'edit' ? 'Try a change' : 'Try a brief') + '</div>' + list.map((s, i) => '<button type="button" data-i="' + i + '"><i style="background:' + dots[i % dots.length] + '"></i>' + esc(s) + '</button>').join('');
@@ -73,7 +73,7 @@
     $('mode').setAttribute('aria-pressed', String(mode === 'edit'));
     $('mode').title = mode === 'edit' ? 'Changing the current design. Click to start a new one.' : 'Starting a new design. Click to change the current one.';
     $('workflow').hidden = mode === 'edit';
-    brief.placeholder = mode === 'edit' ? 'Describe a change, like “Change headline to Field Notes”' : 'Describe a website or product';
+    brief.placeholder = mode==='edit' && doc?.reference?.kind==='html-css' ? 'Replace “old text” with “new text”' : mode === 'edit' ? 'Describe a change, like “Change headline to Field Notes”' : 'Describe a website or product';
     $('build-label').textContent = mode === 'edit' ? 'Apply' : $('workflow').value === 'guided' ? 'Plan' : 'Build';
     brief.setAttribute('aria-label', mode === 'edit' ? 'Describe a change' : 'Describe a product');
     $('prompt').classList.toggle('editing', mode === 'edit');
@@ -171,22 +171,45 @@
     libraryBusy=active; $('build-library').disabled=active; $('library-status').textContent=message;
     $('build').disabled=active || busy;
   }
-  async function fetchCapture(id) {
-    return (await call('/vault-capture?id='+encodeURIComponent(id),null,null,30000)).png;
-  }
   $('build-library').onclick=()=>{
-    if(!isPlugin || busy || pluginState==='running' || pluginState==='starting') return;
-    if(!connected) {libraryStatus('Connect the local Iris service in Settings to read the vault images.',false);$('settings').hidden=false;return;}
+    if(!isPlugin || busy || libraryBusy || pluginState==='running' || pluginState==='starting')return;
     libraryStatus('Opening the website library…',true);
     parent.postMessage({pluginMessage:{kind:'library-open'}},'*');
   };
+  async function importedDesign(note,match){
+    const name=Websites.brandOf(note,match),measurements={};
+    await Promise.all(CodeSites.panels(match.id).map(async panel=>{
+      measurements[panel.id]=await measureCodePage(CodeMarkup[panel.source],panel.width,name);
+    }));
+    return Doc.clean(Websites.build(note,match,measurements));
+  }
+  async function reflowWebsite(next){
+    const names=new Set(next.nodes.filter(n=>n.copyRole==='brand').map(n=>n.text));
+    if(names.size===1){
+      const name=[...names][0].slice(0,60);
+      for(const screen of next.screens)if(screen.name.startsWith(next.name+' · '))screen.name=name+screen.name.slice(next.name.length);
+      next.name=name;
+    }
+    for(const screen of next.screens){
+      const html=CodeMarkup[screen.vaultSource];
+      if(!html)continue;
+      const children=next.nodes.filter(n=>n.parent===screen.id);
+      const copy=Object.fromEntries(children.filter(n=>n.type==='text').map(n=>[n.slot,n.text]));
+      const layout=await measureCodePage(html,screen.w,next.name,copy);
+      const measured=new Map(layout.nodes.map(n=>[n.id,n]));
+      screen.h=layout.h;
+      for(const n of children){
+        const box=measured.get(n.slot);
+        if(box)Object.assign(n,{x:box.x,y:box.y,w:box.w,h:box.h,displayText:box.displayText,measuredText:box.text});
+      }
+    }
+  }
   async function libraryEntry(m) {
     try {
-      const family=OriginalPages.families.find(f=>f.id===m.id);
-      libraryStatus((m.done+1)+' of '+m.total+' · '+(family?family.name:ReferenceBrands[m.id]),true);
-      const png=family?null:await fetchCapture(m.id);
-      const next=Doc.clean(Websites.build('recreate '+m.id,Websites.match('recreate '+m.id),true));
-      revisions=[]; rev=-1; librarySite=m.id; nextCapture=png;
+      const site=CodeIndex.find(s=>s.id===m.id);
+      libraryStatus((m.done+1)+' of '+m.total+' · '+site.title,true);
+      const next=await importedDesign(site.title,{id:site.id,site});
+      revisions=[];rev=-1;librarySite=m.id;nextCapture=null;
       setMode('new'); brief.value='';
       commit(next,'Building '+next.name,null,'Website library');
     } catch(error) {libraryStatus('Paused. '+error.message+' Open the library again to resume.',false);}
@@ -237,25 +260,24 @@
     if (busy || libraryBusy) return;
     const note = brief.value.trim();
     if (!note) { brief.focus(); return; }
-    if(mode==='new' && $('workflow').value==='vault') {
+    if(mode==='new' && ($('workflow').value==='vault' || /\b(website|homepage|landing page|web site)\b/i.test(note))) {
       try {
         const reference=Websites.match(note);
         nextCapture=null;
-        if(isPlugin && connected && reference.exact && !reference.original) {
-          try {nextCapture=await fetchCapture(reference.id);} catch { /* Artwork is bundled locally. */ }
-        }
-        const next=Doc.clean(Websites.build(note,reference));
+        setBusy(true,'Measuring the source layout…',reference.site.title);
+        const next=await importedDesign(note,reference);
+        setBusy(false);
         commit(next,'Built from “'+note+'”',null,'Vault · '+reference.site.title);
-        if(connected){setMode('edit');brief.value='';}
+        setMode('edit');brief.value='';
       } catch(error){setBusy(false,'Could not build the vault website',error.message);}
       return;
     }
+    if (mode === 'edit' && doc) { await change(note); return; }
     if (!connected) {
       $('settings').hidden = false;
       $('token').focus();
       return;
     }
-    if (mode === 'edit' && doc) { await change(note); return; }
     const request = {note, profile: profileSel.value};
     const guided = !automatic && $('workflow').value === 'guided';
     try {
@@ -288,7 +310,8 @@
     } catch (error) { setBusy(false, 'Could not build that', error.message); }
   }
   async function change(text) {
-    if (!canDesign()) {
+    const replace=doc?.reference?.kind==='html-css' && text.match(/^replace\s+["“]([^"”]+)["”]\s+with\s+["“]([^"”]{1,300})["”]\s*[.!]?$/i);
+    if (!canDesign() && !replace) {
       setHead('Connect to Iris to make changes', 'Open ⚙ and connect the local Iris service, then describe the change again.');
       $('settings').hidden = false; return;
     }
@@ -302,10 +325,14 @@
           if (m.notes.length) { base = m.doc; baseBoard = Screens.checkBoard(Doc.compile(base), true); setHead(busyHead, 'Including your edits in Figma: ' + m.notes.slice(0, 3).join(', ') + (m.notes.length > 3 ? '…' : '')); }
         }
       }
-      const r = await call('/edit', JSON.stringify({doc: base, note: text, profile: profileSel.value}));
+      const r = replace ? {
+        ops:base.nodes.filter(n=>n.type==='text' && n.text===replace[1]).map(n=>({op:'set',id:n.id,node:{text:replace[2]}})),
+        summary:'Replace “'+replace[1]+'” with “'+replace[2]+'”'
+      } : await call('/edit', JSON.stringify({doc: base, note: text, profile: profileSel.value}));
       const res = Doc.apply(base, r.ops || []);
-      setBusy(false);
       if (!res.applied.length) { setBusy(false, 'No changes made', r.summary || 'Iris could not map that request onto this design. Try rephrasing it.'); return; }
+      if(res.doc.reference?.kind==='html-css' && res.applied.length)await reflowWebsite(res.doc);
+      setBusy(false);
       commit(res.doc, r.summary || text, baseBoard, res.skipped.length ? res.skipped.length + ' step' + (res.skipped.length > 1 ? 's' : '') + ' skipped' : null);
       brief.value = '';
     } catch (e) { setBusy(false, 'Could not make that change', e.message); }
@@ -483,6 +510,10 @@
     const g = f.dir === 'v' ? ctx.createLinearGradient(x, y, x, y + h) : ctx.createLinearGradient(x, y, x + w, y + h);
     g.addColorStop(0, f.from); g.addColorStop(1, f.to); return g;
   }
+  function imageUri(id){
+    const bytes=RasterImages[id];
+    return 'data:image/'+(bytes.startsWith('/9j/')?'jpeg':'png')+';base64,'+bytes;
+  }
   const fontOf = (L, px) => L.weight + ' ' + px + 'px Inter, ui-sans-serif, system-ui, sans-serif';
   const iconPaths = new Map();
   const iconPath = name => { let p = iconPaths.get(name); if (!p) { p = new Path2D(Icons.path(name)); iconPaths.set(name, p); } return p; };
@@ -538,7 +569,7 @@
   function rasterImage(id) {
     if(!rasterCache.has(id)) {
       const img=new Image();
-      img.src='data:image/png;base64,'+RasterImages[id];
+      img.src=imageUri(id);
       rasterCache.set(id,img);
     }
     return rasterCache.get(id);
@@ -558,7 +589,11 @@
     else if (L.art && RasterImages[L.art]) {
       const img=rasterImage(L.art);
       if(img.complete && img.naturalWidth) {
-        ctx.save();ctx.globalAlpha=op;ctx.drawImage(img,x,y,w,h);ctx.restore();
+        ctx.save();ctx.globalAlpha=op;
+        const scale=Math.max(w/img.naturalWidth,h/img.naturalHeight);
+        const sw=w/scale,sh=h/scale;
+        if(w>0 && h>0)ctx.drawImage(img,(img.naturalWidth-sw)/2,(img.naturalHeight-sh)/2,sw,sh,x,y,w,h);
+        ctx.restore();
       }
     }
     else if (Websites.artwork(L.art)) {
@@ -877,7 +912,7 @@
           body += '<text font-family="Inter, sans-serif" font-size="' + L.size + '" font-weight="' + L.weight + '" fill="' + L.fill + '" text-anchor="' + anchor + '"' + (L.size >= 28 ? ' letter-spacing="' + r2(-L.size * .02) + '"' : '') + op + '>' +
             L.text.split('\n').map((s, i) => '<tspan x="' + r2(ax) + '" y="' + r2(L.y + L.size * L.lh * (i + .5)) + '" dominant-baseline="central">' + esc(s) + '</tspan>').join('') + '</text>';
         } else if (L.art && RasterImages[L.art]) {
-          body+='<image x="'+L.x+'" y="'+L.y+'" width="'+L.w+'" height="'+L.h+'" preserveAspectRatio="none" href="data:image/png;base64,'+RasterImages[L.art]+'"'+op+'/>';
+          body+='<image x="'+L.x+'" y="'+L.y+'" width="'+L.w+'" height="'+L.h+'" preserveAspectRatio="xMidYMid slice" href="'+imageUri(L.art)+'"'+op+'/>';
         } else if (Websites.artwork(L.art)) {
           const a=Websites.artwork(L.art);
           body+='<path transform="translate('+L.x+' '+L.y+') scale('+L.w/a.w+' '+L.h/a.h+')" fill-rule="evenodd" fill="'+fillRef(L.fill,0,0,a.w,a.h)+'" d="'+a.path+'"'+op+'/>';

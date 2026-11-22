@@ -1,0 +1,84 @@
+[
+  {
+    "id": "code-cafe",
+    "group": "cafe",
+    "file": "index",
+    "title": "Café homepage",
+    "tags": "coffee espresso café cafe bakery roaster restaurant food tea",
+    "source": "Business Casual",
+    "url": "https://startbootstrap.github.io/startbootstrap-business-casual/",
+    "revision": "b6f928934386a54e08c2e7f40ebd9e4d7510bba4",
+    "styles": [
+      "styles.css"
+    ]
+  },
+  {
+    "id": "code-cafe-products",
+    "group": "cafe",
+    "file": "products",
+    "title": "Menu",
+    "tags": "products menu drinks beans coffees pastries",
+    "source": "Business Casual",
+    "url": "https://startbootstrap.github.io/startbootstrap-business-casual/products.html",
+    "revision": "b6f928934386a54e08c2e7f40ebd9e4d7510bba4",
+    "styles": [
+      "styles.css"
+    ]
+  },
+  {
+    "id": "code-journal",
+    "group": "journal",
+    "file": "index",
+    "title": "Editorial journal",
+    "tags": "travel planner itinerary guide magazine editorial blog stories photography journal",
+    "source": "Clean Blog",
+    "url": "https://startbootstrap.github.io/startbootstrap-clean-blog/",
+    "revision": "1ebc4f8f3b6194335df237a2a7837955a5a4a9aa",
+    "styles": [
+      "styles.css"
+    ]
+  },
+  {
+    "id": "code-agency",
+    "group": "agency",
+    "file": "index",
+    "title": "Agency studio",
+    "tags": "creative architecture studio agency services portfolio fashion designer",
+    "source": "Agency",
+    "url": "https://startbootstrap.github.io/startbootstrap-agency/",
+    "revision": "b2d5d5c6b1396bc5b0e8dd92c693b106cfb7cee1",
+    "styles": [
+      "styles.css"
+    ]
+  },
+  {
+    "id": "code-skeleton",
+    "group": "skeleton",
+    "file": "index",
+    "title": "Product handbook",
+    "tags": "developer documentation api docs guide developer tools library",
+    "source": "Skeleton",
+    "url": "http://getskeleton.com/",
+    "revision": "4daf69a02b1091924f8045602628a43825a81472",
+    "styles": [
+      "normalize.css",
+      "skeleton.css",
+      "custom.css"
+    ]
+  },
+  {
+    "id": "code-milligram",
+    "group": "milligram",
+    "file": "index",
+    "title": "Product overview",
+    "tags": "software startup saas product fintech bank poker app platform dashboard",
+    "source": "Milligram",
+    "url": "https://milligram.io/",
+    "revision": "06774e8d88b393bf29774dfb790ad4bbc6d714b5",
+    "styles": [
+      "normalize.css",
+      "milligram.css",
+      "main.css"
+    ]
+  }
+]
