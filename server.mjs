@@ -8,6 +8,7 @@ import {join, basename} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {ElevenLabsClient} from '@elevenlabs/elevenlabs-js';
 import {design, edit} from './designer.mjs';
+import {loadProfiles, profileStyle} from './profiles.mjs';
 
 // The session key survives restarts (kept in .iris-session, never committed), so you paste it
 // into the browser or the Figma plugin once and it keeps working.
@@ -116,7 +117,8 @@ async function critique(req, res) {
   if (!client) return json(res, 200, {critique: '', note: 'No Anthropic credentials, so there is no visual critique.'});
   const content = [];
   if (typeof d.png === 'string' && d.png.startsWith('iVBOR') && /^[A-Za-z0-9+/=]+$/.test(d.png)) content.push({type: 'image', source: {type: 'base64', media_type: 'image/png', data: d.png}});
-  content.push({type: 'text', text: 'Question: ' + question + '\nFrame: ' + JSON.stringify(d.frame || {}) + '\nVisible copy: ' + JSON.stringify((d.texts || []).slice(0, 40))});
+  const style = await profileStyle(vaultDir, d.profile, 0);
+  content.push({type: 'text', text: (style ? 'Judge it against this house style.\n' + style.text + '\n\n' : '') + 'Question: ' + question + '\nFrame: ' + JSON.stringify(d.frame || {}) + '\nVisible copy: ' + JSON.stringify((d.texts || []).slice(0, 40))});
   const message = await client.messages.create({
     model: MODEL, max_tokens: 2000, thinking: {type: 'adaptive'}, output_config: {effort: 'low'},
     system: 'You are Iris, a senior product designer looking over a colleague\'s shoulder at their Figma frame. Answer their question, or give a general critique. Reply in at most four short plain sentences meant to be spoken aloud: one thing that works, then the two highest-impact, specific improvements (hierarchy, spacing, alignment, contrast, type, copy). Name elements by what they are, never by hex code or layer id. No markdown.',
@@ -163,12 +165,14 @@ const server = http.createServer(async (req, res) => {
     if (req.method === 'POST' && url.pathname === '/bridge/result') return await relayResult(req, res);
     if (req.method === 'POST' && url.pathname === '/critique') return await critique(req, res);
     if (req.method === 'GET' && url.pathname === '/references') return await references(url, res);
+    if (req.method === 'GET' && url.pathname === '/profiles') return json(res, 200, {profiles: (await loadProfiles(vaultDir)).map(({id, name, tagline}) => ({id, name, tagline}))});
     if (req.method === 'POST' && (req.url === '/board' || req.url === '/edit')) {
       if (!client) return json(res, 503, {error: 'Set ANTHROPIC_API_KEY (or run ant auth login) and restart the server.'});
       const body = JSON.parse((await collect(req, 4_000_000)).toString());
       const started = Date.now();
-      const out = req.url === '/board' ? await design(body.note, ask) : await edit(body.doc, body.note, ask);
-      console.log((req.url === '/board' ? 'Designed ' : 'Edited ') + 'in ' + ((Date.now() - started) / 1000).toFixed(1) + 's: ' + (out.summary || ''));
+      const style = await profileStyle(vaultDir, body.profile);
+      const out = req.url === '/board' ? await design(body.note, ask, style) : await edit(body.doc, body.note, ask, style);
+      console.log((req.url === '/board' ? 'Designed ' : 'Edited ') + (style ? 'as ' + style.name + ' ' : '') + 'in ' + ((Date.now() - started) / 1000).toFixed(1) + 's: ' + (out.summary || ''));
       return json(res, 200, out);
     }
     if (req.method === 'POST' && req.url === '/voice') return await voice(req, res);

@@ -106,6 +106,7 @@
       if (doc && service.design && mode !== 'edit') { setMode('edit'); brief.value = ''; }
       updateNotice(service.design ? null : 'The service is running but has no Anthropic key. Set ANTHROPIC_API_KEY and restart it.');
       if (service.design) $('settings').hidden = true;
+      loadProfiles();
     } catch (e) {
       const why = /401|session key/i.test(e.message) ? 'The session key doesn’t match. Copy the key that node server.mjs prints.' : 'Can’t reach the Claude service. Start it with node server.mjs in the iris folder.';
       $('ai-state').textContent = why;
@@ -113,6 +114,32 @@
     }
   }
   $('connect').onclick = connect;
+
+  /* ---------- design profiles (house styles from the reference vault) ---------- */
+  let profiles = [];
+  const profileSel = $('profile');
+  const profileName = () => { const p = profiles.find(x => x.id === profileSel.value); return p ? p.name : 'No house style'; };
+  function showProfile() {
+    const p = profiles.find(x => x.id === profileSel.value);
+    $('profile-note').textContent = !canDesign() ? 'Connect Claude to design in a house style from the reference vault.'
+      : p ? p.tagline + '. Claude also sees its three reference images.' : profiles.length ? 'Claude picks the style. Choose a house style to steer it.' : 'No profiles found. Add notes to vault/Profiles.';
+  }
+  function setProfile(id) {
+    id = String(id || '').trim(); if (id === 'none') id = '';
+    if (id && !profiles.some(p => p.id === id)) return false;
+    profileSel.value = id; showProfile();
+    try { localStorage.setItem('iris-profile', id); } catch (e) { /* storage may be unavailable */ }
+    return true;
+  }
+  async function loadProfiles() {
+    try { profiles = (await call('/profiles', null, null, 8000)).profiles || []; } catch (e) { profiles = []; }
+    profileSel.replaceChildren(new Option('No house style', ''), ...profiles.map(p => new Option(p.name, p.id)));
+    profileSel.disabled = !canDesign() || !profiles.length;
+    let saved = null; try { saved = localStorage.getItem('iris-profile'); } catch (e) { /* storage may be unavailable */ }
+    profileSel.value = saved !== null && (saved === '' || profiles.some(p => p.id === saved)) ? saved : profiles.some(p => p.id === 'general') ? 'general' : '';
+    showProfile();
+  }
+  profileSel.onchange = () => setProfile(profileSel.value);
 
   let recorder = null;
   $('mic').onclick = async () => {
@@ -156,11 +183,11 @@
       let next;
       if (canDesign()) {
         setBusy(true, 'Claude is designing…', 'Opus 5.5 is planning screens, layout and copy for your brief. This usually takes one to three minutes.');
-        next = Doc.clean((await call('/board', JSON.stringify({note: prompt}))).doc);
+        next = Doc.clean((await call('/board', JSON.stringify({note: prompt, profile: profileSel.value}))).doc);
       } else next = Doc.fromBoard(Screens.checkBoard(Kit.build(prompt)));
       setBusy(false);
       revisions = []; rev = -1;
-      commit(next, 'Built from “' + prompt + '”', null, null);
+      commit(next, 'Built from “' + prompt + '”' + (canDesign() && profileSel.value ? ' · ' + profileName() : ''), null, null);
       if (canDesign()) { setMode('edit'); brief.value = ''; }
     } catch (e) { setBusy(false, 'Could not build that', e.message); }
   }
@@ -179,7 +206,7 @@
           if (m.notes.length) { base = m.doc; baseBoard = Screens.checkBoard(Doc.compile(base), true); setHead(busyHead, 'Including your edits in Figma: ' + m.notes.slice(0, 3).join(', ') + (m.notes.length > 3 ? '…' : '')); }
         }
       }
-      const r = await call('/edit', JSON.stringify({doc: base, note: text}));
+      const r = await call('/edit', JSON.stringify({doc: base, note: text, profile: profileSel.value}));
       const res = Doc.apply(base, r.ops || []);
       setBusy(false);
       if (!res.applied.length) { setHead('No changes made', r.summary || 'Claude could not map that request onto this design. Try rephrasing it.'); return; }
@@ -795,7 +822,8 @@
       copy: s.layers.filter(L => L.kind === 'text').map(L => L.text.replace(/\n/g, ' ')).filter(x => x.trim()).slice(0, 12)}))};
   }
   window.Iris = {
-    isPlugin, call,
+    isPlugin, call, setProfile,
+    get profile() { return {id: profileSel.value, name: profileName()}; }, get profiles() { return profiles.map(({id, name, tagline}) => ({id, name, tagline})); },
     get connected() { return connected; }, get service() { return service; }, get busy() { return busy; },
     state: () => ({design: outline(), version: rev + 1, versions: revisions.length, running: !!P && !runFinished(), status: headText(), canEdit: canDesign()}),
     async build(text) {

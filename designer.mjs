@@ -73,18 +73,25 @@ function compact(doc) {
   return JSON.stringify(d);
 }
 
-export async function design(note, ask) {
+// With a design profile, the user turn carries its reference images and style brief ahead of the
+// request; the system prompt stays identical so it remains cached.
+function withStyle(text, style) {
+  if (!style || !style.text) return text;
+  return [...(style.images || []), {type: 'text', text: style.text + '\n\n---\n\n' + text}];
+}
+
+export async function design(note, ask, style) {
   if (typeof note !== 'string' || !note.trim() || note.length > 1500) throw Object.assign(Error('Enter a brief of up to 1500 characters.'), {status: 400});
-  const out = await ask(designSystem, 'Design this product:\n\n' + note.trim());
+  const out = await ask(designSystem, withStyle('Design this product:\n\n' + note.trim(), style));
   const doc = Doc.clean({name: out.name, screens: out.screens, nodes: out.nodes});
   Screens.checkBoard(Doc.compile(doc), true);
   return {doc, summary: String(out.summary || '').slice(0, 300)};
 }
 
-export async function edit(doc0, note, ask) {
+export async function edit(doc0, note, ask, style) {
   if (typeof note !== 'string' || !note.trim() || note.length > 1500) throw Object.assign(Error('Describe the change in up to 1500 characters.'), {status: 400});
   const doc = Doc.clean(doc0);
-  const out = await ask(editSystem, '<design>\n' + compact(doc) + '\n</design>\n\nChange request: ' + note.trim());
+  const out = await ask(editSystem, withStyle('<design>\n' + compact(doc) + '\n</design>\n\nChange request: ' + note.trim(), style));
   const ops = Array.isArray(out.ops) ? out.ops.slice(0, 600) : [];
   const trial = Doc.apply(doc, ops);
   Screens.checkBoard(Doc.compile(trial.doc), true);
