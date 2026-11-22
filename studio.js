@@ -87,8 +87,15 @@
     const data = await r.json(); if (!r.ok) throw Error(data.error || 'Service unavailable');
     return data;
   }
+  function updateNotice(problem) {
+    $('template-notice').hidden = canDesign();
+    $('notice-title').textContent = problem ? 'Not connected to Claude' : 'Using built-in templates';
+    $('notice-text').textContent = problem || 'Every brief gets the same seven screens with new copy and colours. Connect Claude for original designs you can change with words.';
+  }
+  $('connect-cta').onclick = e => { e.stopPropagation(); $('settings').hidden = false; $('token').focus(); };
   async function connect() {
     token = $('token').value.trim(); connected = false;
+    if (!token) { $('ai-state').textContent = 'Paste the session key that node server.mjs prints.'; updateNotice(); return; }
     try {
       service = await call('/status', null, null, 8000); connected = true;
       try { localStorage.setItem('iris-key', token); } catch (e) { /* storage may be unavailable */ }
@@ -97,7 +104,13 @@
       $('mode-label').textContent = service.design ? 'Claude Opus 5.5' : 'Local kit';
       $('mic').hidden = !service.voice;
       if (doc && service.design && mode !== 'edit') { setMode('edit'); brief.value = ''; }
-    } catch (e) { $('ai-state').textContent = 'Could not connect. Is node server.mjs running, and is the session key right?'; }
+      updateNotice(service.design ? null : 'The service is running but has no Anthropic key. Set ANTHROPIC_API_KEY and restart it.');
+      if (service.design) $('settings').hidden = true;
+    } catch (e) {
+      const why = /401|session key/i.test(e.message) ? 'The session key doesn’t match. Copy the key that node server.mjs prints.' : 'Can’t reach the Claude service. Start it with node server.mjs in the iris folder.';
+      $('ai-state').textContent = why;
+      updateNotice(why + ' Until then, new designs use the built-in templates.');
+    }
   }
   $('connect').onclick = connect;
 
@@ -771,7 +784,7 @@
     requestAnimationFrame(loop);
   }
   resize();
-  setPlayIcon(); setMode('new'); renderHistory();
+  setPlayIcon(); setMode('new'); renderHistory(); updateNotice();
   requestAnimationFrame(loop);
 
   let saved = '';

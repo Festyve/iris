@@ -3,9 +3,15 @@ import Anthropic from '@anthropic-ai/sdk';
 import http from 'node:http';
 import {randomBytes} from 'node:crypto';
 import {readFile} from 'node:fs/promises';
+import {readFileSync, writeFileSync} from 'node:fs';
 import {design, edit} from './designer.mjs';
 
-const secret = randomBytes(24).toString('hex');
+// The session key survives restarts (kept in .iris-session, never committed), so you paste it
+// into the browser or the Figma plugin once and it keeps working.
+const keyFile = new URL('./.iris-session', import.meta.url);
+let secret = '';
+try { secret = readFileSync(keyFile, 'utf8').trim(); } catch { /* first run */ }
+if (!/^[0-9a-f]{48}$/.test(secret)) { secret = randomBytes(24).toString('hex'); writeFileSync(keyFile, secret + '\n', {mode: 0o600}); }
 const origin = 'http://localhost:4739';
 const voiceKey = process.env.ELEVENLABS_API_KEY;
 const MODEL = 'claude-opus-5-5';
@@ -88,4 +94,8 @@ const server = http.createServer(async (req, res) => {
   }
 });
 server.on('error', e => { console.error('Could not start local service: ' + e.message); process.exitCode = 1; });
-server.listen(4739, '127.0.0.1', () => console.log('Iris\nDesigner: ' + (client ? MODEL : 'not configured (set ANTHROPIC_API_KEY)') + '\nBrowser: ' + origin + '/#key=' + secret + '\nFigma session key: ' + secret));
+server.listen(4739, '127.0.0.1', () => console.log([
+  'Iris is running.', 'Designer: ' + (client ? MODEL : 'not configured (set ANTHROPIC_API_KEY)'), '',
+  'Browser:  ' + origin + '/#key=' + secret,
+  'Figma:    open the Iris plugin, click the gear (⚙) and paste this session key once:', '          ' + secret, '',
+  'Leave this running while you design. Press Ctrl-C to stop.'].join('\n')));
