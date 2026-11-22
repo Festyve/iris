@@ -51,26 +51,27 @@
   const sugg = $('suggest'), brief = $('brief');
   const dots = ['#6E56F8', '#FF5A4E', '#2D6BFF', '#C5F23A', '#EA7212', '#0E9F6E', '#E13F7A'];
   const edits = ['Make the primary buttons pill-shaped', 'Switch the whole app to dark mode', 'Add a search bar under the header on Home', 'Add a settings screen with notification toggles', 'Make the headline bigger and bolder'];
+  const samples = ['A poker website called “River Room”', 'Recreate Stripe', ...Kit.samples];
   function fillSuggestions() {
-    const list = mode === 'edit' ? edits : Kit.samples;
+    const list = mode === 'edit' ? edits : samples;
     sugg.innerHTML = '<div class="hint">' + (mode === 'edit' ? 'Try a change' : 'Try a brief') + '</div>' + list.map((s, i) => '<button type="button" data-i="' + i + '"><i style="background:' + dots[i % dots.length] + '"></i>' + esc(s) + '</button>').join('');
   }
   sugg.addEventListener('mousedown', e => e.preventDefault());
-  sugg.addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; brief.value = (mode === 'edit' ? edits : Kit.samples)[+b.dataset.i]; sugg.hidden = true; go(); });
-  $('samples').innerHTML = Kit.samples.map((x, i) => '<button type="button" data-i="' + i + '">' + esc(x) + '</button>').join('');
-  $('samples').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; setMode('new'); brief.value = Kit.samples[+b.dataset.i]; go(); });
+  sugg.addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; brief.value = (mode === 'edit' ? edits : samples)[+b.dataset.i]; sugg.hidden = true; go(); });
+  $('samples').innerHTML = samples.map((x, i) => '<button type="button" data-i="' + i + '">' + esc(x) + '</button>').join('');
+  $('samples').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; setMode('new'); brief.value = samples[+b.dataset.i]; go(); });
   brief.addEventListener('focus', () => { fillSuggestions(); sugg.hidden = false; });
   brief.addEventListener('blur', () => { sugg.hidden = true; });
   brief.addEventListener('input', () => { sugg.hidden = !!brief.value.trim(); });
   $('prompt').addEventListener('submit', e => { e.preventDefault(); sugg.hidden = true; brief.blur(); go(); });
-  $('dice').onclick = () => { setMode('new'); const pool = Kit.samples.filter(s => s !== brief.value); brief.value = pool[Math.floor(Math.random() * pool.length)]; go(); };
+  $('dice').onclick = () => { setMode('new'); const pool = samples.filter(s => s !== brief.value); brief.value = pool[Math.floor(Math.random() * pool.length)]; go(); };
 
   function setMode(m) {
     mode = m === 'edit' && doc ? 'edit' : 'new';
     $('mode').textContent = mode === 'edit' ? 'Edit ' + (doc.name.length > 12 ? doc.name.slice(0, 11) + '…' : doc.name) : 'New';
     $('mode').setAttribute('aria-pressed', String(mode === 'edit'));
     $('mode').title = mode === 'edit' ? 'Changing the current design. Click to start a new one.' : 'Starting a new design. Click to change the current one.';
-    brief.placeholder = mode === 'edit' ? 'Describe a change, like “add a promo code field to checkout”' : 'Describe a product, like “a budgeting app called Penny”';
+    brief.placeholder = mode === 'edit' ? 'Describe a change, like “add a promo code field to checkout”' : 'Describe a website or product, like “poker”';
     $('build-label').textContent = mode === 'edit' ? 'Apply' : 'Build';
     brief.setAttribute('aria-label', mode === 'edit' ? 'Describe a change' : 'Describe a product');
     $('prompt').classList.toggle('editing', mode === 'edit');
@@ -89,8 +90,8 @@
   }
   function updateNotice(problem) {
     $('template-notice').hidden = canDesign();
-    $('notice-title').textContent = problem ? 'Not connected to Claude' : 'Using built-in templates';
-    $('notice-text').textContent = problem || 'Every brief gets the same seven screens with new copy and colours. Connect Claude for original designs you can change with words.';
+    $('notice-title').textContent = problem ? 'Not connected to Claude' : 'Reference vault ready';
+    $('notice-text').textContent = problem || 'Website briefs match the reference vault. Try “poker” or “recreate Stripe”. Connect Claude for custom art direction and edits.';
   }
   $('connect-cta').onclick = e => { e.stopPropagation(); $('settings').hidden = false; $('token').focus(); };
   async function connect() {
@@ -181,13 +182,26 @@
     if (!text) brief.value = prompt;
     try {
       let next;
-      if (canDesign()) {
-        setBusy(true, 'Claude is designing…', 'Opus 5.5 is planning screens, layout and copy for your brief. This usually takes one to three minutes.');
-        next = Doc.clean((await call('/board', JSON.stringify({note: prompt, profile: profileSel.value}))).doc);
+      const reference = ReferenceMatch.website(prompt) ? Websites.match(prompt) : null;
+      let detail = '', usedModel = false;
+      if (reference && (reference.exact || !canDesign() || !service.vaultWebsites)) {
+        next = Doc.clean(Websites.build(prompt, reference));
+        if (canDesign() && !service.vaultWebsites && !reference.exact) detail = 'Restart the updated service for Claude customization.';
+      } else if (canDesign()) {
+        setBusy(true, reference ? 'Designing from ' + reference.site.title + '…' : 'Claude is designing…', 'Opus 5.5 is planning screens, layout and copy for your brief. This usually takes one to three minutes.');
+        try {
+          next = Doc.clean((await call('/board', JSON.stringify({note: prompt, profile: profileSel.value}))).doc);
+          usedModel = true;
+        } catch (error) {
+          if (!reference) throw error;
+          next = Doc.clean(Websites.build(prompt, reference));
+          detail = 'Used the local reference build. ' + error.message;
+        }
       } else next = Doc.fromBoard(Screens.checkBoard(Kit.build(prompt)));
       setBusy(false);
       revisions = []; rev = -1;
-      commit(next, 'Built from “' + prompt + '”' + (canDesign() && profileSel.value ? ' · ' + profileName() : ''), null, null);
+      const label = 'Built from “' + prompt + '”' + (usedModel && profileSel.value ? ' · ' + profileName() : '');
+      commit(next, label, null, [next.reference && 'Vault · ' + next.reference.title, detail].filter(Boolean).join(' · '));
       if (canDesign()) { setMode('edit'); brief.value = ''; }
     } catch (e) { setBusy(false, 'Could not build that', e.message); }
   }
@@ -249,7 +263,7 @@
     $('board-chip').hidden = false; $('empty').hidden = true;
     const n = board.screens.reduce((s, x) => s + x.layers.length, 0);
     $('board-name').textContent = board.name;
-    $('board-meta').textContent = board.screens.length + ' screens · ' + n + ' layers';
+    $('board-meta').textContent = board.screens.length + (board.screens.length===1?' screen · ':' screens · ') + n + ' layers' + (doc?.reference ? ' · '+doc.reference.title : '');
     status = new Array(P.layers.length).fill(-1); who = new Array(P.layers.length).fill(-1); lastRow.length = 0;
     buildTree(); buildActs(); lastFeedKey = '';
     if (!keepCamera || !userMoved) { fit(true); userMoved = false; }
@@ -437,11 +451,19 @@
     cursors();
   }
 
+  const vectorPaths = new Map();
   function drawLayer(ref, ls, ox, oy, z, S, over, sa) {
     const L = ref.L, b = ls.box, x = ox + b.x * z, y = oy + b.y * z, w = b.w * z, h = b.h * z;
     const op = (L.opacity === undefined ? 1 : L.opacity) * ls.alpha * sa;
     if (L.kind !== 'line' && (x > W || y > H || x + w < 0 || y + h < 0)) return;
     if (L.kind === 'text') drawText(ls, x, y, w, h, z, op, over);
+    else if (Websites.artwork(L.art)) {
+      const vector = Websites.artwork(L.art);
+      if (!vectorPaths.has(L.art)) vectorPaths.set(L.art,new Path2D(vector.path));
+      ctx.save(); ctx.translate(x,y); ctx.scale(w/vector.w,h/vector.h); ctx.globalAlpha=op;
+      ctx.fillStyle=paintOf(ls.fill < .45 ? ls.fillFrom : ls.fillTo,0,0,vector.w,vector.h);
+      ctx.fill(vectorPaths.get(L.art),'evenodd'); ctx.restore();
+    }
     else if (L.kind === 'line') drawLine(ref, ls, ox, oy, z, op, over);
     else if (L.kind === 'icon') {
       ctx.save(); ctx.globalAlpha = op; ctx.translate(x + w / 2, y + h / 2); ctx.scale(ls.scale, ls.scale); ctx.translate(-w / 2, -h / 2); ctx.scale(w / 24, h / 24);
@@ -750,6 +772,9 @@
           const ax = L.align === 'center' ? L.x + L.w / 2 : L.align === 'right' ? L.x + L.w : L.x, anchor = L.align === 'center' ? 'middle' : L.align === 'right' ? 'end' : 'start';
           body += '<text font-family="Inter, sans-serif" font-size="' + L.size + '" font-weight="' + L.weight + '" fill="' + L.fill + '" text-anchor="' + anchor + '"' + (L.size >= 28 ? ' letter-spacing="' + r2(-L.size * .02) + '"' : '') + op + '>' +
             L.text.split('\n').map((s, i) => '<tspan x="' + r2(ax) + '" y="' + r2(L.y + L.size * L.lh * (i + .5)) + '" dominant-baseline="central">' + esc(s) + '</tspan>').join('') + '</text>';
+        } else if (Websites.artwork(L.art)) {
+          const a=Websites.artwork(L.art);
+          body+='<path transform="translate('+L.x+' '+L.y+') scale('+L.w/a.w+' '+L.h/a.h+')" fill-rule="evenodd" fill="'+fillRef(L.fill,0,0,a.w,a.h)+'" d="'+a.path+'"'+op+'/>';
         } else if (L.kind === 'line') {
           body += '<polyline points="' + L.points.map(p => r2(L.x + p[0] * L.w) + ',' + r2(L.y + p[1] * L.h)).join(' ') + '" fill="none" stroke="' + L.stroke + '" stroke-width="' + L.sw + '" stroke-linecap="round" stroke-linejoin="round"' + op + '/>';
         } else if (L.kind === 'icon') {
@@ -833,7 +858,7 @@
       await go();
       if (!revisions.length || revisions[rev] === before) return {error: headText()};
       const run = await settle(240000);
-      return {built: true, crew: run, designer: canDesign() ? 'Claude Opus 5.5' : 'built-in kit (Claude not connected)', summary: revisions[rev].label, design: outline()};
+      return {built: true, crew: run, reference: doc.reference || null, designer: doc.reference ? 'vault reference builder' : canDesign() ? 'Claude Opus 5.5' : 'built-in kit', summary: revisions[rev].label, design: outline()};
     },
     async change(text) {
       if (!doc) return {error: 'There is no design yet. Build one first.'};

@@ -175,7 +175,7 @@ const Doc = (() => {
       out.push(extras(Object.assign(base, {kind: 'rect', fill: paintOf(n) || {from: '#E4E4EC', to: '#CFCFDC', dir: 'd'}})));
       const s = Math.max(12, Math.min(40, Math.min(b.w, b.h) * .28));
       out.push({id: n.id + '~icon', name: n.name + ' icon', kind: 'icon', icon: 'image', stroke: hex(n.color) || '#FFFFFF', sw: 2, fill: null, x: r2(x + (b.w - s) / 2), y: r2(y + (b.h - s) / 2), w: s, h: s, opacity: .85});
-    } else if (n.type === 'shape') out.push(extras(Object.assign(base, {kind: n.shape === 'ellipse' ? 'ellipse' : 'rect', fill: paintOf(n)})));
+    } else if (n.type === 'shape') out.push(extras(Object.assign(base, n.art ? {art:n.art} : {}, {kind: n.shape === 'ellipse' ? 'ellipse' : 'rect', fill: paintOf(n)})));
     else if (paintOf(n) || hex(n.stroke)) out.push(extras(Object.assign(base, {kind: 'rect', fill: paintOf(n)})));
     for (const k of b.kids) emit(k.box, x + k.x, y + k.y, out);
   }
@@ -197,7 +197,7 @@ const Doc = (() => {
   function pin(doc, board) { for (const s of doc.screens) { const b = board.screens.find(x => x.id === s.id); if (b) { s.bx = b.x; s.by = b.y; } } return doc; }
 
   /* ---------- patches ---------- */
-  const NODE_KEYS = ['name', 'layout', 'gap', 'pad', 'align', 'alignSelf', 'justify', 'cols', 'w', 'h', 'x', 'y', 'grow', 'fill', 'fill2', 'fillDir', 'stroke', 'sw', 'r', 'shadow', 'opacity', 'text', 'size', 'weight', 'color', 'lh', 'wrap', 'icon', 'shape', 'points'];
+  const NODE_KEYS = ['name', 'layout', 'gap', 'pad', 'align', 'alignSelf', 'justify', 'cols', 'w', 'h', 'x', 'y', 'grow', 'fill', 'fill2', 'fillDir', 'stroke', 'sw', 'r', 'shadow', 'opacity', 'text', 'size', 'weight', 'color', 'lh', 'wrap', 'icon', 'shape', 'points', 'art'];
   const SCREEN_KEYS = ['name', 'w', 'h', 'fill', 'layout', 'gap', 'pad', 'align', 'justify'];
   function pick(src, keys) { const o = {}; for (const k of keys) if (src && src[k] !== undefined && src[k] !== null) o[k] = src[k]; return o; }
   function subtree(doc, id) { const out = new Set([id]); let grew = true; while (grew) { grew = false; for (const n of doc.nodes) if (out.has(n.parent) && !out.has(n.id)) { out.add(n.id); grew = true; } } return out; }

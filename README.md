@@ -2,6 +2,16 @@
 
 Describe any product and Claude designs it. Then describe changes in plain words and Claude makes them. Every time, hundreds of cursors do the work on the canvas, in the browser or live in your Figma file. They drag out frames, draw and fill shapes, round corners, snap cards into place and type every word. On a change they only touch what changes: moving, recolouring, retyping, deleting and adding.
 
+## Build a website from the vault
+
+Choose **New**, type a subject like **poker**, choose **100**, and press **Build**. In Figma Desktop the named cursors assemble the frame on your canvas. Poker uses MetalForge’s sidebar, filters and card grid to build a playable-looking lobby with table names, game types and open seats. Iris shows the source in Versions.
+
+Name a site directly, for example **recreate Stripe**, **recreate Poolsuite**, or **recreate MetalForge**, to rebuild its captured 1440 × 900 viewport. All 22 site captures have local templates. Text is extracted into editable text layers and graphic regions into editable shapes and vector paths. Typography and detailed imagery are approximations of the capture. Below-the-fold pages and interactions are outside the captures.
+
+Custom website briefs search names, subjects, aesthetics and image captions. The local builder adapts the closest template and uses an editorial layout for unmatched words. With the current Claude service connected, Iris also sends the matched screenshot, a supporting vault image when available and the editable starting layout to the model for brief-specific edits. Named reconstructions and local builds work offline. Native/mobile app briefs retain the product-design workflow.
+
+The site templates are committed in `references/sites.json`. `npm run build` refreshes the searchable image catalog. To retrace changed captures, run the two commands in `scripts/trace-sites.py` before building.
+
 ## What the cursors do
 
 | Task | What the cursor does |
@@ -38,7 +48,7 @@ You can also put the key in a `.env` file and run `node --env-file=.env server.m
 
 The server uses `claude-opus-5-5` with adaptive thinking, structured JSON output and server-side refusal fallback. A new design usually takes a minute or two; a change takes seconds to a minute.
 
-**Without Claude**, Iris still works: the built-in kit turns any brief into a themed seven-screen product (five phone screens, a dashboard and a landing page), and the crew builds it. Changes need Claude.
+**Without Claude**, Iris still works: for native app requests the built-in kit turns the brief into a themed seven-screen product (five phone screens, a dashboard and a landing page), and the crew builds it. Changes need Claude.
 
 ## Use it
 
