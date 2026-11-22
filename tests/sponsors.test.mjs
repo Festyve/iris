@@ -108,18 +108,35 @@ test('Alter restricts caller input to a registered read and preserves actual app
   assert.throws(() => hub.scopedAction({ actionId: 'arbitrary-shell' }), /not registered/);
 });
 
-test('TraceRoot preserves a task result and executes it once even when flush fails', async () => {
-  let count = 0, observed;
+test('TraceRoot preserves a task result and executes it once while a slow batch export is pending', {timeout: 2000}, async () => {
+  let count = 0, observed, flushes = 0;
+  const releaseExport = Promise.withResolvers();
+  let pendingExport;
+  const receipt = {};
   const hub = createSponsorHub({ env: { TRACEROOT_API_KEY: 'test-trace-key' }, tracerootLoader: async () => ({
-    TraceRoot: { initialize: config => { assert.equal(config.apiKey, 'test-trace-key'); }, flush: async () => { throw Error('transport failed'); }, shutdown: async () => {} },
-    observe: async (options, fn) => { observed = options; return fn(); }
+    TraceRoot: {
+      initialize(config) { assert.equal(config.disableBatch, false); },
+      async flush() { flushes++; await pendingExport; },
+      shutdown: () => pendingExport
+    },
+    getCurrentTraceId: () => 'test-id',
+    async observe(options, fn) {
+      observed = options;
+      const result = await fn();
+      pendingExport = releaseExport.promise;
+      return result;
+    }
   }) });
-  const result = await hub.withTrace({ runId: 'run-1', taskId: 'build' }, async () => { count++; return { artifact: 'index.html' }; });
+  const result = await hub.withTrace({ runId: 'run-1', taskId: 'build', receipt }, async () => { count++; return { artifact: 'index.html' }; });
   assert.equal(count, 1);
   assert.equal(result.artifact, 'index.html');
   assert.equal(observed.captureInput, false);
   assert.equal(observed.captureOutput, false);
-  assert.equal(hub.status().find(p => p.id === 'traceroot').state, 'error');
+  assert.equal(flushes, 0);
+  assert.deepEqual(receipt, {id:'test-id', destination:'TraceRoot Cloud', exported:false});
+  const closing = hub.close();
+  releaseExport.resolve();
+  await closing;
 });
 
 test('TraceRoot exports safe failure text and preserves the original application error', async () => {

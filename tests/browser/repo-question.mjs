@@ -4,7 +4,7 @@ import {gunzipSync} from 'node:zlib';
 import {join} from 'node:path';
 import assert from 'node:assert/strict';
 import {once} from 'node:events';
-import {chromium} from '@playwright/test';
+import {chromium, expect} from '@playwright/test';
 import otlp from '@opentelemetry/otlp-transformer/build/src/generated/root.js';
 
 const server = spawn(process.execPath,['--env-file-if-exists=.env','server.mjs'],{
@@ -26,18 +26,37 @@ try {
   const reply = await (await response).json();
   assert.equal(reply.answer,'npm start',reply.error);
   assert.match(reply.citations[0].commit,/^[a-f0-9]{40}$/);
-  await page.getByText(/README\.md line 10/).waitFor();
+  const citation = reply.citations[0];
+  assert.equal(citation.path,'README.md');
+  assert.ok(Number.isInteger(citation.line) && citation.line > 0);
+  await page.getByText(citation.path+' line '+citation.line+' · '+citation.commit,{exact:false}).waitFor();
   if (process.env.TRACEROOT_LOCAL_CAPTURE === '1' && !process.env.TRACEROOT_API_KEY) {
     assert.equal(reply.trace.destination,'local OTLP');
     const {ExportTraceServiceRequest} = otlp.opentelemetry.proto.collector.trace.v1;
-    let seen=false;
-    for (const file of await readdir(reply.trace.directory)) {
-      const bytes=await readFile(join(reply.trace.directory,file));
-      const batch=ExportTraceServiceRequest.decode(bytes[0]===0x1f && bytes[1]===0x8b ? gunzipSync(bytes) : bytes);
-      const spans=batch.resourceSpans.flatMap(r=>r.scopeSpans.flatMap(s=>s.spans));
-      seen ||= spans.some(s=>s.name==='second-cursor.repo-question' && Buffer.from(s.traceId).toString('hex')===reply.trace.id);
-    }
-    assert.ok(seen,'Trace ID missing from the exported OTLP batch');
+    assert.equal(reply.trace.exported,false);
+    await expect(async () => {
+      let seen=false;
+      for (const file of await readdir(reply.trace.directory)) {
+        const bytes=await readFile(join(reply.trace.directory,file));
+        const batch=ExportTraceServiceRequest.decode(bytes[0]===0x1f && bytes[1]===0x8b ? gunzipSync(bytes) : bytes);
+        const spans=batch.resourceSpans.flatMap(r=>r.scopeSpans.flatMap(s=>s.spans));
+        seen ||= spans.some(s=>s.name==='second-cursor.repo-question' && Buffer.from(s.traceId).toString('hex')===reply.trace.id);
+      }
+      assert.ok(seen,'Trace ID missing from the exported OTLP batch');
+    }).toPass({timeout:15000});
+  }
+  if (process.env.TRACEROOT_VERIFY_HOSTED === '1') {
+    assert.equal(reply.trace.destination,'TraceRoot Cloud');
+    assert.equal(reply.trace.exported,false);
+    const endpoint = new URL('/api/v1/public/traces/'+reply.trace.id,process.env.TRACEROOT_HOST_URL || 'https://app.traceroot.ai');
+    await expect(async () => {
+      const response = await fetch(endpoint,{redirect:'error',signal:AbortSignal.timeout(5000),
+        headers:{Authorization:'Bearer '+process.env.TRACEROOT_API_KEY}});
+      assert.equal(response.status,200);
+      const trace = await response.json();
+      assert.equal(trace.trace_id,reply.trace.id);
+      assert.ok(trace.spans.some(span=>span.name==='second-cursor.repo-question'));
+    }).toPass({timeout:45000,intervals:[1000,2000,5000]});
   }
   if (process.env.REPO_DEMO_SCREENSHOT) await page.screenshot({path:process.env.REPO_DEMO_SCREENSHOT});
   console.log(JSON.stringify({question,...reply},null,2));
