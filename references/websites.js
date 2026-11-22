@@ -11,8 +11,17 @@ const Websites = (() => {
     const row = Object.prototype.hasOwnProperty.call(ReferenceSites,id) && ReferenceSites[id].shapes[Number(index)];
     return row && row[5] ? {w:row[2]/3,h:row[3]/3,path:row[5]} : null;
   }
+  // Named captures rebuild exactly and poker keeps its gallery. Other briefs use an original family
+  // when one fits the subject, and every remaining custom brief gets the general Iris Minimal template
+  // instead of pouring generic words into another site's capture.
   function match(note) { const captured=ReferenceMatch.select(note, ReferenceMedia, Object.keys(ReferenceSites));
-    return captured?.named ? captured : OriginalPages.match(note) || captured; }
+    if(captured?.named) return captured;
+    const minimal=typeof MinimalPages!=='undefined';
+    if(minimal && /\bminimal(?:ist)?\b/i.test(note)) return MinimalPages.match(note);
+    const original=OriginalPages.match(note);
+    if(original) return original;
+    if(ReferenceMatch.poker(note) || !minimal) return captured;
+    return MinimalPages.match(note); }
   function titleOf(note) {
     const quoted=note.match(/["“]([^"”]{1,55})["”]/);
     const named=quoted || note.match(/\b(?:called|named)\s+(.{1,55})/i);
@@ -60,6 +69,7 @@ const Websites = (() => {
   const collections=['metalforge','godly'];
   const details=['apple-liquid-glass','teenage-engineering','poolsuite','ui-chords'];
   function build(note,m=match(note),captureOnly=false) {
+    if(m?.minimal)return MinimalPages.build(note,m,titleOf(note),captureOnly);
     if(m?.original)return OriginalPages.build(note,m,titleOf(note),captureOnly);
     if(!m || !Object.prototype.hasOwnProperty.call(ReferenceSites,m.id)) throw Error('No usable website setup is available in the vault.');
     const available=new Set(ReferenceMedia.filter(r=>r.path.startsWith('assets/sites/')).map(r=>r.path.slice(13,-4)));
