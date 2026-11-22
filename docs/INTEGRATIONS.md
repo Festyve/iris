@@ -41,7 +41,7 @@ Authenticated `GET /provider-usage` reports reservations and limits for the curr
 
 | Operation | Upper bound |
 | --- | --- |
-| Model generation | 16,384 requested output tokens per UTC day across Gemini and hosted design critique. One studio plan or poster edit reserves 1,536, a new editable screen reserves 4,096, and a three-persona review reserves 3 × 384. |
+| Model generation | 16,384 requested output tokens per UTC day across Gemini, Iris Claude calls and hosted design critique. Each Claude design attempt reserves 8,192 and a Claude visual critique reserves 1,536. One studio plan or poster edit reserves 1,536, a new editable screen reserves 4,096, and a three-persona review reserves 3 × 384. |
 | Model context | 16 KiB of serialized user context for studio planning and review. Legacy Figma requests allow 32 KiB of text alongside the existing bounded screenshot input. Provider instructions, schemas and image accounting are additional. |
 | ElevenLabs | 12 transcriptions, 24 speech requests and 4 signed session requests per day. |
 | Codevisor | 4 repository task dispatch requests per day. |

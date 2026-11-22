@@ -1,6 +1,7 @@
 // Local service for Iris: Claude designs and edits; ElevenLabs transcribes spoken briefs and runs the Talk to Iris voice agent.
 import Anthropic from '@anthropic-ai/sdk';
-import {studioRoute} from './studio-http.mjs';
+import {outputCaps} from './studio/provider-budget.mjs';
+import {budget,studioRoute} from './studio-http.mjs';
 import {serveStudio} from './studio/server.mjs';
 import http from 'node:http';
 import {randomBytes} from 'node:crypto';
@@ -40,11 +41,15 @@ function parseJson(text) {
   if (start < 0 || end <= start) throw Error('no JSON object');
   return JSON.parse(text.slice(start, end + 1));
 }
+function reserve(path) {
+  if (!budget.admit(path)) throw Object.assign(Error('Daily provider allowance reached. It resets at midnight UTC.'),{status:429});
+}
 async function ask(system, user) {
   for (let attempt = 0; ; attempt++) {
+    reserve('/board');
     const stream = client.beta.messages.stream({
       model: MODEL,
-      max_tokens: 64000,
+      max_tokens: outputCaps.irisBoard,
       // Opus 5.5 always thinks; effort sets how hard. On a policy decline, retry on the recommended model.
       thinking: {type: 'adaptive'},
       output_config: {effort: 'medium'},
@@ -123,8 +128,9 @@ async function critique(req, res) {
   if (typeof d.png === 'string' && d.png.startsWith('iVBOR') && /^[A-Za-z0-9+/=]+$/.test(d.png)) content.push({type: 'image', source: {type: 'base64', media_type: 'image/png', data: d.png}});
   const style = await profileStyle(vaultDir, d.profile, 0);
   content.push({type: 'text', text: (style ? 'Judge it against this house style.\n' + style.text + '\n\n' : '') + 'Question: ' + question + '\nFrame: ' + JSON.stringify(d.frame || {}) + '\nVisible copy: ' + JSON.stringify((d.texts || []).slice(0, 40))});
+  reserve('/critique');
   const message = await client.messages.create({
-    model: MODEL, max_tokens: 2000, thinking: {type: 'adaptive'}, output_config: {effort: 'low'},
+    model: MODEL, max_tokens: outputCaps.irisCritique, thinking: {type: 'adaptive'}, output_config: {effort: 'low'},
     system: 'You are Iris, a senior product designer looking over a colleague\'s shoulder at their Figma frame. Answer their question, or give a general critique. Reply in at most four short plain sentences meant to be spoken aloud: one thing that works, then the two highest-impact, specific improvements (hierarchy, spacing, alignment, contrast, type, copy). Name elements by what they are, never by hex code or layer id. No markdown.',
     messages: [{role: 'user', content}]
   });
@@ -165,7 +171,7 @@ const server = http.createServer(async (req, res) => {
     if (req.method === 'GET' && url.pathname === '/bridge') { if (url.searchParams.get('key') !== secret) return json(res, 401, {error: 'Invalid session key.'}); return openBridge(req, res); }
     if (req.headers.authorization !== 'Bearer ' + secret) return json(res, 401, {error: 'Invalid session key.'});
     if (req.method === 'GET' && req.url === '/status') return json(res, 200, {design: !!client, vaultWebsites: true, voice: !!voiceKey, model: MODEL, agent: !!(eleven && agentId), studio: studios.size > 0});
-    if (req.method === 'GET' && url.pathname === '/voice/session') return await voiceSession(res);
+    if (req.method === 'GET' && url.pathname === '/voice/session') { reserve('/eleven-agent/session'); return await voiceSession(res); }
     if (req.method === 'POST' && url.pathname === '/bridge/command') return await relay(req, res);
     if (req.method === 'POST' && url.pathname === '/bridge/result') return await relayResult(req, res);
     if (req.method === 'POST' && url.pathname === '/critique') return await critique(req, res);
@@ -183,7 +189,7 @@ const server = http.createServer(async (req, res) => {
       console.log((req.url === '/board' ? 'Designed ' : 'Edited ') + (style ? 'as ' + style.name + ' ' : '') + 'in ' + ((Date.now() - started) / 1000).toFixed(1) + 's: ' + (out.summary || ''));
       return json(res, 200, out);
     }
-    if (req.method === 'POST' && req.url === '/voice') return await voice(req, res);
+    if (req.method === 'POST' && req.url === '/voice') { reserve('/voice'); return await voice(req, res); }
     return await studioRoute(req,res);
   } catch (e) {
     if (res.headersSent) return res.end();

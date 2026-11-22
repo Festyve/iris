@@ -9,7 +9,7 @@
     "test": "node --test tests/*.cjs tests/*.mjs poster-adapter/tests/*.cjs",
     "fiber": "node --env-file-if-exists=.env --env-file-if-exists=.env.local scripts/fiber-designers.mjs",
     "studio": "vite --host 127.0.0.1",
-    "build:studio": "vite build"
+    "build:studio": "node poster-adapter/build.mjs && vite build"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.12.0",

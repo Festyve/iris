@@ -1,5 +1,5 @@
 const byId=id=>document.getElementById(id);
-const plugin=parent!==window,api='http://localhost:4739';
+const plugin=parent!==window,api=!plugin && ['localhost','127.0.0.1'].includes(location.hostname) ? location.origin : 'http://localhost:4739';
 if(plugin)document.body.classList.add('plugin');
 let source=SC.base(),plan={...SC.initial},connected=false,version=0,focus='Title',recording,stream,token='',keepCount=0;
 let customSource=false;
@@ -111,4 +111,9 @@ byId('voice').onclick=async()=>{
 };
 byId('audiofile').onclick=()=>byId('file').click();byId('file').onchange=e=>{if(e.target.files[0])transcribe(e.target.files[0])};
 show();
-if(!plugin&&location.hash.startsWith('#key=')){byId('token').value=decodeURIComponent(location.hash.slice(5));history.replaceState(null,'',location.pathname);connect()}
+const studioParams = new URLSearchParams(location.hash.slice(1));
+if (!plugin && studioParams.get('key')) {
+  byId('token').value=studioParams.get('key');
+  history.replaceState(null,'',location.pathname);
+  connect();
+}

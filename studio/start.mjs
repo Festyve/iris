@@ -43,10 +43,11 @@ if (!await ready('http://127.0.0.1:3002','/studio-api/health','"wasp"')) {
   children.push(archive);
   archive.on('exit', code=>{if (code && !stopping) console.error('Wasp archive exited. The studio keeps saving locally.');});
 }
-if (!await ready('http://localhost:4739','/studio/','Second Cursor')) {
+const studioOrigin='http://localhost:'+(process.env.STUDIO_PORT || 4739);
+if (!await ready(studioOrigin,'/studio/','Second Cursor')) {
   const server = spawn(process.execPath,['--env-file-if-exists=.env','--env-file-if-exists=.env.local','server.mjs'],{cwd:root,stdio:'inherit',detached:true});
   children.push(server);
   server.on('exit',code=>{ stop(); process.exitCode=code ?? 0; });
 } else {
-  console.log('Studio already running at http://localhost:4739/studio/. Use its printed session link for integrations.');
+  console.log('Studio already running at '+studioOrigin+'/studio/. Use its printed session link for integrations.');
 }

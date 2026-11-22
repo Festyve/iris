@@ -4,7 +4,7 @@ import { createAiPlanner, AiPlanningError } from './studio/ai-planner.mjs';
 import { serviceRoute, integrationStatus, sponsors } from './studio/services.mjs';
 import { handleVoice } from './studio/server.mjs';
 import {openBudget, outputCaps} from './studio/provider-budget.mjs';
-const budget=openBudget();
+export const budget=openBudget();
 const designKey=process.env.GEMINI_API_KEY,voiceKey=process.env.ELEVENLABS_API_KEY;
 const speech = createVoiceService({apiKey:voiceKey,voiceId:process.env.ELEVENLABS_VOICE_ID,
   sttModel:process.env.ELEVENLABS_STT_MODEL,ttsModel:process.env.ELEVENLABS_TTS_MODEL});

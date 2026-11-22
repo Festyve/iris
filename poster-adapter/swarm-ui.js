@@ -125,7 +125,7 @@ if(plugin)parent.postMessage({pluginMessage:{kind:'ui-ready'}},'*');
 // Open a studio brief in the existing Iris creation controls. The designer still
 // chooses the worker count and starts the editable screen from this adapter.
 if (!plugin) {
-  const studioBrief = new URLSearchParams(location.hash.slice(1)).get('studio-brief');
+  const studioBrief = studioParams.get('studio-brief');
   if (studioBrief) {
     fleetEl('screen-brief').value = studioBrief.slice(0, 700);
     fleetEl('formation').value = 'create';

@@ -79,6 +79,12 @@ function Studio({ initial }) {
   const [studyView, setStudyView] = useState('Compare');
   const [narrow, setNarrow] = useState(false);
   const [key] = useState(localSession);
+  function posterLink(brief) {
+    const params=new URLSearchParams();
+    if(key) params.set('key',key);
+    if(brief) params.set('studio-brief',brief);
+    return 'poster.html'+(params.size ? '#'+params : '');
+  }
   const [services, setServices] = useState({});
   const [useModel,setUseModel] = useState(false);
   const modelMode = useRef(false);
@@ -149,7 +155,7 @@ function Studio({ initial }) {
   };
   return <>
     <header className="mast"><a className="wordmark" href="#canvas"><i aria-hidden="true"/>Second Cursor</a>
-      <nav aria-label="Workspace"><a href="#canvas">Canvas</a><a href="#library">Library</a><a href="poster.html" target="_blank" rel="noreferrer">Iris adapter ↗</a></nav></header>
+      <nav aria-label="Workspace"><a href="#canvas">Canvas</a><a href="#library">Library</a><a href={posterLink()} target="_blank" rel="noreferrer">Iris adapter ↗</a></nav></header>
     <main className="workspace">
       {problem && <div className="notice" role="alert">{problem} <button onClick={() => setProblem('')}>Dismiss</button></div>}
       <section className="canvas-section" id="canvas">
@@ -171,7 +177,7 @@ function Studio({ initial }) {
           </div>
             : <div className="preview-well"><iframe sandbox="allow-scripts" title="Delivered interface" className={narrow ? 'narrow' : ''} srcDoc={current.html}/></div>}
           <div className="canvas-foot"><strong>{sample ? 'After Hours' : current.plan.title}</strong>{sample
-            ? <a href="poster.html" target="_blank" rel="noreferrer">Edit poster ↗</a>
+            ? <a href={posterLink()} target="_blank" rel="noreferrer">Edit poster ↗</a>
             : <button onClick={() => download(current)}>Download HTML ↓</button>}</div>
         </div>
         <aside className="sheet">
@@ -186,7 +192,7 @@ function Studio({ initial }) {
           {current && <label className="version-picker">Restore saved version <select value={project.currentVersion} onChange={e => studio.restore(Number(e.target.value)).catch(error)}>
               {project.versions.map(v => <option value={v.version} key={v.version}>v{v.version} · {v.plan.title}</option>)}</select></label>}
           {current && <details className="checks"><summary>Editable Figma screen</summary><p>Iris builds single screens from editable layers. Its local starters cover transit, a task board, and spending.</p>
-            <a href={'poster.html#studio-brief=' + encodeURIComponent(current.plan.brief)} target="_blank" rel="noreferrer">Open this brief in Iris ↗</a></details>}
+            <a href={posterLink(current.plan.brief)} target="_blank" rel="noreferrer">Open this brief in Iris ↗</a></details>}
           <details className="checks"><summary>Project services</summary>
           {current && <Review key={current.id} artifact={current} references={refs} sessionKey={key}
             configured={services.reviewer?.configured && services.reviewer?.runtimeReady} onSave={studio.saveReview}/>}
