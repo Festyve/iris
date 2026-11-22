@@ -6,9 +6,9 @@ New designs build locally. Claude runs when you request an edit. Every time, hun
 
 Choose **New**, type a subject like **poker**, choose **100**, and press **Build**. In Figma Desktop the named cursors assemble the frame on your canvas. Poker uses MetalForge’s layout for the lobby and two companion vault setups for browsing and details. Iris shows the source in Versions.
 
-Name a site directly, for example **recreate Stripe**, **recreate Poolsuite**, or **recreate MetalForge**, to rebuild its captured 1440 × 900 viewport. All 22 site captures have local templates. Text is extracted into editable text layers and graphic regions into editable shapes and vector paths. Typography and detailed imagery are approximations of the capture. Below-the-fold pages and interactions are outside the captures.
+Choose **Guide me** to review a direction first, or **Build end-to-end** to use the recommendation. Give Iris a product, audience, primary action and any required sections. New editable boards adapt specific composition features such as display hierarchy or an indexed sequence. The website library keeps its original captures for explicit reference study.
 
-Website briefs match only the captured vault setups. A new site gets a home, collection and detail page with editable layers traced to their sources. The local builder adapts text to the brief, including a default vault setup for unmatched words. Native app briefs use the local phone kit. Initial builds make zero Claude requests.
+The local composer works without model credentials. When configured and within the shared daily allowance, Expected Parrot can draft bounded copy for the board. In the Studio companion, generated landing pages and application views support browser interactions, preview checks, revision and restore.
 
 For edits, set **ANTHROPIC_API_KEY** on the local Iris service. **IRIS_EDIT_MODEL** defaults to **claude-haiku-5-5**. Website edits send a compact selection of relevant layer labels, the edit request and allowed vault tokens. Claude can change copy, typography, colours and visibility or add a page based on another known setup. The server validates changes before the cursors apply them.
 

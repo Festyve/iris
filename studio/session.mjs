@@ -18,7 +18,16 @@ export async function studioRequest(key, path, body, signal) {
   });
   let data;
   try { data = await response.json(); }
-  catch { throw Error('The local service could not return a result. Check that the server is running.'); }
-  if (!response.ok) throw Error(data.error || data.message || 'Service returned HTTP ' + response.status);
+  catch { throw Object.assign(Error('The service returned an unreadable response.'), {status:response.ok ? 502 : response.status}); }
+  if (!response.ok) throw Object.assign(Error(data.error || data.message || 'Service returned HTTP ' + response.status), {status:response.status});
   return data;
+}
+
+export async function withLocalRecovery(remote, local, report) {
+  try { return await remote(); }
+  catch (error) {
+    if (!(error instanceof TypeError || error.status === 429 || error.status >= 500)) throw error;
+    report(error.message);
+    return local();
+  }
 }

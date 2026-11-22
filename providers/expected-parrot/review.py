@@ -65,6 +65,27 @@ def run(payload):
     return {"provider": "expected-parrot", "simulated": True, "model": model, "reviews": reviews}
 
 
+def draft_content(payload):
+    from edsl import Model, QuestionFreeText, Scenario, Survey
+    question = QuestionFreeText(question_name="content", question_text=(
+        "Design one original interface for this user brief: {{ scenario.brief }}. "
+        "Direction: {{ scenario.direction }}. Preserve explicitly named products and tasks. "
+        "Choose copy, section names and a primary action specific to the user's subject. "
+        "Do not reproduce reference brands or source text, invent endorsements, or claim external actions. "
+        'Return only a JSON object with title, headline, primaryAction, sections (2-4 short strings) '
+        'and accent (six digit hex color). Title under 55 characters, headline under 100, '
+        'button under 32 characters. Plain text only.'
+    ))
+    model = Model(os.environ.get("EXPECTED_PARROT_MODEL") or "gpt-4o-mini", max_tokens=384)
+    job = Survey([question]).by(Scenario({"brief":payload["brief"],"direction":payload["direction"]})).by(model)
+    results = job.run(n=1, max_concurrency=1, disable_remote_inference=False,
+                      remote_inference_results_visibility="private", progress_bar=False, stop_on_exception=True)
+    answer = next(iter(results)).data["answer"]["content"].strip()
+    if answer.startswith("```"):
+        answer = "\n".join(answer.splitlines()[1:-1])
+    return {"content":json.loads(answer)}
+
+
 def main():
     output = None
     code = 0
@@ -84,7 +105,7 @@ def main():
                     if len(data) > 60000:
                         raise ValueError("invalid_input")
                     payload = json.loads(data)
-                    output = run(payload)
+                    output = draft_content(payload) if payload.get("operation") == "brief-content" else run(payload)
         except ImportError:
             output, code = {"error": "dependency_missing"}, 2
         except Exception as error:

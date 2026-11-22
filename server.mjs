@@ -12,12 +12,13 @@ import {join, basename} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {ElevenLabsClient} from '@elevenlabs/elevenlabs-js';
 import {createElevenAgentService} from './studio/elevenagent-service.mjs';
-import {Doc, edit} from './designer.mjs';
-import Kit from './kit.js';
-import Screens from './screen-spec.cjs';
+import {edit} from './designer.mjs';
+import {composeBrief,planBrief} from './references/compose.mjs';
+import {editBrief} from './references/brief-edit.mjs';
+import {createExpectedParrotReviewer} from './providers/expected-parrot/index.mjs';
 import {loadProfiles, profileStyle} from './profiles.mjs';
 import {capture} from './references/captures.mjs';
-import {websiteDesign,websiteEdit} from './references/planner.mjs';
+import {websiteEdit} from './references/planner.mjs';
 
 // The session key survives restarts (kept in .iris-session, never committed), so you paste it
 // into the browser or the Figma plugin once and it keeps working.
@@ -30,6 +31,7 @@ const origin = 'http://localhost:'+port;
 const voiceKey = process.env.ELEVENLABS_API_KEY;
 const MODEL = 'claude-opus-5-5';
 const EDIT_MODEL = process.env.IRIS_EDIT_MODEL || 'claude-haiku-5-5';
+const contentPlanner=createExpectedParrotReviewer({timeoutMs:32000});
 let agentId = process.env.ELEVENLABS_AGENT_ID || '';
 if (!agentId) try { agentId = JSON.parse(await readFile(new URL('./.iris-agent.json', import.meta.url), 'utf8')).agentId || ''; } catch (e) { /* run npm run agent */ }
 const irisVoice = createElevenAgentService({apiKey: voiceKey, agentId});
@@ -182,21 +184,44 @@ const server = http.createServer(async (req, res) => {
       return json(res,200,{png:bytes.toString('base64')});
     }
     if (req.method === 'GET' && url.pathname === '/profiles') return json(res, 200, {profiles: (await loadProfiles(vaultDir)).map(({id, name, tagline}) => ({id, name, tagline}))});
-    if (req.method === 'POST' && (req.url === '/board' || req.url === '/edit')) {
-      const body = JSON.parse((await collect(req, 4_000_000)).toString());
-      const started = Date.now();
+    if (req.method === 'POST' && ['/brief-plan','/board','/edit'].includes(url.pathname)) {
+      const body = JSON.parse((await collect(req,url.pathname==='/edit' ? 4_000_000 : 12000)).toString());
       if(typeof body.note!=='string' || !body.note.trim() || body.note.length>1500) return json(res,400,{error:'Enter a brief of up to 1500 characters.'});
-      let out;
-      if(req.url==='/board') {
-        out=await websiteDesign(body.note,vaultDir);
-        if(!out) out={doc:Doc.fromBoard(Screens.checkBoard(Kit.nativeBoard(body.note))),summary:'Built locally.'};
-      } else {
-        if(!client)return json(res,503,{error:'Set ANTHROPIC_API_KEY to enable edits.'});
-        const style=await profileStyle(vaultDir,body.profile,0);
-        out=body.doc?.reference ? await websiteEdit(body.doc,body.note,ask,style?.name) : await edit(body.doc,body.note,ask,style);
+      const note=body.note.trim();
+      const profile=await profileStyle(vaultDir,body.profile,0);
+      if (url.pathname==='/edit') {
+        if (!body.doc || !Array.isArray(body.doc.nodes)) return json(res,400,{error:'Select an existing board to revise.'});
+        const local=editBrief(body.doc,note);
+        if(local) return json(res,200,local);
+        if(!client) return json(res,422,{error:'Try “Change headline to …”, “Set accent to #225577”, or “Replace "old text" with "new text"”. Free-form layer editing requires Claude.'});
+        const out=body.doc.reference ? await websiteEdit(body.doc,note,ask,profile?.name) : await edit(body.doc,note,ask,profile);
+        return json(res,200,out);
       }
-      console.log((req.url==='/board'?'Local build':'Claude edit')+' completed in '+(Date.now()-started)+' ms.');
-      return json(res, 200, out);
+      const proposal=planBrief(note,profile);
+      if (url.pathname==='/brief-plan') return json(res,200,proposal);
+      const direction=body.direction ?? proposal.recommended;
+      if (!proposal.directions.some(d=>d.id===direction)) return json(res,400,{error:'Select a direction offered for this brief.'});
+      const controller=new AbortController();
+      res.once('close',()=>{if(!res.writableFinished) controller.abort()});
+      const result=await sponsors.withTrace({runId:randomBytes(12).toString('hex'),taskId:'compose-board'},async()=>{
+        let content, reason;
+        const {configured,runtimeReady}=contentPlanner.status();
+        if(configured && runtimeReady) {
+          try {
+            reserve('/brief-content');
+            content=await contentPlanner.draftContent({brief:note,direction,signal:controller.signal});
+          } catch(error) {
+            if(controller.signal.aborted) throw error;
+            reason=error.code || (error.status===429 ? 'daily_provider_limit' : 'provider_unavailable');
+          }
+        }
+        const out=await composeBrief({note,profile,direction,content});
+        const execution=content ? 'expected-parrot' : 'local';
+        return {...out,execution,direction,references:proposal.references.filter(r=>r.direction===direction),
+          summary:out.summary+(content ? ' Copy planned with Expected Parrot.' : ' Local composition.'),
+          ...(reason && {fallbackReason:reason})};
+      });
+      return json(res,200,result);
     }
     if (req.method === 'POST' && req.url === '/voice') { reserve('/voice'); return await voice(req, res); }
     return await studioRoute(req,res);

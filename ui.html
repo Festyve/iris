@@ -283,6 +283,14 @@ body:not(.plugin) .plugin-only{display:none!important}
 .style-pick:disabled{opacity:.5;cursor:default}
 #style-block h2{margin-bottom:10px}
 #profile-note{margin:8px 0 0;font-size:11px;line-height:1.45;color:var(--text-3)}
+#workflow,#direction-dialog{background:var(--surface);color:var(--text);border:1px solid var(--line-2);border-radius:var(--r)}
+#workflow{height:32px;padding:0 6px}
+#direction-dialog{width:min(420px,90vw);padding:20px;max-height:85vh}
+#direction-dialog::backdrop{background:rgba(0,0,0,.62)}
+#directions button{display:block;width:100%;padding:12px 6px;border-bottom:1px solid var(--line-2);text-align:left;color:var(--text-2)}
+#directions strong{display:block;color:var(--text);margin-bottom:3px}
+#directions button:hover{background:var(--surface-2)}
+#request-status:empty,#plan-refs:empty{display:none}
 </style>
 </head>
 <body>
@@ -291,9 +299,10 @@ body:not(.plugin) .plugin-only{display:none!important}
     <span class="mark" aria-hidden="true"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M5 2.5v17.2l4.7-4.3 3.3 7.2 3.3-1.4-3.3-7.1H19.4z"/></svg></span>
     <div><b>Iris</b><small>A crew of cursors that designs</small></div>
   </div>
+  <select id="workflow" aria-label="Build workflow"><option value="guided">Guide me</option><option value="auto">Build end-to-end</option></select>
   <form class="prompt" id="prompt" autocomplete="off">
     <button type="button" class="mode" id="mode" aria-pressed="false" title="Starting a new design">New</button>
-    <input id="brief" maxlength="400" aria-label="Describe a product" placeholder="Describe a product — “a budgeting app called Penny”">
+    <input id="brief" maxlength="1500" aria-label="Describe a product" placeholder="Describe a product — “a budgeting app called Penny”">
     <button type="button" class="icon-btn" id="mic" title="Speak the brief" aria-label="Speak the brief" hidden><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>
     <button type="button" class="icon-btn" id="dice" title="Surprise me" aria-label="Surprise me"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg></button>
     <div class="suggest" id="suggest" hidden></div>
@@ -301,15 +310,21 @@ body:not(.plugin) .plugin-only{display:none!important}
   <span class="seg-label">Crew</span>
   <div class="seg" id="crew-size" role="radiogroup" aria-label="Crew size"></div>
   <button class="build" id="build" form="prompt" type="submit"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M5 2.5v17.2l4.7-4.3 3.3 7.2 3.3-1.4-3.3-7.1H19.4z"/></svg><span id="build-label">Build</span></button>
-  <button class="icon-btn" id="gear" title="Claude service" aria-label="Claude service settings"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg></button>
+  <button class="icon-btn" id="gear" title="Iris service" aria-label="Iris service settings"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg></button>
   <div class="pop" id="settings" hidden>
-    <h3>Claude service</h3>
-    <p>Iris designs locally out of the box. For original designs from any brief, and to change them with words, run <code>npm install</code> then <code>node server.mjs</code> with <code>ANTHROPIC_API_KEY</code> set, and paste the session key below. Add <code>ELEVENLABS_API_KEY</code> to talk to Iris.</p>
+    <h3>Iris service</h3>
+    <p>Open the private browser link printed by <code>node server.mjs</code>. In Figma, enter the session key below.</p>
     <input id="token" type="password" placeholder="Session key" autocomplete="off" aria-label="Session key">
     <button class="btn primary" id="connect">Connect</button>
-    <div class="state" id="ai-state">Using the built-in design kit. Connect Claude to edit designs.</div>
+    <div class="state" id="ai-state">Waiting for a session key.</div>
   </div>
 </header>
+<dialog id="direction-dialog" aria-labelledby="direction-title">
+  <h2 id="direction-title">Choose a direction to build</h2>
+  <div id="directions"></div>
+  <p id="plan-refs"></p>
+  <form method="dialog"><button class="btn" value="">Back to brief</button></form>
+</dialog>
 <main class="work">
   <aside class="side left" aria-label="Layers">
     <div class="pane-head"><h2>Layers <span id="layer-count" class="num"></span></h2></div>
@@ -320,7 +335,6 @@ body:not(.plugin) .plugin-only{display:none!important}
     <div class="chip float" id="board-chip" hidden><i></i><span id="board-name"></span><small id="board-meta"></small></div>
     <div class="zoom float"><button id="zoom-out" aria-label="Zoom out">−</button><output id="zoom-val" class="num">100%</output><button id="zoom-in" aria-label="Zoom in">+</button><button id="fit" title="Fit board (F)">Fit</button></div>
     <div class="empty" id="empty" hidden>
-      <div class="swarm" aria-hidden="true"><i style="--c:#0D99FF;--x:-120px;--y:-30px"></i><i style="--c:#F24822;--x:-60px;--y:40px"></i><i style="--c:#14AE5C;--x:10px;--y:-50px"></i><i style="--c:#FFC470;--x:80px;--y:30px"></i><i style="--c:#9747FF;--x:130px;--y:-20px"></i></div>
       <h1>Describe a product.<br><span>A crew of cursors builds it.</span></h1>
       <p>Hundreds of cursors frame the screens, draw and fill every shape, round the corners, snap cards to the grid and type the copy, live.</p>
       <div class="samples" id="samples"></div>
@@ -345,10 +359,11 @@ body:not(.plugin) .plugin-only{display:none!important}
     <div class="block" id="style-block">
       <h2>Style <span>from the vault</span></h2>
       <select id="profile" class="style-pick" aria-label="Design profile" disabled><option value="">No house style</option></select>
-      <p id="profile-note">Connect Claude to design in a house style from the reference vault.</p>
+      <p id="profile-note">Connect Iris to design in a house style from the reference vault.</p>
     </div>
     <div class="block">
-      <h2>Build <span id="mode-label">Local kit</span></h2>
+      <h2>Build <span id="mode-label">Session</span></h2>
+      <p id="request-status" role="status"></p>
       <div class="hero-stat">
         <div class="ring" aria-hidden="true"><svg width="1" height="1" viewBox="0 0 76 76"><circle id="ring-arc" cx="38" cy="38" r="32" fill="none" stroke-dasharray="201.06" stroke-dashoffset="201.06"/></svg></div>
         <output id="pct" class="big num">0%</output>
@@ -356,8 +371,8 @@ body:not(.plugin) .plugin-only{display:none!important}
       </div>
       <div class="progress" aria-hidden="true"><i id="s-done-bar"></i></div>
       <div class="notice" id="template-notice">
-        <b id="notice-title">Reference vault ready</b>
-        <p id="notice-text">Website briefs match the reference vault. Try “poker” or “recreate Stripe”. Connect Claude for custom art direction and edits.</p>
+        <b id="notice-title">Connect to Iris</b>
+        <p id="notice-text">Open the private browser link or enter your session key.</p>
         <button class="btn" id="connect-cta">Connect</button>
       </div>
       <div class="stats">
@@ -373,7 +388,7 @@ body:not(.plugin) .plugin-only{display:none!important}
     </div>
     <div class="block talk" id="talk-block">
       <h2>Talk to Iris <span>ElevenLabs</span></h2>
-      <div class="talk-row"><button id="talk" type="button" data-mode="idle" aria-pressed="false" aria-label="Talk to Iris"></button><div><strong id="talk-label">Tap to talk</strong><p id="talk-state" role="status">Connect the Claude service to talk.</p></div></div>
+      <div class="talk-row"><button id="talk" type="button" data-mode="idle" aria-pressed="false" aria-label="Talk to Iris"></button><div><strong id="talk-label">Tap to talk</strong><p id="talk-state" role="status">Connect the Iris service to talk.</p></div></div>
       <button class="btn" id="talk-open" type="button" hidden>Open voice in browser</button>
       <ol id="transcript" hidden aria-live="polite"></ol>
     </div>
@@ -2061,7 +2076,8 @@ const Websites = (() => {
   const query = new URLSearchParams(location.search);
   const isPlugin = query.has('plugin') || (window.parent !== window && !query.has('browser'));
   if (isPlugin) document.body.classList.add('plugin');
-  const api = 'http://localhost:4739';
+  const api = isPlugin ? 'http://localhost:4739' : location.origin;
+  const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
   const COUNTS = isPlugin ? [25, 50, 100, 250] : [50, 100, 250, 500, 1000];
   const SPEEDS = [.5, 1, 2, 4];
   const KIND_STYLE = {
@@ -2092,7 +2108,7 @@ const Websites = (() => {
   const lum = hex => { const n = parseInt(String(hex).slice(1), 16); return ((n >> 16 & 255) * .299 + (n >> 8 & 255) * .587 + (n & 255) * .114) / 255; };
   const easeOut = p => 1 - Math.pow(1 - p, 3);
   const initials = name => name.replace(/\s\d+$/, '').slice(0, 2).toUpperCase();
-  const canDesign = () => connected && service.design;
+  const canDesign = () => connected;
 
   /* ---------- controls ---------- */
   const seg = $('crew-size');
@@ -2106,8 +2122,8 @@ const Websites = (() => {
 
   const sugg = $('suggest'), brief = $('brief');
   const dots = ['#6E56F8', '#FF5A4E', '#2D6BFF', '#C5F23A', '#EA7212', '#0E9F6E', '#E13F7A'];
-  const edits = ['Make the primary buttons pill-shaped', 'Switch the whole app to dark mode', 'Add a search bar under the header on Home', 'Add a settings screen with notification toggles', 'Make the headline bigger and bolder'];
-  const samples = ['A poker website called “River Room”', 'Recreate Stripe', ...Kit.samples];
+  const edits = ['Set accent to #146C94', 'Change headline to Field Notes'];
+  const samples = ['A poker website called “River Room”', ...Kit.samples];
   function fillSuggestions() {
     const list = mode === 'edit' ? edits : samples;
     sugg.innerHTML = '<div class="hint">' + (mode === 'edit' ? 'Try a change' : 'Try a brief') + '</div>' + list.map((s, i) => '<button type="button" data-i="' + i + '"><i style="background:' + dots[i % dots.length] + '"></i>' + esc(s) + '</button>').join('');
@@ -2127,11 +2143,13 @@ const Websites = (() => {
     $('mode').textContent = mode === 'edit' ? 'Edit ' + (doc.name.length > 12 ? doc.name.slice(0, 11) + '…' : doc.name) : 'New';
     $('mode').setAttribute('aria-pressed', String(mode === 'edit'));
     $('mode').title = mode === 'edit' ? 'Changing the current design. Click to start a new one.' : 'Starting a new design. Click to change the current one.';
-    brief.placeholder = mode === 'edit' ? 'Describe a change, like “add a promo code field to checkout”' : 'Describe a website or product, like “poker”';
-    $('build-label').textContent = mode === 'edit' ? 'Apply' : 'Build';
+    $('workflow').hidden = mode === 'edit';
+    brief.placeholder = mode === 'edit' ? 'Describe a change, like “Change headline to Field Notes”' : 'Describe a website or product';
+    $('build-label').textContent = mode === 'edit' ? 'Apply' : $('workflow').value === 'guided' ? 'Plan' : 'Build';
     brief.setAttribute('aria-label', mode === 'edit' ? 'Describe a change' : 'Describe a product');
     $('prompt').classList.toggle('editing', mode === 'edit');
   }
+  $('workflow').onchange = () => setMode(mode);
   $('mode').onclick = () => { if (!doc) return; setMode(mode === 'edit' ? 'new' : 'edit'); brief.value = ''; brief.focus(); };
 
   $('gear').onclick = e => { e.stopPropagation(); $('settings').hidden = !$('settings').hidden; if (!$('settings').hidden) $('token').focus(); };
@@ -2146,8 +2164,8 @@ const Websites = (() => {
   }
   function updateNotice(problem) {
     $('template-notice').hidden = canDesign();
-    $('notice-title').textContent = problem ? 'Not connected to Claude' : 'Reference vault ready';
-    $('notice-text').textContent = problem || 'Website briefs match the reference vault. Try “poker” or “recreate Stripe”. Connect Claude for custom art direction and edits.';
+    $('notice-title').textContent = 'Connect to Iris';
+    $('notice-text').textContent = problem || 'Open the private browser link printed by node server.mjs, or enter the session key in Settings.';
   }
   $('connect-cta').onclick = e => { e.stopPropagation(); $('settings').hidden = false; $('token').focus(); };
   async function connect() {
@@ -2157,17 +2175,17 @@ const Websites = (() => {
       service = await call('/status', null, null, 8000); connected = true;
       try { localStorage.setItem('iris-key', token); } catch (e) { /* storage may be unavailable */ }
       if (isPlugin) parent.postMessage({pluginMessage: {kind: 'save-key', key: token}}, '*');
-      $('ai-state').textContent = service.design ? 'Connected. New builds use local templates. Claude handles requested edits.' + (service.voice ? ' Voice is on.' : '') : 'Connected, but the server has no Anthropic credentials. Set ANTHROPIC_API_KEY and restart it.';
-      $('mode-label').textContent = 'Local templates';
+      $('ai-state').textContent = 'Connected.' + (service.voice ? ' Voice is on.' : '');
+      $('mode-label').textContent = 'Connected';
       $('mic').hidden = !service.voice;
-      if (doc && service.design && mode !== 'edit') { setMode('edit'); brief.value = ''; }
-      updateNotice(service.design ? null : 'The service is running but has no Anthropic key. Set ANTHROPIC_API_KEY and restart it.');
-      if (service.design) $('settings').hidden = true;
+      if (doc && !busy) setMode('edit');
+      updateNotice();
+      $('settings').hidden = true;
       loadProfiles();
     } catch (e) {
-      const why = /401|session key/i.test(e.message) ? 'The session key doesn’t match. Copy the key that node server.mjs prints.' : 'Can’t reach the Claude service. Start it with node server.mjs in the iris folder.';
+      const why = /401|unauthorized|session key/i.test(e.message) ? 'The session key doesn’t match. Copy the key that node server.mjs prints.' : 'Can’t reach the Iris service. Start it with node server.mjs in the iris folder.';
       $('ai-state').textContent = why;
-      updateNotice(why + ' Until then, new designs use the built-in templates.');
+      updateNotice(why);
     }
   }
   $('connect').onclick = connect;
@@ -2178,8 +2196,8 @@ const Websites = (() => {
   const profileName = () => { const p = profiles.find(x => x.id === profileSel.value); return p ? p.name : 'No house style'; };
   function showProfile() {
     const p = profiles.find(x => x.id === profileSel.value);
-    $('profile-note').textContent = !canDesign() ? 'Connect Claude to design in a house style from the reference vault.'
-      : p ? p.tagline + '. Claude also sees its three reference images.' : profiles.length ? 'Claude picks the style. Choose a house style to steer it.' : 'No profiles found. Add notes to vault/Profiles.';
+    $('profile-note').textContent = !canDesign() ? 'Connect Iris to design in a house style from the reference vault.'
+      : p ? p.tagline : profiles.length ? 'Choose a house style to steer it.' : 'No profiles found. Add notes to vault/Profiles.';
   }
   function setProfile(id) {
     id = String(id || '').trim(); if (id === 'none') id = '';
@@ -2191,7 +2209,7 @@ const Websites = (() => {
   async function loadProfiles() {
     try { profiles = (await call('/profiles', null, null, 8000)).profiles || []; } catch (e) { profiles = []; }
     profileSel.replaceChildren(new Option('No house style', ''), ...profiles.map(p => new Option(p.name, p.id)));
-    profileSel.disabled = !canDesign() || !profiles.length;
+    profileSel.disabled = busy || !canDesign() || !profiles.length;
     let saved = null; try { saved = localStorage.getItem('iris-profile'); } catch (e) { /* storage may be unavailable */ }
     profileSel.value = saved !== null && (saved === '' || profiles.some(p => p.id === saved)) ? saved : profiles.some(p => p.id === 'general') ? 'general' : '';
     showProfile();
@@ -2246,6 +2264,10 @@ const Websites = (() => {
   // While Claude works, the headline counts the seconds so it's clear something is happening.
   let busyTimer = 0, busyHead = '';
   function setBusy(on, head, sub) {
+    for (const control of [brief, profileSel, $('workflow'), $('mode'), $('dice')]) {
+      control.disabled = on || (control === profileSel && !profiles.length);
+    }
+    $('request-status').textContent = head ? [head, sub].filter(Boolean).join(' · ') : '';
     busy = on; $('build').disabled = on; document.body.classList.toggle('thinking', on);
     clearInterval(busyTimer);
     if (head) { busyHead = head; setHead(head, sub || ''); }
@@ -2257,36 +2279,76 @@ const Websites = (() => {
       }, 1000);
     }
   }
-  async function go() {
+  function chooseDirection(plan) {
+    const dialog = $('direction-dialog');
+    const choices = $('directions');
+    choices.replaceChildren();
+    for (const item of plan.directions) {
+      const button = document.createElement('button');
+      button.type = 'button';
+      const title = document.createElement('strong');
+      title.textContent = item.label + (item.id === plan.recommended ? ' · Recommended' : '');
+      button.append(title, document.createTextNode(item.reason));
+      button.onclick = () => dialog.close(item.id);
+      choices.append(button);
+    }
+    const references = (plan.references || []).map(ref => typeof ref === 'string' ? ref : ref.source || ref.title || ref.name).filter(Boolean);
+    $('plan-refs').textContent = references.length ? 'References · ' + references.join(', ') : '';
+    dialog.returnValue = '';
+    return new Promise(resolve => {
+      dialog.addEventListener('close', () => resolve(dialog.returnValue), {once: true});
+      dialog.showModal();
+    });
+  }
+
+  async function go(automatic = false) {
     if (busy || libraryBusy) return;
-    const text = brief.value.trim();
-    if (mode === 'edit' && doc) { if (text) await change(text); return; }
-    const prompt = text || Kit.samples[0];
-    if (!text) brief.value = prompt;
+    const note = brief.value.trim();
+    if (!note) { brief.focus(); return; }
+    if (!connected) {
+      $('settings').hidden = false;
+      $('token').focus();
+      return;
+    }
+    if (mode === 'edit' && doc) { await change(note); return; }
+    const request = {note, profile: profileSel.value};
+    const guided = !automatic && $('workflow').value === 'guided';
     try {
-      const website=ReferenceMatch.website(prompt);
-      const reference=website?Websites.match(prompt):null;
-      let detail='';
-      const next=website ? Doc.clean(Websites.build(prompt,reference)) : Doc.fromBoard(Screens.checkBoard(Kit.nativeBoard(prompt)));
-      nextCapture=null;
-      if(isPlugin && reference?.exact && connected) {
-        try {nextCapture=await fetchCapture(reference.id);}
-        catch(error) {detail='Editable panels ready. The desktop capture requires the updated local service.';}
+      setBusy(true, 'Planning directions…', note);
+      const plan = await call('/brief-plan', JSON.stringify(request));
+      if (!Array.isArray(plan.directions) || !plan.directions.length ||
+          !plan.directions.every(d => d && d.id && d.label && d.reason)) {
+        throw Error('The planner returned no usable directions. Try the brief again.');
       }
+      let direction = plan.recommended;
+      if (guided) {
+        setBusy(true, 'Choose a direction', note);
+        direction = await chooseDirection(plan);
+        if (!direction) { setBusy(false, 'Plan closed', 'Your brief is ready to revise.'); return; }
+      }
+      const chosen = plan.directions.find(d => d.id === direction);
+      setBusy(true, 'Building your design…', chosen?.label || note);
+      const result = await call('/board', JSON.stringify({...request, direction: chosen?.id}));
+      if (result.doc?.reference?.setups || result.summary === 'Built locally.') {
+        throw Error('The service returned a legacy template. Restart Iris with the brief composer enabled.');
+      }
+      const next = Doc.clean(result.doc);
       setBusy(false);
-      revisions = []; rev = -1;
-      const label = 'Built from “' + prompt + '”';
-      commit(next, label, null, [next.reference && 'Vault · ' + next.reference.title, detail].filter(Boolean).join(' · '));
-      if (canDesign()) { setMode('edit'); brief.value = ''; }
-    } catch (e) { setBusy(false, 'Could not build that', e.message); }
+      const reference = plan.references?.find(ref => ref.direction === chosen?.id);
+      const decision = chosen && [chosen.label + (chosen.id === plan.recommended ? ' (recommended)' : ''), chosen.reason, reference?.source].filter(Boolean).join(' · ');
+      commit(next, result.summary || 'Built from “' + note + '”', null, decision);
+      $('mode-label').textContent = result.execution === 'expected-parrot' ? 'Expected Parrot interpretation'
+        : result.execution === 'local' ? 'Local composition' : 'Connected';
+      setMode('edit'); brief.value = '';
+    } catch (error) { setBusy(false, 'Could not build that', error.message); }
   }
   async function change(text) {
     if (!canDesign()) {
-      setHead('Changes need Claude', 'Open ⚙ and connect the local Claude service, then describe the change again.');
+      setHead('Connect to Iris to make changes', 'Open ⚙ and connect the local Iris service, then describe the change again.');
       $('settings').hidden = false; return;
     }
     try {
-      setBusy(true, 'Claude is changing ' + doc.name + '…', '“' + text + '” · Applying a targeted edit.');
+      setBusy(true, 'Iris is changing ' + doc.name + '…', '“' + text + '” · Applying a targeted edit.');
       let base = doc, baseBoard = board;
       if (isPlugin) {
         const read = await readback();
@@ -2298,7 +2360,7 @@ const Websites = (() => {
       const r = await call('/edit', JSON.stringify({doc: base, note: text, profile: profileSel.value}));
       const res = Doc.apply(base, r.ops || []);
       setBusy(false);
-      if (!res.applied.length) { setHead('No changes made', r.summary || 'Claude could not map that request onto this design. Try rephrasing it.'); return; }
+      if (!res.applied.length) { setBusy(false, 'No changes made', r.summary || 'Iris could not map that request onto this design. Try rephrasing it.'); return; }
       commit(res.doc, r.summary || text, baseBoard, res.skipped.length ? res.skipped.length + ' step' + (res.skipped.length > 1 ? 's' : '') + ' skipped' : null);
       brief.value = '';
     } catch (e) { setBusy(false, 'Could not make that change', e.message); }
@@ -2307,7 +2369,7 @@ const Websites = (() => {
     const b = Screens.checkBoard(Doc.compile(nextDoc), true);
     Doc.pin(nextDoc, b);
     doc = nextDoc;
-    revisions = revisions.slice(0, rev + 1);
+    revisions = prevBoard ? revisions.slice(0, rev + 1) : [];
     revisions.push({doc: nextDoc, board: b, label, note, at: new Date()});
     rev = revisions.length - 1;
     renderHistory();
@@ -2332,7 +2394,7 @@ const Websites = (() => {
     board = b;
     P = Crew.plan(board, count, {prev: prevBoard || null});
     for (const E of P.screens) E.S.dark = lum(E.S.background) < .4;
-    t = 0; finishedShown = false; playing = true;
+    t = reducedMotion.matches && !isPlugin ? P.total : 0; finishedShown = false; playing = t < P.total;
     $('toast').classList.remove('show');
     $('done-actions').hidden = true;
     $('board-chip').hidden = false; $('empty').hidden = true;
@@ -2342,7 +2404,7 @@ const Websites = (() => {
     status = new Array(P.layers.length).fill(-1); who = new Array(P.layers.length).fill(-1); lastRow.length = 0;
     buildTree(); buildActs(); lastFeedKey = '';
     if (!keepCamera || !userMoved) { fit(true); userMoved = false; }
-    if (isPlugin) { pluginState = 'starting'; parent.postMessage({pluginMessage: {kind: 'build', board, prev: prevBoard || null, doc, count, speed:librarySite?4:speed,png:nextCapture,libraryId:librarySite}}, '*'); nextCapture=null; librarySite=null; }
+    if (isPlugin) { pluginState = 'starting'; parent.postMessage({pluginMessage: {kind: 'build', board, prev: prevBoard || null, doc, count, speed: reducedMotion.matches ? Number.MAX_SAFE_INTEGER : librarySite ? 4 : speed,png:nextCapture,libraryId:librarySite}}, '*'); nextCapture=null; librarySite=null; }
     setPlayIcon();
   }
 
@@ -2909,7 +2971,7 @@ const Websites = (() => {
         P = Crew.plan(board, count); t = P.total; pluginState = 'done';
         status = new Array(P.layers.length).fill(-1); who = new Array(P.layers.length).fill(-1); lastRow.length = 0;
         buildTree(); buildActs(); setMode(canDesign() ? 'edit' : 'new');
-        setHead(board.name + ' is on this page', 'Connect Claude (⚙) and describe a change to keep designing.');
+        setHead(board.name + ' is on this page', 'Connect Iris (⚙) and describe a change to keep designing.');
       } catch (err) { /* ignore a stale or foreign document */ }
     }
   });
@@ -2939,16 +3001,16 @@ const Websites = (() => {
     state: () => ({design: outline(), version: rev + 1, versions: revisions.length, running: !!P && !runFinished(), status: headText(), canEdit: canDesign()}),
     async build(text) {
       if (busy) return {error: 'Iris is still working on the last request.'};
-      setMode('new'); brief.value = String(text || '').slice(0, 400);
+      setMode('new'); brief.value = String(text || '').slice(0, 1500);
       const before = revisions.length ? revisions[rev] : null;
-      await go();
+      await go(true);
       if (!revisions.length || revisions[rev] === before) return {error: headText()};
       const run = await settle(240000);
-      return {built: true, crew: run, reference: doc.reference || null, designer: doc.reference ? 'vault reference builder' : 'built-in kit', summary: revisions[rev].label, design: outline()};
+      return {built: true, crew: run, reference: doc.reference || null, designer: revisions[rev].label, summary: revisions[rev].label, design: outline()};
     },
     async change(text) {
       if (!doc) return {error: 'There is no design yet. Build one first.'};
-      if (!canDesign()) return {error: 'Changes need Claude, and the server has no Anthropic credentials.'};
+      if (!canDesign()) return {error: 'Connect to Iris to make changes.'};
       if (busy) return {error: 'Iris is still working on the last request.'};
       setMode('edit'); const before = revisions[rev];
       await change(String(text || '').slice(0, 1500));
@@ -2977,7 +3039,7 @@ const Websites = (() => {
     const dt = Math.min(.1, (now - lastFrame) / 1000); lastFrame = now;
     if (P && playing && !isPlugin) { t = Math.min(P.total, t + dt * speed); if (t >= P.total) { playing = false; setPlayIcon(); } }
     if (camGoal) {
-      const k = 1 - Math.pow(.0008, dt);
+      const k = reducedMotion.matches ? 1 : 1 - Math.pow(.0008, dt);
       const lz = Math.log(cam.z) + (Math.log(camGoal.z) - Math.log(cam.z)) * k;
       const cx = cam.x + W / 2 / cam.z, cy = cam.y + H / 2 / cam.z, gx = camGoal.x + W / 2 / camGoal.z, gy = camGoal.y + H / 2 / camGoal.z;
       const nz = Math.exp(lz), nx = cx + (gx - cx) * k, ny = cy + (gy - cy) * k;
@@ -3001,12 +3063,7 @@ const Websites = (() => {
   // Development hook: render a saved design document without calling Claude (open with ?dev&idle).
   if (query.has('dev')) window.irisLoad = d => { revisions = []; rev = -1; commit(Doc.clean(d), 'Loaded “' + (d.name || 'design') + '”', null, null); };
   if (isPlugin) { parent.postMessage({pluginMessage: {kind: 'ui-ready'}}, '*'); brief.value = Kit.samples[0]; }
-  else if (query.has('idle')) $('empty').hidden = false;
-  else {
-    brief.value = Kit.samples[0];
-    const startDemo = () => { if (!P && !busy) go(); };
-    (document.fonts ? document.fonts.ready : Promise.resolve()).then(() => setTimeout(startDemo, 250));
-  }
+  else $('empty').hidden = false;
 })();
 
 /* Talk to Iris: a live ElevenLabs voice agent whose client tools drive the studio (window.Iris).
