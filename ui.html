@@ -24,7 +24,7 @@
 <section class="stage"><div id="fleet-preview" hidden><div class="fleet-top"><b>Responsive layouts</b><button id="back">Back to desktop</button></div><svg id="fleet-canvas" aria-label="Responsive layouts with live cursor assignments"></svg><p class="note">Click a layout to inspect it. Click again to see the full set.</p></div><div class="boards"><figure><figcaption>Desktop · your canvas</figcaption><svg id="desktop" class="board" aria-label="Editable desktop poster"></svg></figure><figure><figcaption>Mobile · Iris</figcaption><svg id="mobile" class="board" aria-label="Mobile proposal"></svg></figure></div><p>Drag the headline or flower on desktop to art-direct the mobile version.</p><div id="saved" class="saved"></div></section>
 <section class="panel"><h1>Iris</h1><p class="note">Design a new screen or adapt an existing frame.</p>
 <section class="talk" aria-label="Talk to Iris"><button id="talk" data-mode="idle" aria-pressed="false" aria-label="Talk to Iris"></button><b id="talk-label">Talk to Iris</b><p class="note" id="talk-state" role="status">Connect the local service, then tap to talk.</p><button id="talk-open" class="wide" hidden>Open voice in browser</button><ol id="transcript" hidden aria-live="polite"></ol></section>
-<section class="swarm-controls"><h2>Cursor swarm</h2><select id="formation" aria-label="Swarm view"><option value="shared">Shared canvas</option><option value="grid">Responsive grid</option><option value="create">New UI from brief</option></select><label for="profile" class="profile-label">Design profile</label><select id="profile" aria-label="Design profile"><option value="">General designer</option></select><p class="note" id="profile-note" hidden></p><div id="new-ui" hidden><label for="screen-brief">What should Iris build?</label><textarea id="screen-brief" maxlength="700" placeholder="A mobile transit departures screen"></textarea><p class="note" id="screen-mode">Local starters: transit, task board, spending. Connect Gemini for a custom screen.</p></div><div class="row"><select id="workers" aria-label="Cursor count"><option value="100">100 cursors</option><option value="25">25 cursors</option><option value="5">5 cursors</option></select><button id="launch" class="primary">Launch swarm</button></div><progress id="meter" max="1" value="0"></progress><p class="note" role="status" id="fleet-status">Ready</p><div class="row"><button id="pause" hidden>Pause</button><button id="cancel" hidden>Cancel run</button></div></section><div class="browser-only"><label for="scale">Flower size</label><input id="scale" type="range" min="260" max="780" value="500"><label for="headline">Headline</label><input id="headline" value="After / Hours" maxlength="32"></div>
+<section class="swarm-controls"><h2>Cursor swarm</h2><select id="formation" aria-label="Swarm view"><option value="shared">Shared canvas</option><option value="grid">Responsive grid</option><option value="create">New UI from brief</option></select><label for="profile" class="profile-label">Design profile</label><select id="profile" aria-label="Design profile"><option value="">No profile</option></select><p class="note" id="profile-note" hidden></p><div id="new-ui" hidden><label for="screen-brief">What should Iris build?</label><textarea id="screen-brief" maxlength="700" placeholder="A mobile transit departures screen"></textarea><p class="note" id="screen-mode">Local starters: transit, task board, spending. Connect Gemini for a custom screen.</p></div><div class="row"><select id="workers" aria-label="Cursor count"><option value="100">100 cursors</option><option value="25">25 cursors</option><option value="5">5 cursors</option></select><button id="launch" class="primary">Launch swarm</button></div><progress id="meter" max="1" value="0"></progress><p class="note" role="status" id="fleet-status">Ready</p><div class="row"><button id="pause" hidden>Pause</button><button id="cancel" hidden>Cancel run</button></div></section><div class="browser-only"><label for="scale">Flower size</label><input id="scale" type="range" min="260" max="780" value="500"><label for="headline">Headline</label><input id="headline" value="After / Hours" maxlength="32"></div>
 <label>Mobile composition</label><div class="row" id="presets"></div><button id="keep" class="wide">Keep this mobile version</button>
 <hr class="rule"><label for="brief">Art direction</label><textarea id="brief" maxlength="700" placeholder="Keep the overlap. Put the date at the top."></textarea><label id="watchLabel" hidden><input id="watch" type="checkbox" style="width:auto"> AI review after desktop edits</label><div class="row"><button id="apply" class="primary">Ask coworker</button><button id="voice">Record note</button><button id="audiofile" hidden>Use audio file</button><input id="file" type="file" accept="audio/*" hidden></div><p class="status" role="status" id="status">Local mode · try “keep the overlap” or “stack the title.”</p>
 <details id="settings"><summary>Connect local AI service</summary><label for="token">Session key from server</label><input id="token" type="password" autocomplete="off"><button style="margin-top:6px" id="connect">Connect</button></details></section></main><script>
@@ -701,10 +701,10 @@ function openBridge(){
 }
 // Design profiles from vault/Profiles, chosen in the panel or by voice.
 let profiles=[];
-const currentProfileName=()=>{const p=profiles.find(x=>x.id===talkEl('profile').value);return p?p.name:'General designer'};
+const currentProfileName=()=>{const p=profiles.find(x=>x.id===talkEl('profile').value);return p?p.name:'No profile'};
 function showProfileNote(){const p=profiles.find(x=>x.id===talkEl('profile').value);talkEl('profile-note').hidden=!p;talkEl('profile-note').textContent=p?p.tagline:''}
 function setProfile(id){
-  id=String(id||'').trim();if(id==='general')id='';
+  id=String(id||'').trim();if(id==='none')id='';
   if(id&&!profiles.some(p=>p.id===id))return false;
   talkEl('profile').value=id;showProfileNote();try{localStorage.setItem('iris-profile',id)}catch{}
   if(talk)talk.sendContextualUpdate('Active design profile is now: '+currentProfileName()+'.');
@@ -712,10 +712,10 @@ function setProfile(id){
 }
 async function loadProfileOptions(){
   try{profiles=(await call('/profiles')).profiles||[]}catch{profiles=[]}
-  const sel=talkEl('profile');sel.replaceChildren(new Option('General designer',''));
+  const sel=talkEl('profile');sel.replaceChildren(new Option('No profile',''));
   for(const p of profiles)sel.appendChild(new Option(p.name,p.id));
   let saved='';try{saved=localStorage.getItem('iris-profile')||''}catch{}
-  if(profiles.some(p=>p.id===saved))sel.value=saved;showProfileNote();
+  if(profiles.some(p=>p.id===saved))sel.value=saved;else if(profiles.some(p=>p.id==='general'))sel.value='general';showProfileNote();
 }
 talkEl('profile').onchange=()=>setProfile(talkEl('profile').value);
 function onServiceConnected(){

@@ -18,7 +18,7 @@ try {
   }
 } catch {}
 profiles.sort((a, b) => (Number(a.order) || 99) - (Number(b.order) || 99));
-const profileIds = ['general', ...profiles.map(p => p.id)];
+const profileIds = [...new Set(['none', ...profiles.map(p => p.id)])];
 const profileList = profiles.map(p => `- ${p.id}: ${p.name}, ${p.tagline}`).join('\n');
 
 const prompt = `# Personality
@@ -39,10 +39,10 @@ You are a voice assistant inside the Iris Figma plugin. The user is looking at t
 3. When the user wants the selected design changed, polished, or made responsive, call refine_design with a clear direction. Use mode "grid" only for responsive or breakpoint requests.
 4. When the user says stop, wait, pause, resume or cancel during a build, call control_build.
 5. After a tool returns, tell the user in one sentence what happened and ask what they want next.
-6. Design profiles are house styles drawn from the team's reference vault. When the user names a vibe ("make it liquid glass", "go ASCII", "more like a calm bank app") or asks to switch style, call set_profile, or pass profile to build_screen or refine_design. Call profiles by their name, never their id. "general" means no particular style.
+6. Design profiles are house styles drawn from the team's reference vault. When the user names a vibe ("make it liquid glass", "go ASCII", "more like a calm bank app") or asks to switch style, call set_profile, or pass profile to build_screen or refine_design. Call profiles by their name, never their id. "general" is the balanced default; "none" removes any house style.
 
 # Design profiles
-- general: General designer, balanced and product-appropriate
+- none: no house style
 ${profileList}
 If a tool returns an error, explain it plainly and suggest the next step. Never claim something was built if the tool did not say so.`;
 
@@ -65,7 +65,7 @@ const tools = [
       profile: { type: 'string', enum: profileIds, description: 'Optional design profile id to apply. Omit to keep the current one.' } }, required: ['direction', 'mode'] } },
   { type: 'client', name: 'set_profile', expectsResponse: true, responseTimeoutSecs: 10,
     description: 'Switch the active design profile (house style) used for building, refining and critiquing.',
-    parameters: { type: 'object', properties: { profile: { type: 'string', enum: profileIds, description: 'Profile id; "general" for no particular style.' } }, required: ['profile'] } },
+    parameters: { type: 'object', properties: { profile: { type: 'string', enum: profileIds, description: 'Profile id; "general" is the balanced default, "none" removes the style.' } }, required: ['profile'] } },
   { type: 'client', name: 'control_build', expectsResponse: true, responseTimeoutSecs: 10,
     description: 'Pause, resume or cancel the cursor swarm that is currently running.',
     parameters: { type: 'object', properties: { action: { type: 'string', enum: ['pause', 'resume', 'cancel'], description: 'What to do with the running build.' } }, required: ['action'] } },

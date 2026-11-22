@@ -4,3 +4,4 @@
 node_modules
 .iris-agent.json
 voice.bundle.js
+vault/.obsidian/

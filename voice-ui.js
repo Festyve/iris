@@ -142,10 +142,10 @@ function openBridge(){
 }
 // Design profiles from vault/Profiles, chosen in the panel or by voice.
 let profiles=[];
-const currentProfileName=()=>{const p=profiles.find(x=>x.id===talkEl('profile').value);return p?p.name:'General designer'};
+const currentProfileName=()=>{const p=profiles.find(x=>x.id===talkEl('profile').value);return p?p.name:'No profile'};
 function showProfileNote(){const p=profiles.find(x=>x.id===talkEl('profile').value);talkEl('profile-note').hidden=!p;talkEl('profile-note').textContent=p?p.tagline:''}
 function setProfile(id){
-  id=String(id||'').trim();if(id==='general')id='';
+  id=String(id||'').trim();if(id==='none')id='';
   if(id&&!profiles.some(p=>p.id===id))return false;
   talkEl('profile').value=id;showProfileNote();try{localStorage.setItem('iris-profile',id)}catch{}
   if(talk)talk.sendContextualUpdate('Active design profile is now: '+currentProfileName()+'.');
@@ -153,10 +153,10 @@ function setProfile(id){
 }
 async function loadProfileOptions(){
   try{profiles=(await call('/profiles')).profiles||[]}catch{profiles=[]}
-  const sel=talkEl('profile');sel.replaceChildren(new Option('General designer',''));
+  const sel=talkEl('profile');sel.replaceChildren(new Option('No profile',''));
   for(const p of profiles)sel.appendChild(new Option(p.name,p.id));
   let saved='';try{saved=localStorage.getItem('iris-profile')||''}catch{}
-  if(profiles.some(p=>p.id===saved))sel.value=saved;showProfileNote();
+  if(profiles.some(p=>p.id===saved))sel.value=saved;else if(profiles.some(p=>p.id==='general'))sel.value='general';showProfileNote();
 }
 talkEl('profile').onchange=()=>setProfile(talkEl('profile').value);
 function onServiceConnected(){
