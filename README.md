@@ -1,4 +1,44 @@
-# Iris — Figma cursor swarm
+# Second Cursor design studio
+
+Build a working landing page or small application from a brief and your own reference notes. The browser stores the vault snapshots, selected references and versioned HTML locally. The companion shows the source of each design decision and the result of each tool.
+
+## Run locally
+
+Use Node 22.12 or later for the React studio. From this directory run:
+
+```sh
+npm ci
+node build.mjs
+npm run build:studio
+node --env-file-if-exists=.env server.mjs
+```
+
+Open **http://localhost:4739/studio/**. For server-backed features, use the private studio link printed by the server. The fragment contains a temporary session key. The Iris browser adapter remains at **http://localhost:4739/** and the Figma development plugin still loads from `manifest.json`.
+
+## Try the reference-to-build flow
+
+1. Drop Markdown notes and their screenshots together, select a folder, or click **Load design-vault demo**. Open a reference to inspect its original note, linked images and attribution.
+2. Select **Founder audience · YC** from the demo. Open **Write a brief**, attach the selected note, and enter `Build a landing page named "Founder Workshop" for a startup accelerator`.
+3. Review the reference decisions and choose **Build plan**. Try **Apply** inside the preview to prepare a local application draft.
+4. Ask `Set title to Founder Field Notes` and apply the plan. Download the self-contained HTML, reload the page or restore an earlier version.
+5. For an app, use **New design** and try `Build a searchable app named "Field Index" for design references`. Add an entry and shortlist it. The studio saves the generated artifact. Entries typed inside its demo preview last for that preview session.
+
+Local planning uses bounded rules, two compositions and a set of subject profiles. Gemini can choose a structured design plan when the server has `GEMINI_API_KEY`. The compiler produces the HTML, checks it, and renders it in isolated frames at 390 and 1024 pixels before saving a version. A failed or cancelled run keeps the previous deliverable.
+
+Set secrets in the ignored `.env`. Scribe transcription requires `ELEVENLABS_API_KEY`. Spoken feedback also requires `ELEVENLABS_VOICE_ID`. The studio lets you edit a transcript in the companion before submitting it. Integration availability and evidence are recorded in [the integration map](docs/INTEGRATIONS.md).
+
+## Verify the studio
+
+```sh
+npm test
+npx playwright install chromium
+node tests/browser/journey.mjs
+STUDIO_URL=http://localhost:4739/studio/ npx playwright test tests/vault.browser.spec.js
+```
+
+Start the built studio server first for browser checks. The journey script prints its temporary screenshot directory. To use an installed Chrome browser, set `CHROME_CHANNEL=chrome` for that script.
+
+## Iris — Figma cursor swarm
 
 Iris gives you a team of up to 100 visible cursors in Figma. Describe a new screen and watch them build editable layers, or select an existing frame to refine it and explore responsive layouts.
 
