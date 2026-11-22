@@ -24,7 +24,7 @@ function paint(id,scene,cursor){
   el.innerHTML=sceneSvg(scene);
   if(cursor){const n=scene.layers[focus]||scene.layers.Title;
     const x=Math.min(270,Math.max(10,n.x+20)),y=Math.min(625,n.y+20);
-    el.innerHTML+='<g transform="translate('+x+' '+y+')"><path fill="#7846BF" stroke="white" stroke-width="2" d="M0 0L22 12L13 16L9 26Z"/><rect x="13" y="20" rx="4" width="94" height="21" fill="#7846BF"/><text x="19" y="35" fill="white" font-family="Arial" font-size="12">Second Cursor</text></g>'}
+    el.innerHTML+='<g transform="translate('+x+' '+y+')"><path fill="#7846BF" stroke="white" stroke-width="2" d="M0 0L22 12L13 16L9 26Z"/><rect x="13" y="20" rx="4" width="94" height="21" fill="#7846BF"/><text x="19" y="35" fill="white" font-family="Arial" font-size="12">Iris</text></g>'}
 }
 function show(){
   if(!plugin){paint('desktop',source,false);paint('mobile',SC.mobile(source,plan),true)}
@@ -54,7 +54,7 @@ async function call(path,body,type){
 }
 async function connect(){
   token=byId('token').value.trim();connected=false;
-  try{service=await call('/status');connected=true;byId('watchLabel').hidden=customSource||!service.design;byId('settings').open=false;
+  try{service=await call('/status');connected=true;byId('screen-mode').textContent=service.design?'Gemini designs a new screen from your brief.':'Local starters: transit, task board, spending. Connect Gemini for a custom screen.';byId('watchLabel').hidden=customSource||!service.design;byId('settings').open=false;
     say((service.design?'AI design connected':'Set GEMINI_API_KEY for AI design')+' · '+(service.voice?'voice connected':'voice key missing'))}
   catch(e){say('Connection failed. Check that the local server is running and the session key matches.')}
 }
@@ -98,7 +98,7 @@ async function ask(auto=false){
 byId('apply').onclick=()=>ask();
 async function transcribe(blob){
   const n=++requestNo;say('Transcribing with ElevenLabs…');
-  try{const r=await call('/voice',blob,blob.type||'audio/webm');if(n!==requestNo)return;byId('brief').value=r.text;if(service.design&&!customSource)await ask();else say('Direction ready. Launch the swarm to apply it.')}catch(e){say(e.message)}
+  try{const r=await call('/voice',blob,blob.type||'audio/webm');if(n!==requestNo)return;if(byId('formation').value==='create'){byId('screen-brief').value=r.text;say('Brief ready. Click Build new UI.');return}byId('brief').value=r.text;if(service.design&&!customSource)await ask();else say('Direction ready. Launch the swarm to apply it.')}catch(e){say(e.message)}
 }
 byId('voice').onclick=async()=>{
   if(recording&&recording.state==='recording'){recording.stop();return}

@@ -61,7 +61,7 @@ function stepFleet(){
     for(const j of run.jobs){if(j.finished){done++;continue}const t=Swarm.progress(j,run.elapsed);applyGroup(j,t);if(t>=1){j.finished=true;done++}}
     if(done!==run.done){run.done=done;postFleet('running',{done,total:run.jobs.length,frames:run.frames})}
     if(done===run.jobs.length){clearInterval(run.timer);run.timer=null;for(const j of run.jobs)if(!j.ptr.removed)j.ptr.remove();
-      run.board.name='Second Cursor · '+run.frames+' finished layouts';nativeRun=null;postFleet('finished',{done,total:done,frames:run.frames});figma.commitUndo()}
+      run.board.name='Iris · '+run.frames+' finished layouts';nativeRun=null;postFleet('finished',{done,total:done,frames:run.frames});figma.commitUndo()}
   }catch(e){stopFleet();figma.ui.postMessage({kind:'error',text:'Swarm stopped: '+e.message})}
 }
 async function launchFleet(count,brief,sourceKey,shared){
@@ -79,7 +79,7 @@ async function launchFleet(count,brief,sourceKey,shared){
     const fontList=new Map();
     for(const n of source.children)if(n.type==='TEXT'&&n.fontName!==figma.mixed)fontList.set(JSON.stringify(n.fontName),n.fontName);
     await Promise.all(Array.from(fontList.values()).map(f=>figma.loadFontAsync(f)));
-    board=figma.createFrame();board.name='Second Cursor · working layouts';board.setPluginData('sc-output','yes');board.resize(grid.width+144,grid.height+144);
+    board=figma.createFrame();board.name='Iris · working layouts';board.setPluginData('sc-output','yes');board.resize(grid.width+144,grid.height+144);
     const bounds=source.absoluteBoundingBox;board.x=bounds.x+bounds.width+650;board.y=bounds.y;
     for(const old of figma.currentPage.children){if(old!==board&&old.getPluginData('sc-output')==='yes'&&old.x===board.x)board.y=Math.max(board.y,old.y+old.height+160)}board.clipsContent=false;board.fills=paint('#E4E1E9');
     const jobs=[],pool=new Map();let frames=0;

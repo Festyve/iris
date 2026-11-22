@@ -21,6 +21,7 @@ function tickSharedBrowser(r){
   const stats=Shared.advance(r.jobs,r.elapsed,(j,p,t)=>{
     j.ptr.setAttribute('visibility','visible');j.ptr.setAttribute('transform','translate('+p.x+' '+p.y+') scale('+k+')');if(t===1)j.ptr.remove();
   },(n,phase)=>{
+    if(r.build){r.build(n);return}
     if(phase!==1||n.applied)return;n.applied=true;
     const dest=Swarm.adjust(n,n.patch,source.width,source.height),scale=n.patch?n.patch.scale:1;
     n.group.setAttribute('transform','translate('+Math.round(dest.x)+' '+Math.round(dest.y)+') scale('+scale+') translate('+(-n.x)+' '+(-n.y)+')');

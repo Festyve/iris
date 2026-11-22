@@ -23,7 +23,7 @@ function read(){
   }return s;
 }
 function cursor(x,y){
-  if(!arrow||arrow.removed){arrow=figma.createNodeFromSvg('<svg xmlns="http://www.w3.org/2000/svg" width="28" height="32"><path d="M2 2L25 16L15 18L10 29Z" fill="#7A47E7" stroke="white" stroke-width="2"/></svg>');arrow.name='Second Cursor · pointer';arrow.locked=true}
+  if(!arrow||arrow.removed){arrow=figma.createNodeFromSvg('<svg xmlns="http://www.w3.org/2000/svg" width="28" height="32"><path d="M2 2L25 16L15 18L10 29Z" fill="#7A47E7" stroke="white" stroke-width="2"/></svg>');arrow.name='Iris · pointer';arrow.locked=true}
   figma.currentPage.appendChild(arrow);arrow.x=x;arrow.y=y;
 }
 function render(force,focus) {
@@ -40,14 +40,17 @@ function render(force,focus) {
 }
 let failure='';
 function tick(){try{render(false);failure=''}catch(e){if(String(e)!==failure){failure=String(e);figma.ui.postMessage({kind:'error',text:failure})}}}
-async function start(){
+async function startSample(){
   await Promise.all([figma.loadFontAsync(fonts.Title),figma.loadFontAsync(fonts.normal)]);
-  if(inputFrame&&!inputFrame.removed){figma.ui.postMessage({kind:'custom-source',name:inputFrame.name});return}
+  if(desk&&!desk.removed)return;
   const center=figma.viewport.center;desk=drawFrame(SC.base(),'Desktop · edit me',Math.round(center.x-650),Math.round(center.y-300));active=true;render(true);figma.viewport.scrollAndZoomIntoView([desk,phone]);figma.currentPage.selection=inputFrame&&!inputFrame.removed?[inputFrame]:[desk];
   setInterval(tick,650);
 }
 figma.ui.onmessage=async msg=>{
   try{
+    if(msg.kind==='ui-ready'){if(inputFrame&&!inputFrame.removed)figma.ui.postMessage({kind:'custom-source',name:inputFrame.name});else figma.ui.postMessage({kind:'blank-source'});return}
+    if(msg.kind==='new-screen'){await startScreen(msg.screen,[5,25,100].includes(msg.count)?msg.count:100);return}
+    if(['fleet-context','launch-fleet','apply','keep','snapshot'].includes(msg.kind)&&!targetFrame())await startSample();
     if(msg.kind==='fleet-context'){
       try{const f=targetFrame();if(!f)throw Error('Select a source frame.');
         const img=await f.exportAsync({format:'PNG',constraint:{type:'WIDTH',value:720}});
@@ -62,4 +65,3 @@ figma.ui.onmessage=async msg=>{
   }catch(e){figma.ui.postMessage({kind:'error',text:String(e)})}
 };
 figma.on('close',()=>{if(nativeRun)dropBoard(nativeRun);if(arrow&&!arrow.removed)arrow.remove()});
-start().catch(e=>figma.ui.postMessage({kind:'error',text:String(e)}));

@@ -1,10 +1,10 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Second Cursor</title><style>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Iris</title><style>
 *{box-sizing:border-box}body{margin:0;color:#201d25;background:#e8e5e0;font:14px/1.4 Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}button,input,textarea{font:inherit}button{cursor:pointer}button:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid #946dff;outline-offset:2px}header{display:flex;align-items:center;gap:12px;background:#211f25;color:white;padding:16px 28px}header b{font-size:18px;letter-spacing:-.6px}header span:last-child{margin-left:auto;font-size:12px;color:#cfccd3}.mark{display:inline-block;width:20px;height:24px;background:#bd9cff;clip-path:polygon(0 0,100% 59%,55% 65%,37% 100%)}main{display:grid;grid-template-columns:minmax(0,1fr) 300px;min-height:calc(100vh - 58px)}.stage{padding:40px 3vw;background-image:radial-gradient(#c5c0ba .8px,transparent .8px);background-size:12px 12px}.boards{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:24px;align-items:start}figure{margin:0;min-width:0}figcaption{font:600 11px ui-monospace,monospace;letter-spacing:1px;color:#574e61;text-transform:uppercase;margin:0 0 10px}svg.board{display:block;width:100%;height:auto;box-shadow:0 8px 23px #30273820;touch-action:none}#desktop [data-role]{cursor:grab}#desktop [data-role]:active{cursor:grabbing}.stage p{font-size:12px;color:#554f59}.panel{background:#fcfbf9;border-left:1px solid #d5d0cd;padding:24px 18px}h1{font-size:24px;letter-spacing:-1.2px;line-height:1.15;margin:2px 0 8px}p{margin:8px 0 15px}.note,details{font-size:12px;color:#625a68}label{display:block;font-size:12px;font-weight:650;margin:16px 0 6px}input,textarea{width:100%;border:1px solid #cfc9d1;border-radius:6px;padding:8px;background:white}input[type=range]{padding:0;accent-color:#7047bb}textarea{resize:vertical;min-height:66px}button{padding:8px 10px;border-radius:6px;border:1px solid #ccc5d1;background:white;color:#32283b;font-size:12px}.primary{background:#47315e;color:white;border-color:#47315e}.wide{width:100%}.row{display:flex;gap:5px;flex-wrap:wrap;margin:6px 0 9px}button[aria-pressed=true]{background:#eadff9;border-color:#9167cb}button:disabled{opacity:.55;cursor:default}.status{min-height:34px;font-size:12px;color:#584a65}.rule{margin:18px 0;border:0;border-top:1px solid #ded9de}summary{cursor:pointer}.saved{max-width:200px;margin-top:28px}.saved:empty{display:none}.plugin header,.plugin .stage,.plugin .browser-only{display:none}.plugin main{display:block;min-height:0}.plugin .panel{border:0;padding:16px}.plugin h1{font-size:20px}.plugin .rule{margin:10px 0}.plugin label{margin-top:9px}@media(max-width:780px){main{display:flex;flex-direction:column}.stage{padding:16px}.panel{border:0}.boards{gap:12px}}
 [hidden]{display:none!important}.swarm-controls{border-top:1px solid #ded9de;border-bottom:1px solid #ded9de;padding:12px 0;margin-bottom:16px}.swarm-controls h2{font-size:15px;margin:0 0 8px}.swarm-controls select{font:inherit;padding:5px;border:1px solid #cfc9d1;border-radius:5px}.swarm-controls progress{width:100%;height:4px;accent-color:#7047bb}.swarm-controls .note{margin:6px 0 2px}.swarm-controls label{margin:0}.fleet-top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}.fleet-top b{font-size:18px}#fleet-canvas{display:block;width:100%;max-height:72vh}#fleet-canvas svg[role=button]{cursor:zoom-in}.plugin .panel{padding:12px 15px}
-</style></head><body><header><i class="mark"></i><b>Second Cursor</b><span>Responsive design studio</span></header><main>
-<section class="stage"><div id="fleet-preview" hidden><div class="fleet-top"><b>Responsive layouts</b><button id="back">Back to desktop</button></div><svg id="fleet-canvas" aria-label="Responsive layouts with live cursor assignments"></svg><p class="note">Click a layout to inspect it. Click again to see the full set.</p></div><div class="boards"><figure><figcaption>Desktop · your canvas</figcaption><svg id="desktop" class="board" aria-label="Editable desktop poster"></svg></figure><figure><figcaption>Mobile · second cursor</figcaption><svg id="mobile" class="board" aria-label="Mobile proposal"></svg></figure></div><p>Drag the headline or flower on desktop to art-direct the mobile version.</p><div id="saved" class="saved"></div></section>
-<section class="panel"><h1>Second Cursor</h1><p class="note">You design desktop. Your coworker handles mobile.</p>
-<section class="swarm-controls"><h2>Cursor swarm</h2><select id="formation" aria-label="Swarm view"><option value="shared">Shared canvas</option><option value="grid">Responsive grid</option></select><div class="row"><select id="workers" aria-label="Cursor count"><option value="100">100 cursors</option><option value="25">25 cursors</option><option value="5">5 cursors</option></select><button id="launch" class="primary">Launch swarm</button></div><progress id="meter" max="1" value="0"></progress><p class="note" role="status" id="fleet-status">Ready</p><div class="row"><button id="pause" hidden>Pause</button><button id="cancel" hidden>Cancel run</button></div></section><div class="browser-only"><label for="scale">Flower size</label><input id="scale" type="range" min="260" max="780" value="500"><label for="headline">Headline</label><input id="headline" value="After / Hours" maxlength="32"></div>
+.creating .browser-only,.creating label[for="brief"],.creating #brief,.creating #apply,.creating #watchLabel,.creating #presets,.creating label:has(+ #presets),.creating #keep{display:none!important}#new-ui{margin:10px 0}</style></head><body><header><i class="mark"></i><b>Iris</b><span>Responsive design studio</span></header><main>
+<section class="stage"><div id="fleet-preview" hidden><div class="fleet-top"><b>Responsive layouts</b><button id="back">Back to desktop</button></div><svg id="fleet-canvas" aria-label="Responsive layouts with live cursor assignments"></svg><p class="note">Click a layout to inspect it. Click again to see the full set.</p></div><div class="boards"><figure><figcaption>Desktop · your canvas</figcaption><svg id="desktop" class="board" aria-label="Editable desktop poster"></svg></figure><figure><figcaption>Mobile · Iris</figcaption><svg id="mobile" class="board" aria-label="Mobile proposal"></svg></figure></div><p>Drag the headline or flower on desktop to art-direct the mobile version.</p><div id="saved" class="saved"></div></section>
+<section class="panel"><h1>Iris</h1><p class="note">Design a new screen or adapt an existing frame.</p>
+<section class="swarm-controls"><h2>Cursor swarm</h2><select id="formation" aria-label="Swarm view"><option value="shared">Shared canvas</option><option value="grid">Responsive grid</option><option value="create">New UI from brief</option></select><div id="new-ui" hidden><label for="screen-brief">What should Iris build?</label><textarea id="screen-brief" maxlength="700" placeholder="A mobile transit departures screen"></textarea><p class="note" id="screen-mode">Local starters: transit, task board, spending. Connect Gemini for a custom screen.</p></div><div class="row"><select id="workers" aria-label="Cursor count"><option value="100">100 cursors</option><option value="25">25 cursors</option><option value="5">5 cursors</option></select><button id="launch" class="primary">Launch swarm</button></div><progress id="meter" max="1" value="0"></progress><p class="note" role="status" id="fleet-status">Ready</p><div class="row"><button id="pause" hidden>Pause</button><button id="cancel" hidden>Cancel run</button></div></section><div class="browser-only"><label for="scale">Flower size</label><input id="scale" type="range" min="260" max="780" value="500"><label for="headline">Headline</label><input id="headline" value="After / Hours" maxlength="32"></div>
 <label>Mobile composition</label><div class="row" id="presets"></div><button id="keep" class="wide">Keep this mobile version</button>
 <hr class="rule"><label for="brief">Art direction</label><textarea id="brief" maxlength="700" placeholder="Keep the overlap. Put the date at the top."></textarea><label id="watchLabel" hidden><input id="watch" type="checkbox" style="width:auto"> AI review after desktop edits</label><div class="row"><button id="apply" class="primary">Ask coworker</button><button id="voice">Record note</button><button id="audiofile" hidden>Use audio file</button><input id="file" type="file" accept="audio/*" hidden></div><p class="status" role="status" id="status">Local mode · try “keep the overlap” or “stack the title.”</p>
 <details id="settings"><summary>Connect local AI service</summary><label for="token">Session key from server</label><input id="token" type="password" autocomplete="off"><button style="margin-top:6px" id="connect">Connect</button></details></section></main><script>
@@ -94,7 +94,7 @@ const Swarm = (() => {
   }
   function worker(id,frameIndex,target){
     const lane=id%5;
-    return {id,frameIndex,target,color:colors[lane],delay:((id*37)%83)/100,duration:3.4+((id*13)%21)/10,lane};
+    return {id,frameIndex,target,color:colors[lane],delay:((id*37)%83)/250,duration:1.36+((id*13)%21)/25,lane};
   }
   // Each worker first moves its layer, then sets its geometry and finally reveals it.
   function progress(job,elapsed){return Math.max(0,Math.min(1,(elapsed-job.delay)/job.duration))}
@@ -127,7 +127,7 @@ const Shared = (() => {
     const paths=digits.split('').map((d,i)=>'<path transform="translate('+(19+i*5)+' 16)" d="'+digitPaths[Number(d)]+'"/>').join('');
     return '<svg xmlns="http://www.w3.org/2000/svg" width="39" height="25" viewBox="0 0 39 25"><path d="M1 1l4 14 3-5 5-2z" fill="'+color+'" stroke="white" stroke-width="1.1"/><rect x="11" y="12" width="27" height="12" rx="3" fill="'+color+'"/><g fill="none" stroke="white" stroke-linecap="round" stroke-linejoin="round" stroke-width="1">'+paths+'</g></svg>';
   }
-  function timing(id,count){return {enter:1.8*(id/Math.max(1,count-1))+((id*31)%17)/100,duration:9+((id*47)%38)/10}}
+  function timing(id,count){return {enter:.72*(id/Math.max(1,count-1))+((id*31)%17)/250,duration:3.6+((id*47)%38)/25}}
   function motion(id,t,points){
     const k=Math.min(points.length-2,Math.floor(t*(points.length-1))),u=Math.min(1,(t*(points.length-1)-k)/.73);
     const s=u*u*(3-2*u),a=points[k],b=points[k+1],curve=Math.sin(Math.PI*u)*.055*(id%2?1:-1);
@@ -162,6 +162,84 @@ const Shared = (() => {
   return {badge,timing,motion,makeJobs,advance};
 })();
 
+/* Ordered primitives are the transport between the planner and both renderers. */
+const Screens = (() => {
+  const color = value => typeof value === 'string' && /^#[a-f0-9]{6}$/i.test(value);
+  function check(screen){
+    const {name,width,height,background,layers}=screen||{};
+    if(typeof name!=='string'||!name.trim()||name.length>90||!color(background)||
+      !Number.isInteger(width)||width<240||width>1920||!Number.isInteger(height)||height<240||height>2400||
+      !Array.isArray(layers)||!layers.length||layers.length>180)throw Error('Invalid screen definition.');
+    for(const v of layers){
+      if(!v||!['rect','text','ellipse'].includes(v.kind)||!color(v.fill)||typeof v.name!=='string'||!v.name.trim()||
+        ![v.x,v.y,v.w,v.h].every(Number.isFinite)||v.x<0||v.y<0||v.w<1||v.h<1||
+        v.x+v.w>width+1||v.y+v.h>height+1)throw Error('Invalid geometry in the screen plan.');
+      if(v.kind==='text'&&(typeof v.text!=='string'||!v.text.trim()||v.text.length>240||!Number.isFinite(v.size)||v.size<8||v.size>110))throw Error('Invalid text in the screen plan.');
+      if(v.radius!==undefined&&(!Number.isFinite(v.radius)||v.radius<0))throw Error('Invalid corner radius.');
+    }
+    return screen;
+  }
+  function starter(brief){
+    const mobile=/transit|metro|train|commut|departure|bus stop/i.test(brief);
+    const board=/kanban|task|sprint|project board/i.test(brief);
+    const finance=/spend|budget|expense|financ|wallet/i.test(brief);
+    if(!mobile&&!board&&!finance)throw Error('Connect Gemini for this custom brief, or try a local transit, task board, or spending screen.');
+    const ink='#172523',muted='#51655E',leaf='#D9F79B',white='#FFFFFF',paper='#F4F6F1';
+    const quoted=brief.match(/["“]([^"”\n]{1,32})["”]/);
+    const name=quoted?quoted[1]:mobile?'Northline':board?'Studio board':'Ledger';
+    const width=mobile?390:1040,height=mobile?780:690,layers=[];
+    const shape=(kind,name,x,y,w,h,fill,radius=0)=>layers.push({kind,name,x,y,w,h,fill,radius});
+    const box=(name,x,y,w,h,fill,r=0)=>shape('rect',name,x,y,w,h,fill,r);
+    const label=(text,x,y,w,size,fill=ink,bold=false)=>layers.push({kind:'text',name:text.slice(0,50),text,x,y,w,h:Math.ceil(size*1.32),size,fill,bold});
+    if(mobile){
+      box('Station header',0,0,390,307,ink);label(name,24,28,300,22,leaf,true);
+      label('Union Station',24,98,345,38,white,true);label('Northbound platform',25,152,330,17,'#C1D4CC');
+      box('Departure highlight',24,207,342,70,leaf,14);label('Next train',40,219,180,14);label('3 min',258,223,94,26,ink,true);
+      label('Departures',24,338,320,26,ink,true);
+      ['North York Centre','Finch','Sheppard–Yonge','Finch'].forEach((s,i)=>{
+        const y=397+i*76;shape('ellipse','Line marker',24,y,30,30,'#F7CA51');label('1',34,y+5,13,15,ink,true);
+        label(s,70,y,212,18,ink,true);label('Platform 2',70,y+30,180,13,muted);label([3,8,13,19][i]+' min',308,y+3,65,15);
+        box('Divider',24,y+59,342,1,'#CFDAD1');
+      });
+      box('Save station',24,715,342,44,ink,12);label('Save station',137,727,130,15,white,true);
+    }else if(board){
+      box('Navigation',0,0,width,67,ink);label(name,32,19,420,23,leaf,true);
+      label('Product sprint',32,99,610,40,ink,true);label('Design and engineering',34,159,560,17,muted);
+      const cols=[['Backlog','Search filters','Update shortcuts','Export states'],['In progress','Mobile navigation','Activity history'],['In review','Color system','Keyboard focus']];
+      cols.forEach((col,i)=>{const x=32+i*328;
+        box(col[0]+' column',x,220,312,420,'#E4EBE2',16);label(col[0],x+16,237,230,21,ink,true);
+        col.slice(1).forEach((s,k)=>{const y=292+k*101;box('Task card',x+12,y,288,85,white,12);label(s,x+26,y+14,255,18,ink,true);label(['Design','Engineering','Product'][k],x+26,y+48,235,13,muted)});
+      });
+    }else{
+      box('Sidebar',0,0,188,height,ink);label(name,20,31,151,24,leaf,true);
+      ['Overview','Activity','Budgets','Reports'].forEach((s,i)=>label(s,22,122+i*44,145,16,i?'#C1D4CC':white,i===0));
+      label('Spending overview',218,44,790,42,ink,true);label('November',220,110,300,17,muted);
+      box('Total card',218,165,785,217,ink,16);label('Total spending',245,191,360,17,leaf);label('$2,480',242,239,390,54,white,true);
+      [40,55,36,62,90,75,103,85,125,103,133,153].forEach((v,i)=>box('Daily spending',590+i*32,351-v,20,v,leaf,4));
+      label('Recent activity',219,415,610,27,ink,true);['Neighborhood market','City transit','Paper & ink'].forEach((s,i)=>{const y=479+i*57;label(s,221,y,440,18);label(['$68.40','$24.00','$42.50'][i],895,y,108,17,ink,true);box('Divider',220,y+37,784,1,'#CDD8D1')});
+    }
+    return check({name,width,height,background:paper,layers});
+  }
+  return {check,starter};
+})();
+if(typeof module!=='undefined'&&module.exports)module.exports=Screens;
+
+// Map each visit to an ordered slice of the design. Small and large fleets both
+// build every layer once, even when a slow frame skips an animation phase.
+function screenJobs(count,screen){
+  const jobs=Shared.makeJobs(count,screen.layers,screen.width,screen.height),total=count*3;
+  for(const job of jobs){
+    for(let stage=0;stage<3;stage++){
+      const slot=stage*count+job.id;
+      const first=Math.floor(slot*screen.layers.length/total),last=Math.floor((slot+1)*screen.layers.length/total);
+      const layer=screen.layers[first];
+      job.targets[stage]={first,last};
+      job.points[stage+1]={x:layer.x+layer.w*(.18+(job.id%5)*.12),y:layer.y+layer.h*.45};
+    }
+  }
+  return jobs;
+}
+
 </script><script>
 const byId=id=>document.getElementById(id);
 const plugin=parent!==window,api='http://localhost:4739';
@@ -189,7 +267,7 @@ function paint(id,scene,cursor){
   el.innerHTML=sceneSvg(scene);
   if(cursor){const n=scene.layers[focus]||scene.layers.Title;
     const x=Math.min(270,Math.max(10,n.x+20)),y=Math.min(625,n.y+20);
-    el.innerHTML+='<g transform="translate('+x+' '+y+')"><path fill="#7846BF" stroke="white" stroke-width="2" d="M0 0L22 12L13 16L9 26Z"/><rect x="13" y="20" rx="4" width="94" height="21" fill="#7846BF"/><text x="19" y="35" fill="white" font-family="Arial" font-size="12">Second Cursor</text></g>'}
+    el.innerHTML+='<g transform="translate('+x+' '+y+')"><path fill="#7846BF" stroke="white" stroke-width="2" d="M0 0L22 12L13 16L9 26Z"/><rect x="13" y="20" rx="4" width="94" height="21" fill="#7846BF"/><text x="19" y="35" fill="white" font-family="Arial" font-size="12">Iris</text></g>'}
 }
 function show(){
   if(!plugin){paint('desktop',source,false);paint('mobile',SC.mobile(source,plan),true)}
@@ -219,7 +297,7 @@ async function call(path,body,type){
 }
 async function connect(){
   token=byId('token').value.trim();connected=false;
-  try{service=await call('/status');connected=true;byId('watchLabel').hidden=customSource||!service.design;byId('settings').open=false;
+  try{service=await call('/status');connected=true;byId('screen-mode').textContent=service.design?'Gemini designs a new screen from your brief.':'Local starters: transit, task board, spending. Connect Gemini for a custom screen.';byId('watchLabel').hidden=customSource||!service.design;byId('settings').open=false;
     say((service.design?'AI design connected':'Set GEMINI_API_KEY for AI design')+' · '+(service.voice?'voice connected':'voice key missing'))}
   catch(e){say('Connection failed. Check that the local server is running and the session key matches.')}
 }
@@ -263,7 +341,7 @@ async function ask(auto=false){
 byId('apply').onclick=()=>ask();
 async function transcribe(blob){
   const n=++requestNo;say('Transcribing with ElevenLabs…');
-  try{const r=await call('/voice',blob,blob.type||'audio/webm');if(n!==requestNo)return;byId('brief').value=r.text;if(service.design&&!customSource)await ask();else say('Direction ready. Launch the swarm to apply it.')}catch(e){say(e.message)}
+  try{const r=await call('/voice',blob,blob.type||'audio/webm');if(n!==requestNo)return;if(byId('formation').value==='create'){byId('screen-brief').value=r.text;say('Brief ready. Click Build new UI.');return}byId('brief').value=r.text;if(service.design&&!customSource)await ask();else say('Direction ready. Launch the swarm to apply it.')}catch(e){say(e.message)}
 }
 byId('voice').onclick=async()=>{
   if(recording&&recording.state==='recording'){recording.stop();return}
@@ -290,9 +368,9 @@ function fleetView(state,done,total,frames,active){
   fleetEl('fleet-status').textContent=state==='running'?done+' / '+total+' cursors finished · '+frames+' layouts':
     state==='paused'?'Paused · '+done+' / '+total+' finished':state==='finished'?frames+' layouts ready · '+done+' cursor assignments complete':
     state==='starting'?'Preparing editable layers…':'Ready';
-  if(fleetEl('formation').value==='shared'){
+  if(fleetEl('formation').value!=='grid'){
     if(state==='running')fleetEl('fleet-status').textContent=(active||0)+' active / '+total+' cursors · '+done+' finished';
-    if(state==='finished')fleetEl('fleet-status').textContent='Shared canvas ready · '+done+' cursor assignments complete';
+    if(state==='finished')fleetEl('fleet-status').textContent=(fleetEl('formation').value==='create'?'New screen ready · ':'Shared canvas ready · ')+done+' cursor assignments complete';
   }
   fleetEl('meter').max=total||1;fleetEl('meter').value=done||0;
 }
@@ -361,6 +439,13 @@ async function getFleetContext(){
 fleetEl('launch').onclick=async()=>{
   const shared=fleetEl('formation').value==='shared',count=Number(numberInput.value);fleetView('starting',0,count,0);
   try{
+    if(fleetEl('formation').value==='create'){
+      const note=fleetEl('screen-brief').value.trim();if(!note)throw Error('Describe the screen to build.');
+      fleetEl('fleet-status').textContent=connected&&service.design?'Planning your screen…':'Preparing local starter…';
+      const screen=Screens.check(connected&&service.design?(await call('/screen',JSON.stringify({note}))).screen:Screens.starter(note));
+      if(plugin){parent.postMessage({pluginMessage:{kind:'new-screen',screen,count}},'*');return}
+      browserRun=buildWebScreen(screen,count);fleetView('running',0,count,1,0);browserRun.anim=requestAnimationFrame(browserTick);return;
+    }
     let brief=[],sourceKey=null;
     if(connected&&service.design){
       fleetEl('fleet-status').textContent='Art director is assigning layer edits…';
@@ -387,6 +472,15 @@ window.addEventListener('message',e=>{const m=e.data&&e.data.pluginMessage;if(!m
   if(m.kind==='error'&&fleetState==='starting'){fleetView('idle',0,0,0);fleetEl('fleet-status').textContent=m.text}
 });
 
+function switchMode(){
+  const create=fleetEl('formation').value==='create';
+  fleetEl('new-ui').hidden=!create;fleetEl('launch').textContent=create?'Build new UI':'Launch swarm';
+  document.body.classList.toggle('creating',create);
+}
+fleetEl('formation').onchange=switchMode;
+window.addEventListener('message',e=>{if(e.data&&e.data.pluginMessage&&e.data.pluginMessage.kind==='blank-source'){fleetEl('formation').value='create';switchMode()}});
+if(plugin)parent.postMessage({pluginMessage:{kind:'ui-ready'}},'*');
+
 function buildShared(count,brief){
   const svg=fleetEl('fleet-canvas'),w=source.width,h=source.height;
   svg.setAttribute('viewBox',[0,0,w,h].join(' '));svg.innerHTML=sceneSvg(source);
@@ -410,6 +504,7 @@ function tickSharedBrowser(r){
   const stats=Shared.advance(r.jobs,r.elapsed,(j,p,t)=>{
     j.ptr.setAttribute('visibility','visible');j.ptr.setAttribute('transform','translate('+p.x+' '+p.y+') scale('+k+')');if(t===1)j.ptr.remove();
   },(n,phase)=>{
+    if(r.build){r.build(n);return}
     if(phase!==1||n.applied)return;n.applied=true;
     const dest=Swarm.adjust(n,n.patch,source.width,source.height),scale=n.patch?n.patch.scale:1;
     n.group.setAttribute('transform','translate('+Math.round(dest.x)+' '+Math.round(dest.y)+') scale('+scale+') translate('+(-n.x)+' '+(-n.y)+')');
@@ -417,6 +512,29 @@ function tickSharedBrowser(r){
   r.lastDone=stats.done;r.active=stats.active;
   if(stats.done===r.jobs.length){fleetView('finished',stats.done,stats.done,1,0);return}
   fleetView('running',stats.done,r.jobs.length,1,stats.active);r.anim=requestAnimationFrame(browserTick);
+}
+
+function buildWebScreen(screen,count){
+  const svg=fleetEl('fleet-canvas');svg.replaceChildren();
+  svg.setAttribute('viewBox','0 0 '+screen.width+' '+screen.height);
+  svg.appendChild(makeSvg('rect',{width:screen.width,height:screen.height,fill:screen.background}));
+  const slots=screen.layers.map(()=>{const g=makeSvg('g');svg.appendChild(g);return g});
+  function build(slice){
+    for(let i=slice.first;i<slice.last;i++){
+      const v=screen.layers[i];let element;
+      if(v.kind==='text'){
+        element=makeSvg('text',{fill:v.fill,'font-size':v.size,'font-family':'Inter, Arial, sans-serif','font-weight':v.bold?700:400});
+        v.text.split('\n').forEach((line,k)=>{const span=makeSvg('tspan',{x:v.x,y:v.y+v.size*(.89+k*1.16)});span.textContent=line;element.appendChild(span)});
+      }else if(v.kind==='ellipse'){element=makeSvg('ellipse',{cx:v.x+v.w/2,cy:v.y+v.h/2,rx:v.w/2,ry:v.h/2,fill:v.fill})}
+      else {element=makeSvg('rect',{x:v.x,y:v.y,width:v.w,height:v.h,rx:v.radius||0,fill:v.fill})}
+      element.setAttribute('data-layer',v.name);slots[i].appendChild(element);
+    }
+  }
+  const jobs=screenJobs(count,screen);
+  for(const j of jobs){j.ptr=makeSvg('g',{'data-worker':j.id,visibility:'hidden','pointer-events':'none'});j.ptr.innerHTML=Shared.badge(j.id);svg.appendChild(j.ptr)}
+  document.querySelector('.fleet-top b').textContent=screen.name;fleetPanel.querySelector('.note').hidden=true;fleetPanel.hidden=false;
+  document.querySelector('.boards').hidden=true;document.querySelector('.stage > p').hidden=true;
+  return {shared:true,build,jobs,frames:1,elapsed:0,last:performance.now(),anim:0,lastDone:0,active:0};
 }
 
 </script></body></html>
