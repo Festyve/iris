@@ -230,7 +230,7 @@ function screenJobs(count,screen){
   return jobs;
 }
 
-figma.showUI(__html__, {width:360,height:620,themeColors:true});
+figma.showUI(__html__, {width:340,height:560,themeColors:true});
 let desk,phone,arrow,last='',direction=Object.assign({},SC.initial),active=false;
 const fonts={Title:{family:'Inter',style:'Black'},normal:{family:'Inter',style:'Regular'}};
 function paint(hex){return [{type:'SOLID',color:{r:parseInt(hex.slice(1,3),16)/255,g:parseInt(hex.slice(3,5),16)/255,b:parseInt(hex.slice(5,7),16)/255}}]}
