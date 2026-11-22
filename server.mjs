@@ -4,6 +4,7 @@ import { randomBytes } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { createVoiceService, VoiceServiceError } from './voice-service.mjs';
 import { createAiPlanner, AiPlanningError } from './studio/ai-planner.mjs';
+import { serviceRoute, integrationStatus, sponsors } from './studio/services.mjs';
 import { serveStudio, handleVoice } from './studio/server.mjs';
 const secret=randomBytes(24).toString('hex');
 const origin='http://localhost:4739';
@@ -71,12 +72,13 @@ const server=http.createServer(async(req,res)=>{
     if(await serveStudio(req,res))return;
     if(req.method==='GET'&&req.url==='/'){res.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store'});return res.end(await readFile(new URL('./ui.html',import.meta.url)))}
     if(req.headers.authorization!=='Bearer '+secret)return json(res,401,{error:'Invalid session key.'});
-    if(req.method==='GET'&&req.url==='/status')return json(res,200,{design:!!designKey,voice:speech.status().transcriptionConfigured,...speech.status()});
+    if(req.method==='GET'&&req.url==='/status')return json(res,200,{design:!!designKey,voice:speech.status().transcriptionConfigured,...speech.status(),...integrationStatus()});
+    if(await serviceRoute(req,res,json,collect))return;
     if(req.method==='POST'&&req.url==='/studio-plan'){
       const stop = new AbortController();
       res.on('close', () => { if (!res.writableFinished) stop.abort(); });
-      const {brief,references,previous,direction} = JSON.parse((await collect(req,250_000)).toString());
-      return json(res,200,await planner.plan({brief,references,previous,direction,signal:stop.signal}));
+      const {brief,references,previous,direction,runId} = JSON.parse((await collect(req,250_000)).toString());
+      return json(res,200,await sponsors.withTrace({runId:runId || 'studio',taskId:'design'}, () => planner.plan({brief,references,previous,direction,signal:stop.signal})));
     }
     if(req.method==='POST'&&req.url==='/screen')return await newScreen(req,res);
     if(req.method==='POST'&&req.url==='/swarm')return await design(req,res,true);

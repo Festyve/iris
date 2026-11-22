@@ -1,10 +1,14 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
+import { retrieve } from './retrieve.mjs';
 import Library from './Library.jsx';
 import Companion from './Companion.jsx';
-import { localSession } from './session.mjs';
+import { localSession, studioRequest } from './session.mjs';
+import Archive from './Archive.jsx';
+import ProjectTools from './ProjectTools.jsx';
+import Review from './Review.jsx';
 import Voice from './Voice.jsx';
-import { rankReferences } from './vault.mjs';
+import { importFiles, saveReferences } from './vault.mjs';
 import { compileArtifact, planBuild, verifyArtifact } from './compiler.mjs';
 import { currentArtifact, projectController } from './project.mjs';
 import { loadProject, saveProject } from './store.mjs';
@@ -13,28 +17,20 @@ import desktopShot from '../design-vault/assets/after-hours-desktop.png';
 import mobileShot from '../design-vault/assets/after-hours-mobile.png';
 import './studio.css';
 
+const ElevenAgent = React.lazy(() => import('./ElevenAgent.jsx'));
+
 async function makePlan(options, key, useModel) {
   if (!useModel) return { ...planBuild(options), planningMode: 'local' };
   const {brief, refs, previous, direction, signal} = options;
   const references = refs.map(({id,title,tags,observation,adaptation}) => ({id,title,tags,observation,adaptation}));
   const response = await fetch('/studio-plan', { method:'POST', signal, headers: {
     'Content-Type':'application/json', Authorization:'Bearer ' + key
-  }, body: JSON.stringify({brief, references, previous, direction}) });
+  }, body: JSON.stringify({brief, references, previous, direction, runId:options.runId}) });
   const result = await response.json();
   if (!response.ok) throw Error(result.error || 'Planning failed. Retry the request.');
   return result;
 }
 
-
-function retrieve(refs, brief, pinned) {
-  const attached = refs.filter(r => pinned.includes(r.id));
-  const ranked = rankReferences(refs, brief, attached.flatMap(r => r.tags));
-  const matches = new Map(ranked.slice(0, 4).map(hit => [hit.id, hit]));
-  for (const ref of attached) {
-    matches.set(ref.id, { ...matches.get(ref.id), id: ref.id, reason: 'Selected for this brief' + (matches.has(ref.id) ? ' · ' + matches.get(ref.id).reason : '') });
-  }
-  return Array.from(matches.values(), hit => ({ ...hit, title: refs.find(r => r.id === hit.id).title }));
-}
 
 function ask(text) {
   window.dispatchEvent(new CustomEvent('studio:ask', { detail: { text } }));
@@ -66,6 +62,17 @@ function Tasks({ run, onCancel, onRetry }) {
 function Studio({ initial }) {
   const [project, setProject] = useState(initial);
   const [refs, setRefs] = useState([]);
+  const [libraryRevision,refreshLibrary] = useState(0);
+  async function addNote({title,tags,source,provider,observation,adaptation}) {
+    const note = ['---','title: '+JSON.stringify(title),'features: '+JSON.stringify(tags),'source_url: '+JSON.stringify(source),
+      'author: '+JSON.stringify(provider),'---','# '+title,'','## Observation',observation,'','## Adaptation',adaptation].join('\n');
+    const {refs:imported,errors} = await importFiles([new File([note],provider+'-research.md')], undefined, refs);
+    if (!imported.length) throw Error(errors[0]?.message || 'Could not import research.');
+    await saveReferences(imported);
+    await studio.select([...new Set([...studio.read().selectedIds,imported[0].id])]);
+    setSelectedIds(studio.read().selectedIds);
+    refreshLibrary(v=>v+1);
+  }
   const [selectedIds, setSelectedIds] = useState(initial.selectedIds);
   const selectionChange = useRef(0);
   const [problem, setProblem] = useState('');
@@ -74,6 +81,10 @@ function Studio({ initial }) {
   const [services, setServices] = useState({});
   const [useModel,setUseModel] = useState(false);
   const modelMode = useRef(false);
+  const tracing = useRef(false);
+  tracing.current = services.sponsors?.some(s=>s.id==='traceroot' && s.configured);
+  const session = useRef('');
+  session.current = key;
   useEffect(() => {
     if (!key) return;
     const controller = new AbortController();
@@ -88,7 +99,14 @@ function Studio({ initial }) {
   modelMode.current = useModel;
   const controller = useRef(null);
   if (!controller.current) controller.current = projectController(initial, { save: saveProject, notify: setProject,
-    retrieve, planBuild: options => makePlan(options, key, modelMode.current), compile: compileArtifact, async verify(html, plan) {
+    retrieve: (items, brief, pinned, runId) => {
+      if (!session.current || !tracing.current) return retrieve(items,brief,pinned);
+      const sources = items.map(({id,title,tags,observation,adaptation})=>({id,title,tags,observation,adaptation}));
+      const data = {refs:sources,brief,pinned,runId};
+      if (new Blob([JSON.stringify(data)]).size > 170000) return retrieve(items,brief,pinned);
+      return studioRequest(session.current,'/reference-search',data).then(r=>r.matches);
+    }, planBuild: options => makePlan(options, key, modelMode.current), compile: async plan => session.current
+      ? (await studioRequest(session.current, '/artifact-build', {plan})).html : compileArtifact(plan), async verify(html, plan) {
       const checks = verifyArtifact(html, plan);
       for (const width of [390, 1024]) checks.push(await inspectPreview(html, width));
       return checks;
@@ -149,11 +167,25 @@ function Studio({ initial }) {
               {project.versions.map(v => <option value={v.version} key={v.version}>v{v.version} · {v.plan.title}</option>)}</select></label>}
           {current && <details className="checks"><summary>Editable Figma screen</summary><p>Iris builds single screens from editable layers. Its local starters cover transit, a task board, and spending.</p>
             <a href={'poster.html#studio-brief=' + encodeURIComponent(current.plan.brief)} target="_blank" rel="noreferrer">Open this brief in Iris ↗</a></details>}
+          {current && <Review key={current.id} artifact={current} references={refs} sessionKey={key}
+            configured={services.reviewer?.configured && services.reviewer?.runtimeReady} onSave={studio.saveReview}/>}
+          {current && <Archive project={project} sessionKey={key}/>}
+          <ProjectTools refresh={async()=>setServices(await studioRequest(key,'/status'))} sessionKey={key} services={services} artifact={current} addNote={addNote}/>
+          {services.elevenAgent?.configured ? <React.Suspense fallback={<p>Loading voice tools…</p>}>
+            <ElevenAgent api="" token={key} onBrief={onBrief} onBuild={onBuild}
+              onCancel={async () => { await studio.cancel(); return studio.read().run; }}
+              getContext={() => ({projectId:project.id,run:project.run,selectedIds,
+                references:refs.map(({id,title,tags})=>({id,title,tags})),plan:project.pending?.mechanism,
+                artifact: current && {version:current.version,title:current.plan.title,path:current.path}})}
+              onRepoTask={instruction=>studioRequest(key,'/repo/tasks',{instruction})}
+              onRepoTaskStatus={id=>studioRequest(key,'/repo/tasks/'+encodeURIComponent(id))}/>
+            </React.Suspense> : <details className="checks"><summary>Talk to your repository</summary>
+              <p>{key ? 'Live conversations require ELEVENLABS_API_KEY and ELEVENLABS_AGENT_ID on the server.' : 'Open the private studio link printed by the server for live conversations.'}</p></details>}
           <Voice config={services} sessionKey={key} reply={plan?.mechanism || ''} onTranscript={ask}/>
         </aside></div>
         <Tasks run={project.run} onCancel={onCancel} onRetry={onRetry}/>
       </section>
-      <div id="library"><Library onChange={setRefs} selectedIds={selectedIds} onSelect={select} onError={error}/></div>
+      <div id="library"><Library key={libraryRevision} onChange={setRefs} selectedIds={selectedIds} onSelect={select} onError={error}/></div>
     </main>
     <Companion refs={refs} selectedIds={selectedIds} project={{ ...project, current }} run={project.run}
       onBrief={onBrief} onBuild={onBuild} onCancel={onCancel} onRetry={onRetry} onError={error}/>

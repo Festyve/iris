@@ -92,11 +92,11 @@ export function projectController(initial, { save, notify, retrieve, planBuild, 
       const pinned = [...new Set([...state.selectedIds, ...attachedIds])];
       await write(p => ({ ...p, clarification: '', pending: null, run }));
       await task(run.id, 'references', 'running');
-      const matches = retrieve(refs, request, [...new Set([...pinned, ...(previous?.referenceIds || [])])]);
+      const matches = await retrieve(refs, request, [...new Set([...pinned, ...(previous?.referenceIds || [])])],run.id);
       await task(run.id, 'references', 'succeeded', { detail: matches.map(m => m.title).join(', ') || 'No matching references' });
       await task(run.id, 'design', 'running');
       const sources = matches.map(m => refs.find(ref => ref.id === m.id));
-      const plan = await planBuild({ brief: request, refs: sources, previous, signal: planning.signal });
+      const plan = await planBuild({ brief: request, refs: sources, previous, runId:run.id, signal: planning.signal });
       check(run.id);
       Object.assign(plan, { id: run.id, matches, request, pinned, baseVersion: previous ? state.currentVersion : null });
       await task(run.id, 'design', 'succeeded', { detail: plan.mechanism });
@@ -161,6 +161,10 @@ export function projectController(initial, { save, notify, retrieve, planBuild, 
   }
   return {
     brief, build, cancel, read: () => state,
+    saveReview: (id, review) => write(p => {
+      if (!p.versions.some(v => v.id === id)) throw Error('The reviewed artifact is unavailable.');
+      return { ...p, versions: p.versions.map(v => v.id === id ? { ...v, review } : v) };
+    }),
     select: ids => write(p => ({ ...p, selectedIds: ids })),
     resume() {
       if (state.run?.status === 'running') return cancel('Interrupted by reload');
