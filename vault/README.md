@@ -38,7 +38,7 @@ Explore the [original website collections](Originals/README.md) for 631 editable
 - [[Tools and libraries]]: galleries, component libraries and taste skills
 - [[Designers]]: the people and studios behind the profiles
 - `assets/pinterest/<aesthetic>/`: 336 Pinterest references (each note links the pin and original source)
-- `assets/sites/`: 22 full-page screenshots of reference sites
+- `assets/sites/`: 27 desktop viewport captures, including [[Design Galleries]]
 - `assets/user/`: images the team added by hand
 
 ## Adding to the vault

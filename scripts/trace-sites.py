@@ -92,7 +92,11 @@ def trace(path, observations):
 
 ocr = json.loads(Path(sys.argv[1]).read_text())
 folder = Path(sys.argv[2]) if len(sys.argv)>2 else Path('vault/assets/sites')
-sites = {p.stem:trace(p,ocr[p.stem]) for p in sorted(folder.glob('*.png'))}
+# These five captures already have DOM-derived geometry and registration patches.
+dom_sites = {'siteinspire','httpster','cofolios','viewport-ui','designspells'}
+sites = {p.stem:trace(p,ocr[p.stem]) for p in sorted(folder.glob('*.png')) if p.stem not in dom_sites}
 if len(sys.argv)==2:
     Path('references/source-text.json').write_text(json.dumps({k:v['text'] for k,v in sites.items()},ensure_ascii=False,separators=(',',':'))+'\n')
+stored = json.loads(Path('references/sites.json').read_text())
+sites.update({k:v for k,v in stored.items() if k in dom_sites})
 Path('references/sites.json').write_text(json.dumps(sites,ensure_ascii=False,separators=(',',':'))+'\n')

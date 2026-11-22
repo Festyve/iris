@@ -54,7 +54,7 @@ def replacement(site,label):
         out=re.sub(r'(?<!\w)(?:'+pattern+r')(?!\w)',to,out,flags=re.I)
     return out
 
-result={}
+result=json.loads((root/'brand-patches.json').read_text())
 fontroot=Path('/System/Library/Fonts/Supplemental')
 for key,site in sites.items():
     im=Image.open('vault/assets/sites/'+key+'.png').convert('RGB')

@@ -9,7 +9,7 @@ const root=fileURLToPath(new URL('../vault',import.meta.url));
 const manifest=JSON.parse(await readFile(new URL('../references/brand-patches.json',import.meta.url),'utf8'));
 
 test('each gallery reference is rebranded and all pixels outside listed patches are identical',async()=>{
-  assert.equal(new Set(Object.values(brands)).size,22);
+  assert.equal(new Set(Object.values(brands)).size,27);
   for(const [id,name] of Object.entries(brands)){
     const original=PNG.sync.read(await readFile(root+'/assets/sites/'+id+'.png'));
     const rendered=PNG.sync.read(await capture(root,id));

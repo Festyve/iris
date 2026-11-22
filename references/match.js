@@ -29,6 +29,10 @@ const ReferenceMatch = (() => {
   const terms = s => tokens(s).filter(w=>!ignored.has(w)).map(w=>w.length>4 && w.endsWith('s') ? w.slice(0,-1) : w);
   const score = (query, text) => { const words=new Set(terms(text)); return query.reduce((n,w)=>n+Number(words.has(w)),0); };
   const poker = s => /\b(poker|hold[ ’'-]?em|blackjack|casino|card room)\b/i.test(s);
+  const galleryAliases={
+    siteinspire:['Site Inspire'],httpster:[],cofolios:[],
+    'viewport-ui':['ViewportUI','viewport-ui.design'],designspells:['Design Spells']
+  };
   function select(note, media, keys) {
     const query = [...new Set(terms(note))], normalized = ' '+tokens(note).join(' ')+' ';
     const sites = media.filter(m=>m.path.startsWith('assets/sites/') && keys.includes(m.path.slice(13,-4)));
@@ -38,19 +42,19 @@ const ReferenceMatch = (() => {
     const bestImage = [...images].sort((a,b)=>b.score-a.score)[0];
     const ranked = sites.map(s=>{
       const id = s.path.slice(13,-4);
-      const named = [id,s.title,s.url && s.url.replace(/^https?:\/\/(www\.)?/,'').replace(/\/$/,'')].filter(Boolean)
+      const named = [id,s.title,...(galleryAliases[id] || []),s.url && s.url.replace(/^https?:\/\/(www\.)?/,'').replace(/\/$/,'')].filter(Boolean)
         .some(alias=>normalized.includes(' '+tokens(alias).join(' ')+' '));
       const visualFit = bestImage?.score > 0 ? Math.min(3,score(terms(bestImage.m.tags),s.tags)) : 0;
       const weight = visualFit + (named ? 100 : 0) + score(query,topics[id] || '')*6 + score(query,s.tags)*2 + (poker(note) && id==='metalforge' ? 16 : 0);
       return {id,site:s,named,weight};
-    }).sort((a,b)=>b.weight-a.weight || a.id.localeCompare(b.id));
+    }).filter(r=>!Object.hasOwn(galleryAliases,r.id) || r.named).sort((a,b)=>b.weight-a.weight || a.id.localeCompare(b.id));
     const match = ranked[0]?.weight ? ranked[0] : ranked.find(r=>r.id==='rauno') || ranked[0];
     if (!match) return null;
     const rankedImages = images.map(({m,score:relevance})=>({m,
       score:relevance+Math.min(2,score(terms(match.site.tags),m.tags))}))
       .sort((a,b)=>b.score-a.score || a.m.path.localeCompare(b.m.path));
     const inspiration = rankedImages.find(r=>r.score>0)?.m;
-    const aliasWords = new Set([...tokens(match.id),...tokens(match.site.title),...tokens(match.site.url || ''), ...tokens('please can you me exactly the original screen screenshot homepage home page website web site make build design clone copy recreate reproduce rebuild show of from vault template capture as is')]);
+    const aliasWords = new Set([...tokens(match.id),...tokens((galleryAliases[match.id]||[]).join(' ')),...tokens(match.site.title),...tokens(match.site.url || ''), ...tokens('please can you me exactly the original screen screenshot homepage home page website web site make build design clone copy recreate reproduce rebuild show of from vault template capture as is')]);
     const exact = match.named && tokens(note).every(w=>aliasWords.has(w));
     return {...match, exact, inspiration, fallback:!match.weight};
   }
