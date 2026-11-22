@@ -107,6 +107,7 @@
       if (doc && service.design && mode !== 'edit') { setMode('edit'); brief.value = ''; }
       updateNotice(service.design ? null : 'The service is running but has no Anthropic key. Set ANTHROPIC_API_KEY and restart it.');
       if (service.design) $('settings').hidden = true;
+      loadProfiles();
     } catch (e) {
       const why = /401|session key/i.test(e.message) ? 'The session key doesn’t match. Copy the key that node server.mjs prints.' : 'Can’t reach the Claude service. Start it with node server.mjs in the iris folder.';
       $('ai-state').textContent = why;
@@ -114,6 +115,32 @@
     }
   }
   $('connect').onclick = connect;
+
+  /* ---------- design profiles (house styles from the reference vault) ---------- */
+  let profiles = [];
+  const profileSel = $('profile');
+  const profileName = () => { const p = profiles.find(x => x.id === profileSel.value); return p ? p.name : 'No house style'; };
+  function showProfile() {
+    const p = profiles.find(x => x.id === profileSel.value);
+    $('profile-note').textContent = !canDesign() ? 'Connect Claude to design in a house style from the reference vault.'
+      : p ? p.tagline + '. Claude also sees its three reference images.' : profiles.length ? 'Claude picks the style. Choose a house style to steer it.' : 'No profiles found. Add notes to vault/Profiles.';
+  }
+  function setProfile(id) {
+    id = String(id || '').trim(); if (id === 'none') id = '';
+    if (id && !profiles.some(p => p.id === id)) return false;
+    profileSel.value = id; showProfile();
+    try { localStorage.setItem('iris-profile', id); } catch (e) { /* storage may be unavailable */ }
+    return true;
+  }
+  async function loadProfiles() {
+    try { profiles = (await call('/profiles', null, null, 8000)).profiles || []; } catch (e) { profiles = []; }
+    profileSel.replaceChildren(new Option('No house style', ''), ...profiles.map(p => new Option(p.name, p.id)));
+    profileSel.disabled = !canDesign() || !profiles.length;
+    let saved = null; try { saved = localStorage.getItem('iris-profile'); } catch (e) { /* storage may be unavailable */ }
+    profileSel.value = saved !== null && (saved === '' || profiles.some(p => p.id === saved)) ? saved : profiles.some(p => p.id === 'general') ? 'general' : '';
+    showProfile();
+  }
+  profileSel.onchange = () => setProfile(profileSel.value);
 
   let recorder = null;
   $('mic').onclick = async () => {
@@ -156,23 +183,25 @@
     try {
       let next;
       const reference = ReferenceMatch.website(prompt) ? Websites.match(prompt) : null;
-      let detail='';
+      let detail = '', usedModel = false;
       if (reference && (reference.exact || !canDesign() || !service.vaultWebsites)) {
-        next=Doc.clean(Websites.build(prompt,reference));
-        if (canDesign() && !service.vaultWebsites && !reference.exact) detail='Local vault build. Restart the updated Iris service for Claude customization.';
-      }
-      else if (canDesign()) {
-        setBusy(true, reference ? 'Designing from '+reference.site.title+'…' : 'Claude is designing…', 'Opus 5.5 is planning screens, layout and copy for your brief. This usually takes one to three minutes.');
-        try { next = Doc.clean((await call('/board', JSON.stringify({note: prompt}))).doc); }
-        catch(error) {
+        next = Doc.clean(Websites.build(prompt, reference));
+        if (canDesign() && !service.vaultWebsites && !reference.exact) detail = 'Restart the updated service for Claude customization.';
+      } else if (canDesign()) {
+        setBusy(true, reference ? 'Designing from ' + reference.site.title + '…' : 'Claude is designing…', 'Opus 5.5 is planning screens, layout and copy for your brief. This usually takes one to three minutes.');
+        try {
+          next = Doc.clean((await call('/board', JSON.stringify({note: prompt, profile: profileSel.value}))).doc);
+          usedModel = true;
+        } catch (error) {
           if (!reference) throw error;
-          next=Doc.clean(Websites.build(prompt,reference));
-          detail='Used the local reference build. '+error.message;
+          next = Doc.clean(Websites.build(prompt, reference));
+          detail = 'Used the local reference build. ' + error.message;
         }
       } else next = Doc.fromBoard(Screens.checkBoard(Kit.build(prompt)));
       setBusy(false);
       revisions = []; rev = -1;
-      commit(next, 'Built from “' + prompt + '”', null, [next.reference && 'Vault · '+next.reference.title,detail].filter(Boolean).join(' · '));
+      const label = 'Built from “' + prompt + '”' + (usedModel && profileSel.value ? ' · ' + profileName() : '');
+      commit(next, label, null, [next.reference && 'Vault · ' + next.reference.title, detail].filter(Boolean).join(' · '));
       if (canDesign()) { setMode('edit'); brief.value = ''; }
     } catch (e) { setBusy(false, 'Could not build that', e.message); }
   }
@@ -191,7 +220,7 @@
           if (m.notes.length) { base = m.doc; baseBoard = Screens.checkBoard(Doc.compile(base), true); setHead(busyHead, 'Including your edits in Figma: ' + m.notes.slice(0, 3).join(', ') + (m.notes.length > 3 ? '…' : '')); }
         }
       }
-      const r = await call('/edit', JSON.stringify({doc: base, note: text}));
+      const r = await call('/edit', JSON.stringify({doc: base, note: text, profile: profileSel.value}));
       const res = Doc.apply(base, r.ops || []);
       setBusy(false);
       if (!res.applied.length) { setHead('No changes made', r.summary || 'Claude could not map that request onto this design. Try rephrasing it.'); return; }
@@ -354,7 +383,7 @@
     if (key !== gridKey) {
       const c = document.createElement('canvas'), s = Math.max(1, Math.round(step * dpr));
       c.width = c.height = s; const g = c.getContext('2d');
-      g.fillStyle = '#25252F'; g.beginPath(); g.arc(1.2 * dpr, 1.2 * dpr, .9 * dpr, 0, Math.PI * 2); g.fill();
+      g.fillStyle = '#2A2A2A'; g.beginPath(); g.arc(1.2 * dpr, 1.2 * dpr, .9 * dpr, 0, Math.PI * 2); g.fill();
       gridPattern = ctx.createPattern(c, 'repeat'); gridKey = key;
     }
     const s = Math.round(step * dpr) / dpr, ox = (-cam.x * cam.z) % s, oy = (-cam.y * cam.z) % s;
@@ -381,7 +410,7 @@
 
   function render() {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.fillStyle = '#0E0E13'; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = '#141414'; ctx.fillRect(0, 0, W, H);
     grid();
     if (!P) return;
     const z = cam.z, over = [];
@@ -393,7 +422,7 @@
       const fw = st.w * z, fh = st.h * z, sa = st.alpha;
       const visible = ox < W && oy < H && ox + fw > 0 && oy + fh > -30;
       if (visible) {
-        ctx.globalAlpha = st.labelAlpha * sa; ctx.fillStyle = E.ghost ? '#FF6B6B' : '#8D8DA3'; ctx.font = '600 12px Inter, system-ui, sans-serif'; ctx.textBaseline = 'alphabetic';
+        ctx.globalAlpha = st.labelAlpha * sa; ctx.fillStyle = E.ghost ? '#F24822' : '#B3B3B3'; ctx.font = '500 12px Inter, -apple-system, system-ui, sans-serif'; ctx.textBaseline = 'alphabetic';
         let label = S.name.split(' · ').pop(); const room = Math.max(fw, S.width * z) - 4;
         while (label.length > 1 && ctx.measureText(label).width > room) label = label.slice(0, -2) + '…';
         if (room > 18) ctx.fillText(label, ox, oy - 9);
@@ -599,7 +628,7 @@
     if (best && !drag) {
       const s = best.s, what = s.mode === 'work' ? Crew.describe(P, P.tasks[s.task]).replace(/^(\w+)/, m => doing[m] || m) : s.mode === 'move' ? 'heading to the next task' : 'waiting for work';
       tip.style.setProperty('--who', best.c.color);
-      tip.innerHTML = '<b>' + esc(best.c.name) + '</b> · ' + esc(what) + ' <span style="color:#5E5E72">· ' + best.c.jobs + ' tasks</span>';
+      tip.innerHTML = '<b>' + esc(best.c.name) + '</b> · ' + esc(what) + ' <span style="color:#808080">· ' + best.c.jobs + ' tasks</span>';
       tip.style.left = Math.min(W - 260, best.x + 18) + 'px'; tip.style.top = (best.y - 34) + 'px'; tip.hidden = false;
     } else tip.hidden = true;
   }
@@ -708,13 +737,13 @@
     const r = spark.getBoundingClientRect(), w = Math.max(1, r.width), h = Math.max(1, r.height);
     if (spark.width !== Math.round(w * dpr)) { spark.width = Math.round(w * dpr); spark.height = Math.round(h * dpr); }
     sctx.setTransform(dpr, 0, 0, dpr, 0, 0); sctx.clearRect(0, 0, w, h);
-    sctx.fillStyle = '#16161E'; sctx.fillRect(0, 0, w, h);
+    sctx.fillStyle = '#1E1E1E'; sctx.fillRect(0, 0, w, h);
     if (!P) return;
     const n = P.bins.length, bw = w / n, ph = t / P.total * w;
-    const grad = sctx.createLinearGradient(0, 0, w, 0); grad.addColorStop(0, '#8B6CFF'); grad.addColorStop(.6, '#FF6FB1'); grad.addColorStop(1, '#FFB86B');
+    const grad = '#0D99FF';
     for (let i = 0; i < n; i++) {
       const v = P.bins[i] / Math.max(1, P.busiest), bh = Math.max(1.5, v * (h - 10)), x = i * bw;
-      sctx.fillStyle = x + bw <= ph ? grad : '#2C2C39';
+      sctx.fillStyle = x + bw <= ph ? grad : '#3A3A3A';
       sctx.fillRect(x + .15, h - 5 - bh, Math.max(.6, bw - .3), bh);
     }
     sctx.fillStyle = '#FFFFFF'; sctx.fillRect(Math.min(w - 2, ph), 3, 2, h - 6);
@@ -818,7 +847,8 @@
       copy: s.layers.filter(L => L.kind === 'text').map(L => L.text.replace(/\n/g, ' ')).filter(x => x.trim()).slice(0, 12)}))};
   }
   window.Iris = {
-    isPlugin, call,
+    isPlugin, call, setProfile,
+    get profile() { return {id: profileSel.value, name: profileName()}; }, get profiles() { return profiles.map(({id, name, tagline}) => ({id, name, tagline})); },
     get connected() { return connected; }, get service() { return service; }, get busy() { return busy; },
     state: () => ({design: outline(), version: rev + 1, versions: revisions.length, running: !!P && !runFinished(), status: headText(), canEdit: canDesign()}),
     async build(text) {

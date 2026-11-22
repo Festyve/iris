@@ -26,7 +26,7 @@ async function visual(root,ref) {
   return [{type:'text',text:'Visual reference: '+ref.title},{type:'image',source:{type:'base64',media_type:mime,data:data.toString('base64')}}];
 }
 
-export async function websiteDesign(note,root,ask) {
+export async function websiteDesign(note,root,ask,style) {
   if (!root || typeof note!=='string' || !note.trim() || !Match.website(note)) return null;
   if (note.length>1500) throw Object.assign(Error('Enter a brief of up to 1500 characters.'),{status:400});
   const websites=await library(root);
@@ -35,6 +35,6 @@ export async function websiteDesign(note,root,ask) {
   const seed=Doc.clean(websites.build(note,m));
   if (m.exact || !ask) return {doc:seed,summary:'Built from '+m.site.title};
   const images=(await Promise.all([m.site,m.inspiration].filter(Boolean).map(ref=>visual(root,ref)))).flat();
-  const result=await edit(seed,note,(system,user)=>ask(system+'\nAdapt the supplied website reconstruction to the brief. Preserve the reference composition, use meaningful product-specific navigation, copy and features, and replace unrelated artwork. Nodes with art identifiers are editable vector outlines from the reference. Use the images as visual references only.',[...images,{type:'text',text:user}]));
+  const result=await edit(seed,note,(system,user)=>ask(system+'\nAdapt the supplied website reconstruction to the brief. Preserve the reference composition, use meaningful product-specific navigation, copy and features, and replace unrelated artwork. Nodes with art identifiers are editable vector outlines from the reference. Use the images as visual references only.',[...images,...(Array.isArray(user)?user:[{type:'text',text:user}])]),style);
   return {doc:Doc.apply(seed,result.ops).doc,summary:result.summary};
 }
