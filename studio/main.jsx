@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { retrieve } from './retrieve.mjs';
 import Library from './Library.jsx';
 import Companion from './Companion.jsx';
-import { localSession, studioRequest } from './session.mjs';
+import { localSession, studioRequest, withLocalRecovery } from './session.mjs';
 import Archive from './Archive.jsx';
 import ProjectTools from './ProjectTools.jsx';
 import Review from './Review.jsx';
@@ -23,12 +23,7 @@ async function makePlan(options, key, useModel) {
   if (!useModel) return { ...planBuild(options), planningMode: 'local' };
   const {brief, refs, previous, direction, signal} = options;
   const references = refs.map(({id,title,tags,observation,adaptation}) => ({id,title,tags,observation,adaptation}));
-  const response = await fetch('/studio-plan', { method:'POST', signal, headers: {
-    'Content-Type':'application/json', Authorization:'Bearer ' + key
-  }, body: JSON.stringify({brief, references, previous, direction, runId:options.runId}) });
-  const result = await response.json();
-  if (!response.ok) throw Error(result.error || 'Planning failed. Retry the request.');
-  return result;
+  return studioRequest(key, '/studio-plan', {brief, references, previous, direction, runId:options.runId}, signal);
 }
 
 
@@ -111,9 +106,12 @@ function Studio({ initial }) {
       const sources = items.map(({id,title,tags,observation,adaptation})=>({id,title,tags,observation,adaptation}));
       const data = {refs:sources,brief,pinned,runId};
       if (new Blob([JSON.stringify(data)]).size > 170000) return retrieve(items,brief,pinned);
-      return studioRequest(session.current,'/reference-search',data).then(r=>r.matches);
-    }, planBuild: options => makePlan(options, key, modelMode.current), compile: async plan => session.current
-      ? (await studioRequest(session.current, '/artifact-build', {plan})).html : compileArtifact(plan), async verify(html, plan) {
+      return withLocalRecovery(() => studioRequest(session.current,'/reference-search',data).then(r=>r.matches),
+        () => retrieve(items,brief,pinned), reason => setProblem('Ranked references locally. ' + reason));
+    }, planBuild: options => withLocalRecovery(() => makePlan(options, key, modelMode.current),
+      () => makePlan(options, key, false), reason => setProblem('Planned locally. ' + reason)), compile: async plan => session.current
+      ? await withLocalRecovery(() => studioRequest(session.current, '/artifact-build', {plan}).then(r=>r.html),
+        () => compileArtifact(plan), reason => setProblem('Compiled locally. ' + reason)) : compileArtifact(plan), async verify(html, plan) {
       const checks = verifyArtifact(html, plan);
       for (const width of [390, 1024]) checks.push(await inspectPreview(html, width));
       return checks;

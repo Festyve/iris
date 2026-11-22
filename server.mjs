@@ -12,12 +12,13 @@ import {join, basename} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {ElevenLabsClient} from '@elevenlabs/elevenlabs-js';
 import {createElevenAgentService} from './studio/elevenagent-service.mjs';
-import {Doc, edit} from './designer.mjs';
-import Kit from './kit.js';
-import Screens from './screen-spec.cjs';
+import {edit} from './designer.mjs';
+import {composeBrief,planBrief} from './references/compose.mjs';
+import {editBrief} from './references/brief-edit.mjs';
+import {createExpectedParrotReviewer} from './providers/expected-parrot/index.mjs';
 import {loadProfiles, profileStyle} from './profiles.mjs';
 import {capture} from './references/captures.mjs';
-import {websiteDesign,websiteEdit} from './references/planner.mjs';
+import {websiteEdit} from './references/planner.mjs';
 
 // The session key survives restarts (kept in .iris-session, never committed), so you paste it
 // into the browser or the Figma plugin once and it keeps working.
@@ -30,6 +31,7 @@ const origin = 'http://localhost:'+port;
 const voiceKey = process.env.ELEVENLABS_API_KEY;
 const MODEL = 'claude-opus-5-5';
 const EDIT_MODEL = process.env.IRIS_EDIT_MODEL || 'claude-haiku-5-5';
+const contentPlanner=createExpectedParrotReviewer({timeoutMs:32000});
 let agentId = process.env.ELEVENLABS_AGENT_ID || '';
 if (!agentId) try { agentId = JSON.parse(await readFile(new URL('./.iris-agent.json', import.meta.url), 'utf8')).agentId || ''; } catch (e) { /* run npm run agent */ }
 const irisVoice = createElevenAgentService({apiKey: voiceKey, agentId});
@@ -39,6 +41,11 @@ if (!vaultDir) try { if ((await stat(new URL('./vault', import.meta.url))).isDir
 // Credentials come from ANTHROPIC_API_KEY, ANTHROPIC_AUTH_TOKEN or an `ant auth login` profile.
 let client = null;
 try { client = new Anthropic(); } catch (e) { console.warn('No Anthropic credentials found: ' + e.message); }
+
+// The SDK can construct a client even when its credential chain is empty.
+function claudeConfigured() {
+  return Boolean(client && (client.apiKey || client.authToken || client.credentials));
+}
 
 // The design format has more optional fields than structured outputs allow (24), so Claude
 // answers in plain JSON described by the prompt, and designer.mjs validates and repairs it.
@@ -124,7 +131,7 @@ async function relayResult(req, res) {
 async function critique(req, res) {
   const d = JSON.parse((await collect(req, 6_000_000)).toString());
   const question = String(d.question || 'general critique').slice(0, 300);
-  if (!client) return json(res, 200, {critique: '', note: 'No Anthropic credentials, so there is no visual critique.'});
+  if (!claudeConfigured()) return json(res, 200, {critique: '', note: 'No Anthropic credentials, so there is no visual critique.'});
   const content = [];
   if (typeof d.png === 'string' && d.png.startsWith('iVBOR') && /^[A-Za-z0-9+/=]+$/.test(d.png)) content.push({type: 'image', source: {type: 'base64', media_type: 'image/png', data: d.png}});
   const style = await profileStyle(vaultDir, d.profile, 0);
@@ -171,7 +178,7 @@ const server = http.createServer(async (req, res) => {
     if (req.method === 'GET' && url.pathname === '/voice.js') { res.writeHead(200, {'Content-Type': 'text/javascript; charset=utf-8', 'Cache-Control': 'no-store'}); return res.end(await readFile(new URL('./voice.bundle.js', import.meta.url))); }
     if (req.method === 'GET' && url.pathname === '/bridge') { if (url.searchParams.get('key') !== secret) return json(res, 401, {error: 'Invalid session key.'}); return openBridge(req, res); }
     if (req.headers.authorization !== 'Bearer ' + secret) return json(res, 401, {error: 'Invalid session key.'});
-    if (req.method === 'GET' && req.url === '/status') return json(res, 200, {design: !!client, vaultWebsites: true, voice: !!voiceKey, model: EDIT_MODEL, agent: irisVoice.status().configured, studio: studios.size > 0});
+    if (req.method === 'GET' && req.url === '/status') return json(res, 200, {design: claudeConfigured(), vaultWebsites: true, voice: !!voiceKey, model: EDIT_MODEL, agent: irisVoice.status().configured, studio: studios.size > 0});
     if (req.method === 'GET' && url.pathname === '/voice/session') { reserve('/eleven-agent/session'); return await voiceSession(res,url.searchParams.get('transport')); }
     if (req.method === 'POST' && url.pathname === '/bridge/command') return await relay(req, res);
     if (req.method === 'POST' && url.pathname === '/bridge/result') return await relayResult(req, res);
@@ -182,21 +189,44 @@ const server = http.createServer(async (req, res) => {
       return json(res,200,{png:bytes.toString('base64')});
     }
     if (req.method === 'GET' && url.pathname === '/profiles') return json(res, 200, {profiles: (await loadProfiles(vaultDir)).map(({id, name, tagline}) => ({id, name, tagline}))});
-    if (req.method === 'POST' && (req.url === '/board' || req.url === '/edit')) {
-      const body = JSON.parse((await collect(req, 4_000_000)).toString());
-      const started = Date.now();
+    if (req.method === 'POST' && ['/brief-plan','/board','/edit'].includes(url.pathname)) {
+      const body = JSON.parse((await collect(req,url.pathname==='/edit' ? 4_000_000 : 12000)).toString());
       if(typeof body.note!=='string' || !body.note.trim() || body.note.length>1500) return json(res,400,{error:'Enter a brief of up to 1500 characters.'});
-      let out;
-      if(req.url==='/board') {
-        out=await websiteDesign(body.note,vaultDir);
-        if(!out) out={doc:Doc.fromBoard(Screens.checkBoard(Kit.nativeBoard(body.note))),summary:'Built locally.'};
-      } else {
-        if(!client)return json(res,503,{error:'Set ANTHROPIC_API_KEY to enable edits.'});
-        const style=await profileStyle(vaultDir,body.profile,0);
-        out=body.doc?.reference ? await websiteEdit(body.doc,body.note,ask,style?.name) : await edit(body.doc,body.note,ask,style);
+      const note=body.note.trim();
+      const profile=await profileStyle(vaultDir,body.profile,0);
+      if (url.pathname==='/edit') {
+        if (!body.doc || !Array.isArray(body.doc.nodes)) return json(res,400,{error:'Select an existing board to revise.'});
+        const local=editBrief(body.doc,note);
+        if(local) return json(res,200,local);
+        if(!claudeConfigured()) return json(res,422,{error:'Try “Change headline to …”, “Set accent to #225577”, or “Replace "old text" with "new text"”. Free-form layer editing requires Claude.'});
+        const out=body.doc.reference ? await websiteEdit(body.doc,note,ask,profile?.name) : await edit(body.doc,note,ask,profile);
+        return json(res,200,out);
       }
-      console.log((req.url==='/board'?'Local build':'Claude edit')+' completed in '+(Date.now()-started)+' ms.');
-      return json(res, 200, out);
+      const proposal=planBrief(note,profile);
+      if (url.pathname==='/brief-plan') return json(res,200,proposal);
+      const direction=body.direction ?? proposal.recommended;
+      if (!proposal.directions.some(d=>d.id===direction)) return json(res,400,{error:'Select a direction offered for this brief.'});
+      const controller=new AbortController();
+      res.once('close',()=>{if(!res.writableFinished) controller.abort()});
+      const result=await sponsors.withTrace({runId:randomBytes(12).toString('hex'),taskId:'compose-board'},async()=>{
+        let content, reason;
+        const {configured,runtimeReady}=contentPlanner.status();
+        if(configured && runtimeReady) {
+          try {
+            reserve('/brief-content');
+            content=await contentPlanner.draftContent({brief:note,direction,signal:controller.signal});
+          } catch(error) {
+            if(controller.signal.aborted) throw error;
+            reason=error.code || (error.status===429 ? 'daily_provider_limit' : 'provider_unavailable');
+          }
+        }
+        const out=await composeBrief({note,profile,direction,content});
+        const execution=content ? 'expected-parrot' : 'local';
+        return {...out,execution,direction,references:proposal.references.filter(r=>r.direction===direction),
+          summary:out.summary+(content ? ' Copy planned with Expected Parrot.' : ' Local composition.'),
+          ...(reason && {fallbackReason:reason})};
+      });
+      return json(res,200,result);
     }
     if (req.method === 'POST' && req.url === '/voice') { reserve('/voice'); return await voice(req, res); }
     return await studioRoute(req,res);
@@ -209,7 +239,7 @@ const server = http.createServer(async (req, res) => {
 });
 server.on('error', e => { console.error('Could not start local service: ' + e.message); process.exitCode = 1; });
 server.listen(port, '127.0.0.1', () => console.log([
-  'Iris is running.', 'Designer: ' + (client ? MODEL : 'not configured (set ANTHROPIC_API_KEY)'), '',
+  'Iris is running.', 'Designer: ' + (claudeConfigured() ? MODEL : 'not configured (set ANTHROPIC_API_KEY)'), '',
   'Studio: '+origin+'/studio/#key='+secret,
   'Browser:  ' + origin + '/#key=' + secret,
   'Figma:    open the Iris plugin, click the gear (⚙) and paste this session key once:', '          ' + secret, '',

@@ -4,11 +4,13 @@ New designs build locally. Claude runs when you request an edit. Every time, hun
 
 ## Build a website from the vault
 
-Choose **New**, type a subject like **poker**, choose **100**, and press **Build**. In Figma Desktop the named cursors assemble the frame on your canvas. Poker uses MetalForge’s layout for the lobby and two companion vault setups for browsing and details. Iris shows the source in Versions.
+Choose **New → Vault website**, type a subject like **poker**, choose **100**, and press **Build**. In Figma Desktop the named cursors assemble the frame on your canvas. Poker uses MetalForge’s layout for the lobby and two companion vault setups for browsing and details. Iris shows the source in Versions.
 
 Name a site directly, for example **recreate Stripe**, **recreate Poolsuite**, or **recreate MetalForge**, to rebuild its captured 1440 × 900 viewport. All 22 site captures have local templates. Iris preserves artwork at the original resolution as PNG image fills. It lifts lettering on uniform backgrounds into editable Inter text layers. Text inside gallery thumbnails and complex artwork stays in the image. Below-the-fold pages and interactions are outside the captures.
 
-Website briefs match only the captured vault setups. A new site gets a home, collection and detail page with editable layers traced to their sources. The local builder adapts text to the brief, including a default vault setup for unmatched words. Native app briefs use the local phone kit. Initial builds make zero Claude requests.
+Choose **Guide me** to review a direction first, or **Build end-to-end** to use the recommendation. Give Iris a product, audience, primary action and any required sections. New editable boards adapt specific composition features such as display hierarchy or an indexed sequence. The website library keeps its original captures for explicit reference study.
+
+The local composer works without model credentials. When configured and within the shared daily allowance, Expected Parrot can draft bounded copy for the board. In the Studio companion, generated landing pages and application views support browser interactions, preview checks, revision and restore.
 
 For edits, set **ANTHROPIC_API_KEY** on the local Iris service. **IRIS_EDIT_MODEL** defaults to **claude-haiku-5-5**. Website edits send a compact selection of relevant layer labels, the edit request and allowed vault tokens. Claude can change copy, typography, colours and visibility or add a page based on another known setup. The server validates changes before the cursors apply them.
 
@@ -16,9 +18,9 @@ The site templates are committed in `references/sites.json`. `npm run build` ref
 
 ### Organize all reference websites in Figma
 
-Open **Iris → Website library → Build vault library** with the local service connected. Iris creates a dedicated page with one named section per website, arranged in three columns. Each section contains the original-size rebranded desktop capture, an editable reconstruction, a navigation panel and a hero detail. Reopening the library fills missing sections and keeps completed ones. The gallery runs entirely on the laptop and uses no model calls.
+Open **Iris → Website library → Build vault library** with the local service connected. Iris creates a dedicated page with one named section per website, arranged in three columns. Each section contains the original-size rebranded desktop capture, an editable reconstruction, a navigation panel and a hero detail. The first full-resolution import gets its own page alongside any older traced library. Reopening it fills missing sections. The gallery runs entirely on the laptop and uses no model calls.
 
-For a single site, try **recreate Stripe**. Its design opens as **Asterpay**. Custom website builds also get an organized section with editable details. Source provenance stays in the vault and build history. In the photographic reference, pixels outside the brand replacement regions match the source PNG. In the editable reconstruction, detailed imagery and fonts are approximations.
+For a single site, try **recreate Stripe**. Its design opens as **Asterpay**. Custom website builds also get an organized section with editable details. Source provenance stays in the vault and build history. In the photographic reference, pixels outside the brand replacement regions match the source PNG. The editable reconstruction preserves artwork pixels and uses Inter for editable text.
 
 To refresh the reference data after changing a capture, extract source text with the Vision script, run `scripts/trace-sites.py` on that OCR, then run `python3 scripts/brand-captures.py /tmp/iris-branded` and `python3 scripts/trace-sites.py /tmp/iris-branded/observations.json /tmp/iris-branded`. Rebuild the plugin.
 

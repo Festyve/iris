@@ -117,3 +117,8 @@
   .sc-companion button { min-height: 38px; }
   .sc-entry textarea { font-size: 16px; }
 }
+
+.sc-modes { display: flex; gap: 4px; }
+.sc-modes button { flex: 1; }
+.sc-modes button[aria-pressed=true] { background: #293524; color: white; border-color: #293524; }
+.sc-mode-hint { margin: 4px 0 9px; font-size: 12px; }

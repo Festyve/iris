@@ -73,12 +73,8 @@ export function createExpectedParrotReviewer({
   const status = () => ({
     provider: 'expected-parrot', configured: !!key, runtimeReady: runtimeExists(pythonPath), model
   });
-  return {
-    status,
-    async review(input = {}) {
-      const { signal } = input;
+  async function execute(payload, signal, decode) {
       if (signal && (typeof signal.addEventListener !== 'function' || typeof signal.removeEventListener !== 'function')) throw invalid('Provide a valid cancellation signal.');
-      const payload = cleanRequest(input);
       const serialized = JSON.stringify(payload);
       if (Buffer.byteLength(serialized) > 16384) throw invalid('The review content is too large. Shorten the summary or selected references.');
       if (signal?.aborted) throw new ExpectedParrotError(499, 'cancelled', 'The simulated review was cancelled.');
@@ -139,10 +135,28 @@ export function createExpectedParrotReviewer({
             finish(new ExpectedParrotError(errors[id][0], id, errors[id][1]));
             return;
           }
-          try { finish(null, validateResult(result, model)); } catch (error) { finish(error); }
+          try { finish(null, decode(result)); } catch (error) { finish(error); }
         });
         child.stdin.on('error', () => finish(new ExpectedParrotError(502, 'provider_failed', 'Expected Parrot stopped before receiving the design.')));
         child.stdin.end(serialized);
+      });
+  }
+  return {
+    status,
+    async review(input={}) {
+      return execute(cleanRequest(input),input.signal,result=>validateResult(result,model));
+    },
+    async draftContent({brief, direction, signal}) {
+      if (typeof brief !== 'string' || !brief.trim() || brief.length>1500) throw invalid('Provide a brief of up to 1,500 characters.');
+      const payload={operation:'brief-content',brief,direction:String(direction || '').slice(0,80)};
+      return execute(payload,signal,result=>{
+        const c=result?.content;
+        if (!c || !Array.isArray(c.sections) || c.sections.length<2 || c.sections.length>4 ||
+            !/^#[0-9a-f]{6}$/i.test(c.accent)) throw invalid('Incomplete content direction.');
+        for (const field of [c.title,c.headline,c.primaryAction,...c.sections]) {
+          if (typeof field !== 'string' || !field.trim() || field.length>140 || /[<>\x00-\x1f]/.test(field)) throw invalid('Invalid content direction.');
+        }
+        return {title:c.title.trim(),headline:c.headline.trim(),primaryAction:c.primaryAction.trim(),sections:c.sections.map(s=>s.trim()),accent:c.accent};
       });
     }
   };

@@ -5,7 +5,8 @@
   const query = new URLSearchParams(location.search);
   const isPlugin = query.has('plugin') || (window.parent !== window && !query.has('browser'));
   if (isPlugin) document.body.classList.add('plugin');
-  const api = 'http://localhost:4739';
+  const api = isPlugin ? 'http://localhost:4739' : location.origin;
+  const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
   const COUNTS = isPlugin ? [25, 50, 100, 250] : [50, 100, 250, 500, 1000];
   const SPEEDS = [.5, 1, 2, 4];
   const KIND_STYLE = {
@@ -36,7 +37,7 @@
   const lum = hex => { const n = parseInt(String(hex).slice(1), 16); return ((n >> 16 & 255) * .299 + (n >> 8 & 255) * .587 + (n & 255) * .114) / 255; };
   const easeOut = p => 1 - Math.pow(1 - p, 3);
   const initials = name => name.replace(/\s\d+$/, '').slice(0, 2).toUpperCase();
-  const canDesign = () => connected && service.design;
+  const canDesign = () => connected;
 
   /* ---------- controls ---------- */
   const seg = $('crew-size');
@@ -50,8 +51,8 @@
 
   const sugg = $('suggest'), brief = $('brief');
   const dots = ['#6E56F8', '#FF5A4E', '#2D6BFF', '#C5F23A', '#EA7212', '#0E9F6E', '#E13F7A'];
-  const edits = ['Make the primary buttons pill-shaped', 'Switch the whole app to dark mode', 'Add a search bar under the header on Home', 'Add a settings screen with notification toggles', 'Make the headline bigger and bolder'];
-  const samples = ['A poker website called “River Room”', 'Recreate Stripe', ...Kit.samples];
+  const edits = ['Set accent to #146C94', 'Change headline to Field Notes'];
+  const samples = ['A poker website called “River Room”', ...Kit.samples];
   function fillSuggestions() {
     const list = mode === 'edit' ? edits : samples;
     sugg.innerHTML = '<div class="hint">' + (mode === 'edit' ? 'Try a change' : 'Try a brief') + '</div>' + list.map((s, i) => '<button type="button" data-i="' + i + '"><i style="background:' + dots[i % dots.length] + '"></i>' + esc(s) + '</button>').join('');
@@ -71,11 +72,14 @@
     $('mode').textContent = mode === 'edit' ? 'Edit ' + (doc.name.length > 12 ? doc.name.slice(0, 11) + '…' : doc.name) : 'New';
     $('mode').setAttribute('aria-pressed', String(mode === 'edit'));
     $('mode').title = mode === 'edit' ? 'Changing the current design. Click to start a new one.' : 'Starting a new design. Click to change the current one.';
-    brief.placeholder = mode === 'edit' ? 'Describe a change, like “add a promo code field to checkout”' : 'Describe a website or product, like “poker”';
-    $('build-label').textContent = mode === 'edit' ? 'Apply' : 'Build';
+    $('workflow').hidden = mode === 'edit';
+    brief.placeholder = mode === 'edit' ? 'Describe a change, like “Change headline to Field Notes”' : 'Describe a website or product';
+    $('build-label').textContent = mode === 'edit' ? 'Apply' : $('workflow').value === 'guided' ? 'Plan' : 'Build';
     brief.setAttribute('aria-label', mode === 'edit' ? 'Describe a change' : 'Describe a product');
     $('prompt').classList.toggle('editing', mode === 'edit');
   }
+  if(isPlugin)$('workflow').value='vault';
+  $('workflow').onchange = () => setMode(mode);
   $('mode').onclick = () => { if (!doc) return; setMode(mode === 'edit' ? 'new' : 'edit'); brief.value = ''; brief.focus(); };
 
   $('gear').onclick = e => { e.stopPropagation(); $('settings').hidden = !$('settings').hidden; if (!$('settings').hidden) $('token').focus(); };
@@ -90,8 +94,8 @@
   }
   function updateNotice(problem) {
     $('template-notice').hidden = canDesign();
-    $('notice-title').textContent = problem ? 'Not connected to Claude' : 'Reference vault ready';
-    $('notice-text').textContent = problem || 'Website briefs match the reference vault. Try “poker” or “recreate Stripe”. Connect Claude for custom art direction and edits.';
+    $('notice-title').textContent = 'Connect to Iris';
+    $('notice-text').textContent = problem || 'Open the private browser link printed by node server.mjs, or enter the session key in Settings.';
   }
   $('connect-cta').onclick = e => { e.stopPropagation(); $('settings').hidden = false; $('token').focus(); };
   async function connect() {
@@ -101,17 +105,17 @@
       service = await call('/status', null, null, 8000); connected = true;
       try { localStorage.setItem('iris-key', token); } catch (e) { /* storage may be unavailable */ }
       if (isPlugin) parent.postMessage({pluginMessage: {kind: 'save-key', key: token}}, '*');
-      $('ai-state').textContent = service.design ? 'Connected. New builds use local templates. Claude handles requested edits.' + (service.voice ? ' Voice is on.' : '') : 'Connected, but the server has no Anthropic credentials. Set ANTHROPIC_API_KEY and restart it.';
-      $('mode-label').textContent = 'Local templates';
+      $('ai-state').textContent = 'Connected.' + (service.voice ? ' Voice is on.' : '');
+      $('mode-label').textContent = 'Connected';
       $('mic').hidden = !service.voice;
-      if (doc && service.design && mode !== 'edit') { setMode('edit'); brief.value = ''; }
-      updateNotice(service.design ? null : 'The service is running but has no Anthropic key. Set ANTHROPIC_API_KEY and restart it.');
-      if (service.design) $('settings').hidden = true;
+      if (doc && !busy) setMode('edit');
+      updateNotice();
+      $('settings').hidden = true;
       loadProfiles();
     } catch (e) {
-      const why = /401|session key/i.test(e.message) ? 'The session key doesn’t match. Copy the key that node server.mjs prints.' : 'Can’t reach the Claude service. Start it with node server.mjs in the iris folder.';
+      const why = /401|unauthorized|session key/i.test(e.message) ? 'The session key doesn’t match. Copy the key that node server.mjs prints.' : 'Can’t reach the Iris service. Start it with node server.mjs in the iris folder.';
       $('ai-state').textContent = why;
-      updateNotice(why + ' Until then, new designs use the built-in templates.');
+      updateNotice(why);
     }
   }
   $('connect').onclick = connect;
@@ -122,8 +126,8 @@
   const profileName = () => { const p = profiles.find(x => x.id === profileSel.value); return p ? p.name : 'No house style'; };
   function showProfile() {
     const p = profiles.find(x => x.id === profileSel.value);
-    $('profile-note').textContent = !canDesign() ? 'Connect Claude to design in a house style from the reference vault.'
-      : p ? p.tagline + '. Claude also sees its three reference images.' : profiles.length ? 'Claude picks the style. Choose a house style to steer it.' : 'No profiles found. Add notes to vault/Profiles.';
+    $('profile-note').textContent = !canDesign() ? 'Connect Iris to design in a house style from the reference vault.'
+      : p ? p.tagline : profiles.length ? 'Choose a house style to steer it.' : 'No profiles found. Add notes to vault/Profiles.';
   }
   function setProfile(id) {
     id = String(id || '').trim(); if (id === 'none') id = '';
@@ -135,7 +139,7 @@
   async function loadProfiles() {
     try { profiles = (await call('/profiles', null, null, 8000)).profiles || []; } catch (e) { profiles = []; }
     profileSel.replaceChildren(new Option('No house style', ''), ...profiles.map(p => new Option(p.name, p.id)));
-    profileSel.disabled = !canDesign() || !profiles.length;
+    profileSel.disabled = busy || !canDesign() || !profiles.length;
     let saved = null; try { saved = localStorage.getItem('iris-profile'); } catch (e) { /* storage may be unavailable */ }
     profileSel.value = saved !== null && (saved === '' || profiles.some(p => p.id === saved)) ? saved : profiles.some(p => p.id === 'general') ? 'general' : '';
     showProfile();
@@ -190,6 +194,10 @@
   // While Claude works, the headline counts the seconds so it's clear something is happening.
   let busyTimer = 0, busyHead = '';
   function setBusy(on, head, sub) {
+    for (const control of [brief, profileSel, $('workflow'), $('mode'), $('dice')]) {
+      control.disabled = on || (control === profileSel && !profiles.length);
+    }
+    $('request-status').textContent = head ? [head, sub].filter(Boolean).join(' · ') : '';
     busy = on; $('build').disabled = on; document.body.classList.toggle('thinking', on);
     clearInterval(busyTimer);
     if (head) { busyHead = head; setHead(head, sub || ''); }
@@ -201,36 +209,89 @@
       }, 1000);
     }
   }
-  async function go() {
+  function chooseDirection(plan) {
+    const dialog = $('direction-dialog');
+    const choices = $('directions');
+    choices.replaceChildren();
+    for (const item of plan.directions) {
+      const button = document.createElement('button');
+      button.type = 'button';
+      const title = document.createElement('strong');
+      title.textContent = item.label + (item.id === plan.recommended ? ' · Recommended' : '');
+      button.append(title, document.createTextNode(item.reason));
+      button.onclick = () => dialog.close(item.id);
+      choices.append(button);
+    }
+    const references = (plan.references || []).map(ref => typeof ref === 'string' ? ref : ref.source || ref.title || ref.name).filter(Boolean);
+    $('plan-refs').textContent = references.length ? 'References · ' + references.join(', ') : '';
+    dialog.returnValue = '';
+    return new Promise(resolve => {
+      dialog.addEventListener('close', () => resolve(dialog.returnValue), {once: true});
+      dialog.showModal();
+    });
+  }
+
+  async function go(automatic = false) {
     if (busy || libraryBusy) return;
-    const text = brief.value.trim();
-    if (mode === 'edit' && doc) { if (text) await change(text); return; }
-    const prompt = text || Kit.samples[0];
-    if (!text) brief.value = prompt;
+    const note = brief.value.trim();
+    if (!note) { brief.focus(); return; }
+    if(mode==='new' && $('workflow').value==='vault') {
+      try {
+        const reference=Websites.match(note);
+        nextCapture=null;
+        if(isPlugin && connected && reference.exact) {
+          try {nextCapture=await fetchCapture(reference.id);} catch { /* Artwork is bundled locally. */ }
+        }
+        const next=Doc.clean(Websites.build(note,reference));
+        commit(next,'Built from “'+note+'”',null,'Vault · '+reference.site.title);
+        if(connected){setMode('edit');brief.value='';}
+      } catch(error){setBusy(false,'Could not build the vault website',error.message);}
+      return;
+    }
+    if (!connected) {
+      $('settings').hidden = false;
+      $('token').focus();
+      return;
+    }
+    if (mode === 'edit' && doc) { await change(note); return; }
+    const request = {note, profile: profileSel.value};
+    const guided = !automatic && $('workflow').value === 'guided';
     try {
-      const website=ReferenceMatch.website(prompt);
-      const reference=website?Websites.match(prompt):null;
-      let detail='';
-      const next=website ? Doc.clean(Websites.build(prompt,reference)) : Doc.fromBoard(Screens.checkBoard(Kit.nativeBoard(prompt)));
-      nextCapture=null;
-      if(isPlugin && reference?.exact && connected) {
-        try {nextCapture=await fetchCapture(reference.id);}
-        catch(error) {detail='Editable panels ready. The desktop capture requires the updated local service.';}
+      setBusy(true, 'Planning directions…', note);
+      const plan = await call('/brief-plan', JSON.stringify(request));
+      if (!Array.isArray(plan.directions) || !plan.directions.length ||
+          !plan.directions.every(d => d && d.id && d.label && d.reason)) {
+        throw Error('The planner returned no usable directions. Try the brief again.');
       }
+      let direction = plan.recommended;
+      if (guided) {
+        setBusy(true, 'Choose a direction', note);
+        direction = await chooseDirection(plan);
+        if (!direction) { setBusy(false, 'Plan closed', 'Your brief is ready to revise.'); return; }
+      }
+      const chosen = plan.directions.find(d => d.id === direction);
+      setBusy(true, 'Building your design…', chosen?.label || note);
+      const result = await call('/board', JSON.stringify({...request, direction: chosen?.id}));
+      if (result.doc?.reference?.setups || result.summary === 'Built locally.') {
+        throw Error('The service returned a legacy template. Restart Iris with the brief composer enabled.');
+      }
+      const next = Doc.clean(result.doc);
       setBusy(false);
-      revisions = []; rev = -1;
-      const label = 'Built from “' + prompt + '”';
-      commit(next, label, null, [next.reference && 'Vault · ' + next.reference.title, detail].filter(Boolean).join(' · '));
-      if (canDesign()) { setMode('edit'); brief.value = ''; }
-    } catch (e) { setBusy(false, 'Could not build that', e.message); }
+      const reference = plan.references?.find(ref => ref.direction === chosen?.id);
+      const decision = chosen && [chosen.label + (chosen.id === plan.recommended ? ' (recommended)' : ''), chosen.reason, reference?.source].filter(Boolean).join(' · ');
+      commit(next, result.summary || 'Built from “' + note + '”', null, decision);
+      $('mode-label').textContent = result.execution === 'expected-parrot' ? 'Expected Parrot interpretation'
+        : result.execution === 'local' ? 'Local composition' : 'Connected';
+      setMode('edit'); brief.value = '';
+    } catch (error) { setBusy(false, 'Could not build that', error.message); }
   }
   async function change(text) {
     if (!canDesign()) {
-      setHead('Changes need Claude', 'Open ⚙ and connect the local Claude service, then describe the change again.');
+      setHead('Connect to Iris to make changes', 'Open ⚙ and connect the local Iris service, then describe the change again.');
       $('settings').hidden = false; return;
     }
     try {
-      setBusy(true, 'Claude is changing ' + doc.name + '…', '“' + text + '” · Applying a targeted edit.');
+      setBusy(true, 'Iris is changing ' + doc.name + '…', '“' + text + '” · Applying a targeted edit.');
       let base = doc, baseBoard = board;
       if (isPlugin) {
         const read = await readback();
@@ -242,7 +303,7 @@
       const r = await call('/edit', JSON.stringify({doc: base, note: text, profile: profileSel.value}));
       const res = Doc.apply(base, r.ops || []);
       setBusy(false);
-      if (!res.applied.length) { setHead('No changes made', r.summary || 'Claude could not map that request onto this design. Try rephrasing it.'); return; }
+      if (!res.applied.length) { setBusy(false, 'No changes made', r.summary || 'Iris could not map that request onto this design. Try rephrasing it.'); return; }
       commit(res.doc, r.summary || text, baseBoard, res.skipped.length ? res.skipped.length + ' step' + (res.skipped.length > 1 ? 's' : '') + ' skipped' : null);
       brief.value = '';
     } catch (e) { setBusy(false, 'Could not make that change', e.message); }
@@ -251,7 +312,7 @@
     const b = Screens.checkBoard(Doc.compile(nextDoc), true);
     Doc.pin(nextDoc, b);
     doc = nextDoc;
-    revisions = revisions.slice(0, rev + 1);
+    revisions = prevBoard ? revisions.slice(0, rev + 1) : [];
     revisions.push({doc: nextDoc, board: b, label, note, at: new Date()});
     rev = revisions.length - 1;
     renderHistory();
@@ -276,7 +337,7 @@
     board = b;
     P = Crew.plan(board, count, {prev: prevBoard || null});
     for (const E of P.screens) E.S.dark = lum(E.S.background) < .4;
-    t = 0; finishedShown = false; playing = true;
+    t = reducedMotion.matches && !isPlugin ? P.total : 0; finishedShown = false; playing = t < P.total;
     $('toast').classList.remove('show');
     $('done-actions').hidden = true;
     $('board-chip').hidden = false; $('empty').hidden = true;
@@ -286,7 +347,7 @@
     status = new Array(P.layers.length).fill(-1); who = new Array(P.layers.length).fill(-1); lastRow.length = 0;
     buildTree(); buildActs(); lastFeedKey = '';
     if (!keepCamera || !userMoved) { fit(true); userMoved = false; }
-    if (isPlugin) { pluginState = 'starting'; parent.postMessage({pluginMessage: {kind: 'build', board, images:buildImages(board,prevBoard), prev: prevBoard || null, doc, count, speed:librarySite?4:speed,png:nextCapture,libraryId:librarySite}}, '*'); nextCapture=null; librarySite=null; }
+    if (isPlugin) { pluginState = 'starting'; parent.postMessage({pluginMessage: {kind: 'build', board, images:buildImages(board,prevBoard), prev: prevBoard || null, doc, count, speed: reducedMotion.matches ? Number.MAX_SAFE_INTEGER : librarySite ? 4 : speed,png:nextCapture,libraryId:librarySite}}, '*'); nextCapture=null; librarySite=null; }
     setPlayIcon();
   }
 
@@ -877,7 +938,7 @@
         P = Crew.plan(board, count); t = P.total; pluginState = 'done';
         status = new Array(P.layers.length).fill(-1); who = new Array(P.layers.length).fill(-1); lastRow.length = 0;
         buildTree(); buildActs(); setMode(canDesign() ? 'edit' : 'new');
-        setHead(board.name + ' is on this page', 'Connect Claude (⚙) and describe a change to keep designing.');
+        setHead(board.name + ' is on this page', 'Connect Iris (⚙) and describe a change to keep designing.');
       } catch (err) { /* ignore a stale or foreign document */ }
     }
   });
@@ -907,16 +968,16 @@
     state: () => ({design: outline(), version: rev + 1, versions: revisions.length, running: !!P && !runFinished(), status: headText(), canEdit: canDesign()}),
     async build(text) {
       if (busy) return {error: 'Iris is still working on the last request.'};
-      setMode('new'); brief.value = String(text || '').slice(0, 400);
+      setMode('new'); brief.value = String(text || '').slice(0, 1500);
       const before = revisions.length ? revisions[rev] : null;
-      await go();
+      await go(true);
       if (!revisions.length || revisions[rev] === before) return {error: headText()};
       const run = await settle(240000);
-      return {built: true, crew: run, reference: doc.reference || null, designer: doc.reference ? 'vault reference builder' : 'built-in kit', summary: revisions[rev].label, design: outline()};
+      return {built: true, crew: run, reference: doc.reference || null, designer: revisions[rev].label, summary: revisions[rev].label, design: outline()};
     },
     async change(text) {
       if (!doc) return {error: 'There is no design yet. Build one first.'};
-      if (!canDesign()) return {error: 'Changes need Claude, and the server has no Anthropic credentials.'};
+      if (!canDesign()) return {error: 'Connect to Iris to make changes.'};
       if (busy) return {error: 'Iris is still working on the last request.'};
       setMode('edit'); const before = revisions[rev];
       await change(String(text || '').slice(0, 1500));
@@ -945,7 +1006,7 @@
     const dt = Math.min(.1, (now - lastFrame) / 1000); lastFrame = now;
     if (P && playing && !isPlugin) { t = Math.min(P.total, t + dt * speed); if (t >= P.total) { playing = false; setPlayIcon(); } }
     if (camGoal) {
-      const k = 1 - Math.pow(.0008, dt);
+      const k = reducedMotion.matches ? 1 : 1 - Math.pow(.0008, dt);
       const lz = Math.log(cam.z) + (Math.log(camGoal.z) - Math.log(cam.z)) * k;
       const cx = cam.x + W / 2 / cam.z, cy = cam.y + H / 2 / cam.z, gx = camGoal.x + W / 2 / camGoal.z, gy = camGoal.y + H / 2 / camGoal.z;
       const nz = Math.exp(lz), nx = cx + (gx - cx) * k, ny = cy + (gy - cy) * k;
@@ -969,10 +1030,5 @@
   // Development hook: render a saved design document without calling Claude (open with ?dev&idle).
   if (query.has('dev')) window.irisLoad = d => { revisions = []; rev = -1; commit(Doc.clean(d), 'Loaded “' + (d.name || 'design') + '”', null, null); };
   if (isPlugin) { parent.postMessage({pluginMessage: {kind: 'ui-ready'}}, '*'); brief.value = Kit.samples[0]; }
-  else if (query.has('idle')) $('empty').hidden = false;
-  else {
-    brief.value = Kit.samples[0];
-    const startDemo = () => { if (!P && !busy) go(); };
-    (document.fonts ? document.fonts.ready : Promise.resolve()).then(() => setTimeout(startDemo, 250));
-  }
+  else $('empty').hidden = false;
 })();

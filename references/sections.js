@@ -19,9 +19,12 @@ const VaultSections = (() => {
   }
   async function openLibrary() {
     if (run) throw Error('Finish or cancel the current run first.');
-    importPage=figma.root.children.find(p=>p.getPluginData(PAGE)==='1');
+    importPage=figma.root.children.find(p=>p.getPluginData(PAGE)==='2');
     if(!importPage) {
-      importPage=figma.createPage(); importPage.name='Iris · Website library'; importPage.setPluginData(PAGE,'1');
+      const previous=figma.root.children.some(p=>p.getPluginData(PAGE)==='1');
+      importPage=figma.createPage();
+      importPage.name=previous?'Iris · Website library (full resolution)':'Iris · Website library';
+      importPage.setPluginData(PAGE,'2');
     }
     await figma.setCurrentPageAsync(importPage);
     next();

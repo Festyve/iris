@@ -118,7 +118,7 @@ function Attachment({ removable }) {
   </AttachmentPrimitive.Root>;
 }
 
-function Surface({ runtime, refs, selectedIds, project, run, busy, report, storageError }) {
+function Surface({ runtime, refs, selectedIds, project, run, busy, report, storageError, mode, setMode }) {
   const [placement, setPlacement] = useState(() => read("placement", { side: "right", open: false }));
   const input = useRef(null);
   const launcher = useRef(null);
@@ -180,6 +180,12 @@ function Surface({ runtime, refs, selectedIds, project, run, busy, report, stora
         </MessagePrimitive.Root>}</ThreadPrimitive.Messages>
       </ThreadPrimitive.Viewport>
       <ComposerPrimitive.Root className="sc-compose">
+        <div className="sc-modes" role="group" aria-label="Build mode">
+          {[["guide", "Guide me"], ["build", "Build end-to-end"]].map(([value, label]) =>
+            <button key={value} type="button" disabled={busy} aria-pressed={mode === value}
+              onClick={() => setMode(value)}>{label}</button>)}
+        </div>
+        <p className="sc-mode-hint">{mode === "guide" ? "Review the plan before building." : "Build as soon as the brief is clear."}</p>
         <div className="sc-context">
           <button type="button" disabled={!missing.length || busy} onClick={async () => {
             for (const note of missing) await attach(note.id, note.title || note.name || note.id, note.observation || note.body || note.title || note.id);
@@ -207,6 +213,8 @@ function Conversation({ refs = [], selectedIds = [], project = {}, run, onBrief,
     const saved = read(key, []);
     return Array.isArray(saved) ? saved : [];
   });
+  const [mode, setMode] = useState(() => read(key + ".mode", "guide"));
+  useEffect(() => { write(key + ".mode", mode); }, [key, mode]);
   const lock = useRef(false);
   const [busy, setBusy] = useState(false);
   const [storageError, setStorageError] = useState("");
@@ -256,8 +264,12 @@ function Conversation({ refs = [], selectedIds = [], project = {}, run, onBrief,
   }
 
   function brief(text, attachments = []) {
-    const ids = attachments.filter(a => !a.id.startsWith("canvas:")).map(a => a.id);
-    return perform(() => stage(text, ids, text, attachments));
+    const prior = project.clarification ? messages.findLast(m => m.request && m.content === project.clarification)?.attachments || [] : [];
+    const ids = [...prior, ...attachments].filter(a => !a.id.startsWith("canvas:")).map(a => a.id);
+    return perform(async () => {
+      const { plan, callId } = await stage(text, ids, text, attachments);
+      if (plan && mode === "build") await executePlan(callId, plan.direction);
+    });
   }
 
   function change(delivery) {
@@ -322,7 +334,7 @@ function Conversation({ refs = [], selectedIds = [], project = {}, run, onBrief,
   });
   return <AssistantRuntimeProvider runtime={runtime}>
     <Controls.Provider value={{ build, eligible, current: project.startFresh ? null : project.current, pending: project.pending, versions: project.versions, busy, run, onCancel, onRetry, perform, report, change }}>
-      <Surface {...{ runtime, refs, selectedIds: Array.from(selectedIds), project, run, busy, report, storageError }}/>
+      <Surface {...{ runtime, refs, selectedIds: Array.from(selectedIds), project, run, busy, report, storageError, mode, setMode }}/>
     </Controls.Provider>
   </AssistantRuntimeProvider>;
 }

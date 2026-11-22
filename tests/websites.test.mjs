@@ -66,7 +66,7 @@ test('a requested edit calls the model once, contains no image payload, and reje
 
 test('coffee shop uses a menu and hours directory drawn from vault layouts',async()=>{
   const {doc}=await websiteDesign('coffee shop',root);
-  assert.deepEqual(doc.screens.map(s=>s.vaultSource),['gumroad','paco','emilkowal']);
+  assert.deepEqual(Array.from(doc.screens,s=>s.vaultSource),['gumroad','paco','emilkowal']);
   assert.ok(doc.nodes.some(n=>n.parent==='collection' && n.text==='Granola bowl'));
   assert.ok(doc.nodes.some(n=>n.parent==='detail' && n.text==='Saturday–Sunday   8 am – 4 pm'));
 });
