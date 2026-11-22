@@ -116,7 +116,7 @@ window.addEventListener('message',e=>{const m=e.data&&e.data.pluginMessage;if(!m
 
 function switchMode(){
   const create=fleetEl('formation').value==='create';
-  fleetEl('new-ui').hidden=!create;fleetEl('launch').textContent=create?'Build new UI':'Launch swarm';
+  fleetEl('new-ui').hidden=!create;fleetEl('launch').textContent=create?'build ui':'launch swarm';
   document.body.classList.toggle('creating',create);
 }
 fleetEl('formation').onchange=switchMode;
