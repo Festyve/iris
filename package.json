@@ -6,12 +6,14 @@
     "start": "node build.mjs && node --env-file-if-exists=.env --env-file-if-exists=.env.local server.mjs",
     "build": "node build.mjs",
     "agent": "node --env-file-if-exists=.env --env-file-if-exists=.env.local scripts/agent.mjs",
-    "test": "node --test tests/*.test.cjs tests/*.test.mjs"
+    "test": "node --test tests/*.test.cjs tests/*.test.mjs",
+    "fiber": "node --env-file-if-exists=.env --env-file-if-exists=.env.local scripts/fiber-designers.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.12.0",
     "@elevenlabs/client": "^1.37.1",
-    "@elevenlabs/elevenlabs-js": "^2.79.0"
+    "@elevenlabs/elevenlabs-js": "^2.79.0",
+    "@fiberai/sdk": "^0.0.66"
   },
   "engines": {
     "node": ">=22"
