@@ -1,0 +1,20 @@
+{
+  "name": "second-cursor-studio",
+  "private": true,
+  "scripts": {
+    "studio": "vite --host 127.0.0.1",
+    "build:studio": "vite build",
+    "test": "node --test tests/*.cjs tests/*.mjs"
+  },
+  "dependencies": {
+    "@assistant-ui/react": "^0.15.37",
+    "idb-keyval": "^6.3.0",
+    "js-yaml": "^5.5.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.65.1",
+    "vite": "^8.3.8"
+  }
+}
