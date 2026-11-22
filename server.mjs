@@ -2,6 +2,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import {outputCaps} from './studio/provider-budget.mjs';
 import {budget,studioRoute} from './studio-http.mjs';
+import {sponsors} from './studio/services.mjs';
 import {serveStudio} from './studio/server.mjs';
 import http from 'node:http';
 import {randomBytes} from 'node:crypto';
@@ -208,3 +209,23 @@ server.listen(port, '127.0.0.1', () => console.log([
   'Browser:  ' + origin + '/#key=' + secret,
   'Figma:    open the Iris plugin, click the gear (⚙) and paste this session key once:', '          ' + secret, '',
   'Leave this running while you design. Press Ctrl-C to stop.'].join('\n')));
+
+let stopping = false;
+async function stopServer() {
+  if (stopping) return;
+  stopping = true;
+  // Close long-lived Figma event streams before draining the telemetry batch.
+  const deadline = setTimeout(() => server.closeAllConnections(), 2500);
+  deadline.unref();
+  try {
+    await new Promise(resolve => server.close(resolve));
+    await sponsors.close();
+  } catch {
+    console.warn('Trace export did not finish before shutdown.');
+  } finally {
+    clearTimeout(deadline);
+    budget.close();
+  }
+}
+process.once('SIGTERM', stopServer);
+process.once('SIGINT', stopServer);
