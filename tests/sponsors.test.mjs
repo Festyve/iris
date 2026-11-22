@@ -24,13 +24,17 @@ test('Fiber performs the documented bounded company search over MCP and redacts 
   const hub = createSponsorHub({ env: { FIBER_API_KEY: 'test-fiber-key' }, mcpFactory: async config => {
     assert.equal(config.url, 'https://mcp.fiber.ai/mcp/v2');
     assert.equal(config.headers['x-api-key'], 'test-fiber-key');
-    return { callTool: async request => { calls.push(request); return mcpResult({ output: { data: [{ name: 'Stripe', domain: 'stripe.com' }] }, apiKey: 'test-fiber-key', note: 'echo test-fiber-key' }); }, close: async () => { closed++; } };
+    return { callTool: async request => { calls.push(request); return mcpResult({ output: { data: [{ preferred_name: 'Stripe', domains: ['stripe.com'], li_description:'Payments', emails:['private@example.com'] }] }, apiKey: 'test-fiber-key', note: 'echo test-fiber-key' }); }, close: async () => { closed++; } };
   } });
   const result = await hub.companyContext({ domain: 'stripe.com', limit: 200 });
   assert.equal(result.state, 'verified');
   assert.deepEqual(calls[0], { name: 'companySearch_tool', arguments: { searchParams: { domains: ['stripe.com'] }, pageSize: 10, includeCount: false } });
   assert.equal(result.data.companies[0].name, 'Stripe');
-  assert.equal(closed, 1);
+  assert.equal(result.data.companies[0].description, 'Payments');
+  assert.ok(!JSON.stringify(result).includes('private@example.com'));
+  await hub.companyContext({query:'Stripe',limit:1});
+  assert.deepEqual(calls[1].arguments.searchParams, {nameLike:{anyOf:['Stripe']}});
+  assert.equal(closed, 2);
   assert.ok(!JSON.stringify(result).includes('test-fiber-key'));
   assert.equal(hub.status().find(p => p.id === 'fiber').state, 'verified');
 });
