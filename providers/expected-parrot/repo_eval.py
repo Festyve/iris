@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parents[2]
 REPORT = ROOT / "docs/evidence/repo-evaluation.json"
 LIVE = "https://1e4878ee-23cb-40bb-8140-c0ccfc27889f.mtm.sh"
 LOCAL = "http://127.0.0.1:3102"
-COMMIT = "ce329d24c1163f708ab86a0f5378baee39b899ad"
+
 CASES = {
     "answerable": "Which command starts the studio locally?",
     "ambiguous": "How does it work?",
@@ -31,7 +31,7 @@ def grade(scenario, agent_traits):
     if not isinstance(answer, str):
         return False
     if scenario["case"] == "answerable":
-        citation = {"path": "README.md", "line": 10, "commit": scenario["expected_commit"]}
+        citation = {"path": "README.md", "line": scenario["expected_line"], "commit": scenario["expected_commit"]}
         return (body.get("status") == "answered" and answer == "npm start"
                 and body.get("citations") == [citation])
     if body.get("citations") != []:
@@ -51,6 +51,13 @@ def main():
     if not token:
         parser.exit(2, "Missing REPO_QUESTION_TOKEN in the root .env\n")
 
+    # Verify the citation against the public source without forwarding the Wasp bearer.
+    commit_response = requests.get('https://api.github.com/repos/Festyve/iris/commits/main', timeout=15)
+    commit_response.raise_for_status()
+    commit = commit_response.json()['sha']
+    source = requests.get(f'https://raw.githubusercontent.com/Festyve/iris/{commit}/README.md', timeout=15)
+    source.raise_for_status()
+    expected_line = source.text.splitlines().index('npm start') + 1
     cases = []
     scenarios = []
     with requests.Session() as session:
@@ -69,7 +76,7 @@ def main():
                 raise SystemExit(f"{case}: HTTP {response.status_code} expected a JSON object")
             row = dict(case=case, question=question, http_status=response.status_code, response=body)
             cases.append(row)
-            scenarios.append(Scenario(dict(row, expected_commit=COMMIT)))
+            scenarios.append(Scenario(dict(row, expected_commit=commit, expected_line=expected_line)))
 
     rubric = QuestionFunctional(question_name="passes", func=grade)
     results = Survey([rubric]).by(scenarios).by(Model("test")).run(

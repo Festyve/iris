@@ -3,16 +3,17 @@ import type { MiddlewareConfigFn } from 'wasp/server';
 import { timingSafeEqual } from 'node:crypto';
 import { projectId, validateSnapshot, expectedRevision, isLocalRequest } from './validation.mjs';
 import { answerQuestion, authorized } from './repo-question.mjs';
-import { snapshot } from './repo-evidence.mjs';
+import { currentSnapshot } from './repo-refresh.mjs';
 export const repoHealth: RepoHealth = async (_req, res) => {
-  res.json({provider:'wasp', status:'ready', repo:snapshot.repo, commit:snapshot.commit});
+  const snapshot=await currentSnapshot();
+  res.json({freshness:snapshot.freshness,provider:'wasp', status:'ready', repo:snapshot.repo, commit:snapshot.commit});
 };
 export const repoQuestion: RepoQuestion = async (req, res) => {
   res.set('Cache-Control','no-store');
   if (!authorized(req.headers.authorization, process.env.REPO_QUESTION_TOKEN)) {
     res.status(401).json({error:'Repository read authorization required.'}); return;
   }
-  try { res.json(answerQuestion(req.body)); }
+  try { const snapshot=await currentSnapshot(); res.json({...answerQuestion(req.body,snapshot),freshness:snapshot.freshness}); }
   catch { res.status(400).json({error:'Provide a question between 1 and 1000 characters.'}); }
 };
 export const studioMiddleware: MiddlewareConfigFn = config => config;
