@@ -3,11 +3,16 @@ tags: [resources]
 ---
 # Tools, libraries and galleries that fight "AI slop"
 
-Collected from the X posts in [[X posts]]. Use these as places to look before designing, and as vocabulary when briefing.
+Collected from team recommendations and [[X posts]]. Use these as places to look before designing, and as vocabulary when briefing.
 
 ## Inspiration galleries
 | Site | What it is |
 |---|---|
+| [Siteinspire](https://www.siteinspire.com/) | Browse whole sites by style and subject. For a publisher or bookshop, start with [Stripe Press](https://www.siteinspire.com/website/10454-stripe-press). |
+| [Httpster](https://httpster.net/) | For the Daybreak café, browse [Food & Drink](https://httpster.net/type/food-drink/) and compare how menus, photography and opening hours share the first screen. For Paper Miles, browse [Travel](https://httpster.net/type/travel/). |
+| [Cofolios](https://www.cofolios.com/) | For a designer portfolio, compare the project cards on a homepage with the role, process and outcome on a [case study](https://www.cofolios.com/casestudies). |
+| [Viewport UI](https://viewportui.com/) | For Paper Miles and Night Platform, browse [map interfaces](https://viewportui.com/industry/maps/1) for ways to keep a selected stop identifiable on a small screen. |
+| [Design Spells](https://designspells.com/) | For an itinerary date picker, study how [One Year turns a selected day into a search field](https://designspells.com/spells/day-highlight-morphs-into-the-search-bar-in-one-year). Compare the control before and after the transition. |
 | https://land-book.com | Landing page gallery, well curated |
 | https://recent.design | Web design gallery |
 | https://landdding.com | High-end landing pages |
