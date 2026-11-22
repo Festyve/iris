@@ -77,6 +77,9 @@ try {
   await inspect(390,'app-v2-mobile.png');
   await page.getByLabel('Restore saved version').selectOption('1');
   await frame.getByRole('heading',{name:'Field Index',exact:true}).waitFor();
+  await page.reload();
+  await frame.getByRole('heading',{name:'Field Index',exact:true}).waitFor();
+  assert.equal(await page.getByLabel('Restore saved version').inputValue(),'1');
   const download = page.waitForEvent('download');
   await button('Download HTML ↓').click();
   const artifact = await readFile(await (await download).path(),'utf8');

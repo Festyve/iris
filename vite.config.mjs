@@ -4,6 +4,12 @@ import { readFile } from 'node:fs/promises';
 const poster = new URL('./ui.html', import.meta.url);
 export default defineConfig({
   base: '/studio/',
+  build: { rolldownOptions: { onLog(level, log, forward) {
+    // This entry is entirely client-side. React server directives in bundled
+    // dependencies have no effect here.
+    if (log.code === 'MODULE_LEVEL_DIRECTIVE' && log.message.includes('use client')) return;
+    forward(level, log);
+  } } },
   server: { host: '127.0.0.1', port: 5173, strictPort: true },
   preview: { host: '127.0.0.1', port: 5173, strictPort: true },
   plugins: [{
