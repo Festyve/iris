@@ -1,6 +1,6 @@
 {
-  "evaluated_at": "2026-11-22T18:10:23.651022+00:00",
-  "endpoint": "http://127.0.0.1:3102/studio-api/repo/question",
+  "evaluated_at": "2026-11-22T18:15:01.618038+00:00",
+  "endpoint": "https://1e4878ee-23cb-40bb-8140-c0ccfc27889f.mtm.sh/studio-api/repo/question",
   "method": "POST",
   "edsl_version": "1.0.8.dev1",
   "mechanism": "Local EDSL Survey with one restricted-Python QuestionFunctional applied to three HTTP-response Scenarios. Deterministic rubric, EDSL test model selected for offline job setup. QuestionFunctional computes each grade directly. Remote inference and caches disabled.",
