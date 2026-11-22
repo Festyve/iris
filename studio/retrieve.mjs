@@ -9,4 +9,3 @@ export function retrieve(refs, brief, pinned) {
   }
   return Array.from(matches.values(), hit => ({ ...hit, title: refs.find(r => r.id === hit.id).title }));
 }
-
