@@ -1,3 +1,4 @@
+import Screens from './screen-spec.cjs';
 import http from 'node:http';
 import { randomBytes } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
@@ -19,6 +20,25 @@ const schema={type:'OBJECT',properties:{
 const artDirection='You are the mobile art director for a print fair poster. You have an editable 390 by 670 mobile frame. The input describes the desktop design and current mobile controls. Interpret the new instruction, retaining prior choices unless superseded. For big art and legible logistics, put the date on the quieter edge. For an expressive or loud design, try intentional overlap and a larger hero. For precise, editorial hierarchy, stack the title and image and share a left edge. These are references, not requirements. Supported edits: composition (stack/overlap/auto), mobile title, date and venue alignment (left/right), scale of the hero (0.65 to 1.35), and date position (top/bottom). Choose the closest supported edit; if impossible keep previous values and explain. Return one short specific sentence describing the choice and the primary affected layer as focus.';
 async function collect(req,limit){const chunks=[];let total=0;for await(const c of req){total+=c.length;if(total>limit)throw Error('Request is too large');chunks.push(c)}return Buffer.concat(chunks)}
 function json(res,status,value){res.writeHead(status,{'Content-Type':'application/json','Cache-Control':'no-store'});res.end(JSON.stringify(value))}
+async function requestPlan(instruction,format,parts){
+  const r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/'+encodeURIComponent(model)+':generateContent',{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':designKey},signal:AbortSignal.timeout(28000),body:JSON.stringify({systemInstruction:{parts:[{text:instruction}]},contents:[{role:'user',parts}],generationConfig:{responseMimeType:'application/json',responseSchema:format}})});
+  if(!r.ok)throw Error('Design service returned '+r.status+'. Check the model, key and quota.');
+  const raw=await r.json();return JSON.parse(raw.candidates?.[0]?.content?.parts?.filter(x=>!x.thought).map(x=>x.text||'').join('')||'{}');
+}
+
+async function newScreen(req,res){
+  if(!designKey)return json(res,503,{error:'Set GEMINI_API_KEY and restart the server.'});
+  const {note}=JSON.parse((await collect(req,10000)).toString());
+  if(typeof note!=='string'||!note.trim()||note.length>700)return json(res,400,{error:'Enter a brief of up to 700 characters.'});
+  const str={type:'STRING'},num={type:'NUMBER'},integer={type:'INTEGER'};
+  const layer={type:'OBJECT',properties:{name:str,kind:{type:'STRING',enum:['text','rect','ellipse']},x:num,y:num,w:num,h:num,fill:str,radius:num,text:str,size:num,bold:{type:'BOOLEAN'}},required:['name','kind','x','y','w','h','fill']};
+  const format={type:'OBJECT',properties:{name:str,width:integer,height:integer,background:str,layers:{type:'ARRAY',items:layer}},required:['name','width','height','background','layers']};
+  const prompt='You are Iris, a product designer. Design exactly one original, polished UI screen for the user brief. Choose a suitable mobile or desktop viewport (240–1920 wide, 240–2400 high). Return ordered editable primitives from back to front, ideally 25–65 layers. Every layer must be fully within the frame, with positive w and h, a useful name and a six-digit hex fill. Background is also a six-digit hex color. For text, supply text, size 8–110, optional bold, and enough height and width for all characters. Use short realistic copy specific to the product. Use whitespace, hierarchy, distinct information regions and legible contrast. Use rects with radius, ellipses and text for components. No external assets or code.';
+  try{
+    const generated=await requestPlan(prompt,format,[{text:note}]);
+    return json(res,200,{screen:Screens.check(generated)});
+  }catch(e){return json(res,502,{error:e.message||'Could not generate the screen. Try again.'})}
+}
 async function design(req,res,swarm=false){
   if(!designKey)return json(res,503,{error:'Set GEMINI_API_KEY and restart the server.'});
   const d=JSON.parse((await collect(req,3_500_000)).toString());
@@ -27,9 +47,9 @@ async function design(req,res,swarm=false){
   if(d.png&&typeof d.png==='string'&&d.png.startsWith('iVBOR')&&/^[A-Za-z0-9+/=]+$/.test(d.png))parts.push({inlineData:{mimeType:'image/png',data:d.png}});
   const fleetSchema={type:'OBJECT',properties:{reason:{type:'STRING'},patches:{type:'ARRAY',items:{type:'OBJECT',properties:{index:{type:'INTEGER'},band:{type:'STRING',enum:['compact','medium','wide']},dx:{type:'NUMBER'},dy:{type:'NUMBER'},scale:{type:'NUMBER'}},required:['index','band','dx','dy','scale']}}},required:['reason','patches']};
   const fleetPrompt='Act as the art director coordinating layout workers on a shared Figma product. Examine the source PNG, its indexed child layers, and the user direction. Return a few purposeful responsive adjustments to a proportionally adapted base layout, by actual layer index and viewport band: compact below 600, medium below 950, wide otherwise. dx and dy are offsets in fractions of frame width/height, -0.25 to 0.25. Scale is 0.7 to 1.35. Keep important text legible and preserve intentional relationships. You may leave a band or layer alone. Use at most 24 patches, one per index and band. Explain what you are directing in one sentence.';
-  const r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/'+encodeURIComponent(model)+':generateContent',{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':designKey},signal:AbortSignal.timeout(28000),body:JSON.stringify({systemInstruction:{parts:[{text:swarm?fleetPrompt:artDirection}]},contents:[{role:'user',parts}],generationConfig:{responseMimeType:'application/json',responseSchema:swarm?fleetSchema:schema}})});
-  if(!r.ok)return json(res,502,{error:'Design service returned '+r.status+'. Check the model, key and quota.'});
-  const raw=await r.json();const p=JSON.parse(raw.candidates?.[0]?.content?.parts?.filter(x=>!x.thought).map(x=>x.text||'').join('')||'{}');
+  let p;
+  try{p=await requestPlan(swarm?fleetPrompt:artDirection,swarm?fleetSchema:schema,parts)}
+  catch(e){return json(res,502,{error:e.message})}
   if(swarm){
     if(!Array.isArray(p.patches)||typeof p.reason!=='string'||!Array.isArray(d.source.layers))return json(res,502,{error:'Invalid cursor assignments.'});
     const seen=new Set(),patches=[];
@@ -58,6 +78,7 @@ const server=http.createServer(async(req,res)=>{
       const {brief,references,previous,direction} = JSON.parse((await collect(req,250_000)).toString());
       return json(res,200,await planner.plan({brief,references,previous,direction,signal:stop.signal}));
     }
+    if(req.method==='POST'&&req.url==='/screen')return await newScreen(req,res);
     if(req.method==='POST'&&req.url==='/swarm')return await design(req,res,true);
     if(req.method==='POST'&&req.url==='/design')return await design(req,res);
     if(req.method==='POST'&&['/voice','/speech'].includes(req.url))return await handleVoice(req,res,speech);
@@ -68,4 +89,4 @@ const server=http.createServer(async(req,res)=>{
     json(res,400,{error:e.name==='TimeoutError'?'Service timed out. Try again.':'Request could not be completed. Check the input and service connection.'})}
 });
 server.on('error',e=>{console.error('Could not start local service: '+e.message);process.exitCode=1});
-server.listen(4739,'127.0.0.1',()=>console.log('Second Cursor\nStudio: '+origin+'/studio/#key='+secret+'\nPoster: '+origin+'/#key='+secret+'\nFigma session key: '+secret));
+server.listen(4739,'127.0.0.1',()=>console.log('Second Cursor\nStudio: '+origin+'/studio/#key='+secret+'\nIris adapter: '+origin+'/#key='+secret+'\nFigma session key: '+secret));

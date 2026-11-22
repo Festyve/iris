@@ -10,9 +10,9 @@ function fleetView(state,done,total,frames,active){
   fleetEl('fleet-status').textContent=state==='running'?done+' / '+total+' cursors finished · '+frames+' layouts':
     state==='paused'?'Paused · '+done+' / '+total+' finished':state==='finished'?frames+' layouts ready · '+done+' cursor assignments complete':
     state==='starting'?'Preparing editable layers…':'Ready';
-  if(fleetEl('formation').value==='shared'){
+  if(fleetEl('formation').value!=='grid'){
     if(state==='running')fleetEl('fleet-status').textContent=(active||0)+' active / '+total+' cursors · '+done+' finished';
-    if(state==='finished')fleetEl('fleet-status').textContent='Shared canvas ready · '+done+' cursor assignments complete';
+    if(state==='finished')fleetEl('fleet-status').textContent=(fleetEl('formation').value==='create'?'New screen ready · ':'Shared canvas ready · ')+done+' cursor assignments complete';
   }
   fleetEl('meter').max=total||1;fleetEl('meter').value=done||0;
 }
@@ -81,6 +81,13 @@ async function getFleetContext(){
 fleetEl('launch').onclick=async()=>{
   const shared=fleetEl('formation').value==='shared',count=Number(numberInput.value);fleetView('starting',0,count,0);
   try{
+    if(fleetEl('formation').value==='create'){
+      const note=fleetEl('screen-brief').value.trim();if(!note)throw Error('Describe the screen to build.');
+      fleetEl('fleet-status').textContent=connected&&service.design?'Planning your screen…':'Preparing local starter…';
+      const screen=Screens.check(connected&&service.design?(await call('/screen',JSON.stringify({note}))).screen:Screens.starter(note));
+      if(plugin){parent.postMessage({pluginMessage:{kind:'new-screen',screen,count}},'*');return}
+      browserRun=buildWebScreen(screen,count);fleetView('running',0,count,1,0);browserRun.anim=requestAnimationFrame(browserTick);return;
+    }
     let brief=[],sourceKey=null;
     if(connected&&service.design){
       fleetEl('fleet-status').textContent='Art director is assigning layer edits…';
@@ -106,3 +113,12 @@ window.addEventListener('message',e=>{const m=e.data&&e.data.pluginMessage;if(!m
   if(m.kind==='fleet')fleetView(m.state,m.done||0,m.total||0,m.frames||0,m.active);
   if(m.kind==='error'&&fleetState==='starting'){fleetView('idle',0,0,0);fleetEl('fleet-status').textContent=m.text}
 });
+
+function switchMode(){
+  const create=fleetEl('formation').value==='create';
+  fleetEl('new-ui').hidden=!create;fleetEl('launch').textContent=create?'Build new UI':'Launch swarm';
+  document.body.classList.toggle('creating',create);
+}
+fleetEl('formation').onchange=switchMode;
+window.addEventListener('message',e=>{if(e.data&&e.data.pluginMessage&&e.data.pluginMessage.kind==='blank-source'){fleetEl('formation').value='create';switchMode()}});
+if(plugin)parent.postMessage({pluginMessage:{kind:'ui-ready'}},'*');

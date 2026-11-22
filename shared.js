@@ -7,7 +7,7 @@ const Shared = (() => {
     const paths=digits.split('').map((d,i)=>'<path transform="translate('+(19+i*5)+' 16)" d="'+digitPaths[Number(d)]+'"/>').join('');
     return '<svg xmlns="http://www.w3.org/2000/svg" width="39" height="25" viewBox="0 0 39 25"><path d="M1 1l4 14 3-5 5-2z" fill="'+color+'" stroke="white" stroke-width="1.1"/><rect x="11" y="12" width="27" height="12" rx="3" fill="'+color+'"/><g fill="none" stroke="white" stroke-linecap="round" stroke-linejoin="round" stroke-width="1">'+paths+'</g></svg>';
   }
-  function timing(id,count){return {enter:1.8*(id/Math.max(1,count-1))+((id*31)%17)/100,duration:9+((id*47)%38)/10}}
+  function timing(id,count){return {enter:.72*(id/Math.max(1,count-1))+((id*31)%17)/250,duration:3.6+((id*47)%38)/25}}
   function motion(id,t,points){
     const k=Math.min(points.length-2,Math.floor(t*(points.length-1))),u=Math.min(1,(t*(points.length-1)-k)/.73);
     const s=u*u*(3-2*u),a=points[k],b=points[k+1],curve=Math.sin(Math.PI*u)*.055*(id%2?1:-1);

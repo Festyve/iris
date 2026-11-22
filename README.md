@@ -1,6 +1,14 @@
-# Second Cursor — Figma cursor swarm
+# Iris — Figma cursor swarm
 
-Edit a print-fair hero on desktop while an editable mobile composition updates beside it. Both the Figma plugin and the local browser prototype use the same layout engine.
+Iris gives you a team of up to 100 visible cursors in Figma. Describe a new screen and watch them build editable layers, or select an existing frame to refine it and explore responsive layouts.
+
+## Build a new UI
+
+Open **Iris** on a blank Figma canvas, or choose **New UI from brief** in the swarm menu. Describe a screen and click **Build new UI**. Cursors assemble a separate editable Figma frame from named text and shape layers. Runs can be paused, resumed or canceled. New screens are placed beside existing work.
+
+Local mode provides three distinct starters: a mobile transit screen, a task board, and a spending overview. Include a quoted name to name the product. For example, try `A mobile transit screen called "Northline"`. With the Gemini design service connected, a brief can specify an entirely different product, layout, viewport, palette and copy. Creating a screen sends just its brief to the planner. The output is an editable single-screen design.
+
+The shared-canvas and responsive-grid cursor paths now run 2.5 times faster. A full shared-canvas run takes about six seconds of animation, excluding planning and editor overhead.
 
 ## Launch the swarm
 
@@ -20,7 +28,7 @@ Open **ui.html** in a browser. Drag the title or flower, resize the flower, and 
 
 ## Run inside Figma
 
-In Figma Desktop, open a design file. Choose **Plugins → Development → Import plugin from manifest** and select **manifest.json** from this folder. Run **Second Cursor** from the Development menu. With no frame selected, the plugin creates a fresh After Hours desktop frame and mobile proposal. With a frame selected, it opens the swarm controls for that frame.
+In Figma Desktop, open a design file. Choose **Plugins → Development → Import plugin from manifest** and select **manifest.json** from this folder. Run **Iris** from the Development menu. With no frame selected, the plugin opens in New UI from brief mode. The existing-frame modes can still launch the After Hours sample. With a frame selected, it opens the swarm controls for that frame.
 
 Move or resize the desktop Title or Hero layer or edit the headline. A purple pointer marks the area under review in the mobile proposal. Keep this mobile version creates an independent editable Figma frame below the live proposal. The live proposal is regenerated on source changes. Edit the saved frame to refine it by hand. The prototype expects its five named layers.
 
@@ -42,4 +50,4 @@ Edit engine.js for the shared layout rules, figma.js for the native plugin, temp
 
 ## Verify
 
-Run `node --test tests/swarm.test.cjs` for timeline, role assignment, and responsive layout checks.
+Run `node --test tests/*.test.cjs` to check screen generation, layer placement, cursor timing, role assignment and responsive layouts.

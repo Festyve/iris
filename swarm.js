@@ -36,7 +36,7 @@ const Swarm = (() => {
   }
   function worker(id,frameIndex,target){
     const lane=id%5;
-    return {id,frameIndex,target,color:colors[lane],delay:((id*37)%83)/100,duration:3.4+((id*13)%21)/10,lane};
+    return {id,frameIndex,target,color:colors[lane],delay:((id*37)%83)/250,duration:1.36+((id*13)%21)/25,lane};
   }
   // Each worker first moves its layer, then sets its geometry and finally reveals it.
   function progress(job,elapsed){return Math.max(0,Math.min(1,(elapsed-job.delay)/job.duration))}

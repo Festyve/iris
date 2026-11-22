@@ -84,7 +84,7 @@ const Swarm = (() => {
   }
   function worker(id,frameIndex,target){
     const lane=id%5;
-    return {id,frameIndex,target,color:colors[lane],delay:((id*37)%83)/100,duration:3.4+((id*13)%21)/10,lane};
+    return {id,frameIndex,target,color:colors[lane],delay:((id*37)%83)/250,duration:1.36+((id*13)%21)/25,lane};
   }
   // Each worker first moves its layer, then sets its geometry and finally reveals it.
   function progress(job,elapsed){return Math.max(0,Math.min(1,(elapsed-job.delay)/job.duration))}
@@ -117,7 +117,7 @@ const Shared = (() => {
     const paths=digits.split('').map((d,i)=>'<path transform="translate('+(19+i*5)+' 16)" d="'+digitPaths[Number(d)]+'"/>').join('');
     return '<svg xmlns="http://www.w3.org/2000/svg" width="39" height="25" viewBox="0 0 39 25"><path d="M1 1l4 14 3-5 5-2z" fill="'+color+'" stroke="white" stroke-width="1.1"/><rect x="11" y="12" width="27" height="12" rx="3" fill="'+color+'"/><g fill="none" stroke="white" stroke-linecap="round" stroke-linejoin="round" stroke-width="1">'+paths+'</g></svg>';
   }
-  function timing(id,count){return {enter:1.8*(id/Math.max(1,count-1))+((id*31)%17)/100,duration:9+((id*47)%38)/10}}
+  function timing(id,count){return {enter:.72*(id/Math.max(1,count-1))+((id*31)%17)/250,duration:3.6+((id*47)%38)/25}}
   function motion(id,t,points){
     const k=Math.min(points.length-2,Math.floor(t*(points.length-1))),u=Math.min(1,(t*(points.length-1)-k)/.73);
     const s=u*u*(3-2*u),a=points[k],b=points[k+1],curve=Math.sin(Math.PI*u)*.055*(id%2?1:-1);
@@ -152,6 +152,84 @@ const Shared = (() => {
   return {badge,timing,motion,makeJobs,advance};
 })();
 
+/* Ordered primitives are the transport between the planner and both renderers. */
+const Screens = (() => {
+  const color = value => typeof value === 'string' && /^#[a-f0-9]{6}$/i.test(value);
+  function check(screen){
+    const {name,width,height,background,layers}=screen||{};
+    if(typeof name!=='string'||!name.trim()||name.length>90||!color(background)||
+      !Number.isInteger(width)||width<240||width>1920||!Number.isInteger(height)||height<240||height>2400||
+      !Array.isArray(layers)||!layers.length||layers.length>180)throw Error('Invalid screen definition.');
+    for(const v of layers){
+      if(!v||!['rect','text','ellipse'].includes(v.kind)||!color(v.fill)||typeof v.name!=='string'||!v.name.trim()||
+        ![v.x,v.y,v.w,v.h].every(Number.isFinite)||v.x<0||v.y<0||v.w<1||v.h<1||
+        v.x+v.w>width+1||v.y+v.h>height+1)throw Error('Invalid geometry in the screen plan.');
+      if(v.kind==='text'&&(typeof v.text!=='string'||!v.text.trim()||v.text.length>240||!Number.isFinite(v.size)||v.size<8||v.size>110))throw Error('Invalid text in the screen plan.');
+      if(v.radius!==undefined&&(!Number.isFinite(v.radius)||v.radius<0))throw Error('Invalid corner radius.');
+    }
+    return screen;
+  }
+  function starter(brief){
+    const mobile=/transit|metro|train|commut|departure|bus stop/i.test(brief);
+    const board=/kanban|task|sprint|project board/i.test(brief);
+    const finance=/spend|budget|expense|financ|wallet/i.test(brief);
+    if(!mobile&&!board&&!finance)throw Error('Connect Gemini for this custom brief, or try a local transit, task board, or spending screen.');
+    const ink='#172523',muted='#51655E',leaf='#D9F79B',white='#FFFFFF',paper='#F4F6F1';
+    const quoted=brief.match(/["“]([^"”\n]{1,32})["”]/);
+    const name=quoted?quoted[1]:mobile?'Northline':board?'Studio board':'Ledger';
+    const width=mobile?390:1040,height=mobile?780:690,layers=[];
+    const shape=(kind,name,x,y,w,h,fill,radius=0)=>layers.push({kind,name,x,y,w,h,fill,radius});
+    const box=(name,x,y,w,h,fill,r=0)=>shape('rect',name,x,y,w,h,fill,r);
+    const label=(text,x,y,w,size,fill=ink,bold=false)=>layers.push({kind:'text',name:text.slice(0,50),text,x,y,w,h:Math.ceil(size*1.32),size,fill,bold});
+    if(mobile){
+      box('Station header',0,0,390,307,ink);label(name,24,28,300,22,leaf,true);
+      label('Union Station',24,98,345,38,white,true);label('Northbound platform',25,152,330,17,'#C1D4CC');
+      box('Departure highlight',24,207,342,70,leaf,14);label('Next train',40,219,180,14);label('3 min',258,223,94,26,ink,true);
+      label('Departures',24,338,320,26,ink,true);
+      ['North York Centre','Finch','Sheppard–Yonge','Finch'].forEach((s,i)=>{
+        const y=397+i*76;shape('ellipse','Line marker',24,y,30,30,'#F7CA51');label('1',34,y+5,13,15,ink,true);
+        label(s,70,y,212,18,ink,true);label('Platform 2',70,y+30,180,13,muted);label([3,8,13,19][i]+' min',308,y+3,65,15);
+        box('Divider',24,y+59,342,1,'#CFDAD1');
+      });
+      box('Save station',24,715,342,44,ink,12);label('Save station',137,727,130,15,white,true);
+    }else if(board){
+      box('Navigation',0,0,width,67,ink);label(name,32,19,420,23,leaf,true);
+      label('Product sprint',32,99,610,40,ink,true);label('Design and engineering',34,159,560,17,muted);
+      const cols=[['Backlog','Search filters','Update shortcuts','Export states'],['In progress','Mobile navigation','Activity history'],['In review','Color system','Keyboard focus']];
+      cols.forEach((col,i)=>{const x=32+i*328;
+        box(col[0]+' column',x,220,312,420,'#E4EBE2',16);label(col[0],x+16,237,230,21,ink,true);
+        col.slice(1).forEach((s,k)=>{const y=292+k*101;box('Task card',x+12,y,288,85,white,12);label(s,x+26,y+14,255,18,ink,true);label(['Design','Engineering','Product'][k],x+26,y+48,235,13,muted)});
+      });
+    }else{
+      box('Sidebar',0,0,188,height,ink);label(name,20,31,151,24,leaf,true);
+      ['Overview','Activity','Budgets','Reports'].forEach((s,i)=>label(s,22,122+i*44,145,16,i?'#C1D4CC':white,i===0));
+      label('Spending overview',218,44,790,42,ink,true);label('November',220,110,300,17,muted);
+      box('Total card',218,165,785,217,ink,16);label('Total spending',245,191,360,17,leaf);label('$2,480',242,239,390,54,white,true);
+      [40,55,36,62,90,75,103,85,125,103,133,153].forEach((v,i)=>box('Daily spending',590+i*32,351-v,20,v,leaf,4));
+      label('Recent activity',219,415,610,27,ink,true);['Neighborhood market','City transit','Paper & ink'].forEach((s,i)=>{const y=479+i*57;label(s,221,y,440,18);label(['$68.40','$24.00','$42.50'][i],895,y,108,17,ink,true);box('Divider',220,y+37,784,1,'#CDD8D1')});
+    }
+    return check({name,width,height,background:paper,layers});
+  }
+  return {check,starter};
+})();
+if(typeof module!=='undefined'&&module.exports)module.exports=Screens;
+
+// Map each visit to an ordered slice of the design. Small and large fleets both
+// build every layer once, even when a slow frame skips an animation phase.
+function screenJobs(count,screen){
+  const jobs=Shared.makeJobs(count,screen.layers,screen.width,screen.height),total=count*3;
+  for(const job of jobs){
+    for(let stage=0;stage<3;stage++){
+      const slot=stage*count+job.id;
+      const first=Math.floor(slot*screen.layers.length/total),last=Math.floor((slot+1)*screen.layers.length/total);
+      const layer=screen.layers[first];
+      job.targets[stage]={first,last};
+      job.points[stage+1]={x:layer.x+layer.w*(.18+(job.id%5)*.12),y:layer.y+layer.h*.45};
+    }
+  }
+  return jobs;
+}
+
 figma.showUI(__html__, {width:332,height:670,themeColors:true});
 let desk,phone,arrow,last='',direction=Object.assign({},SC.initial),active=false;
 const fonts={Title:{family:'Inter',style:'Black'},normal:{family:'Inter',style:'Regular'}};
@@ -177,7 +255,7 @@ function read(){
   }return s;
 }
 function cursor(x,y){
-  if(!arrow||arrow.removed){arrow=figma.createNodeFromSvg('<svg xmlns="http://www.w3.org/2000/svg" width="28" height="32"><path d="M2 2L25 16L15 18L10 29Z" fill="#7A47E7" stroke="white" stroke-width="2"/></svg>');arrow.name='Second Cursor · pointer';arrow.locked=true}
+  if(!arrow||arrow.removed){arrow=figma.createNodeFromSvg('<svg xmlns="http://www.w3.org/2000/svg" width="28" height="32"><path d="M2 2L25 16L15 18L10 29Z" fill="#7A47E7" stroke="white" stroke-width="2"/></svg>');arrow.name='Iris · pointer';arrow.locked=true}
   figma.currentPage.appendChild(arrow);arrow.x=x;arrow.y=y;
 }
 function render(force,focus) {
@@ -194,14 +272,17 @@ function render(force,focus) {
 }
 let failure='';
 function tick(){try{render(false);failure=''}catch(e){if(String(e)!==failure){failure=String(e);figma.ui.postMessage({kind:'error',text:failure})}}}
-async function start(){
+async function startSample(){
   await Promise.all([figma.loadFontAsync(fonts.Title),figma.loadFontAsync(fonts.normal)]);
-  if(inputFrame&&!inputFrame.removed){figma.ui.postMessage({kind:'custom-source',name:inputFrame.name});return}
+  if(desk&&!desk.removed)return;
   const center=figma.viewport.center;desk=drawFrame(SC.base(),'Desktop · edit me',Math.round(center.x-650),Math.round(center.y-300));active=true;render(true);figma.viewport.scrollAndZoomIntoView([desk,phone]);figma.currentPage.selection=inputFrame&&!inputFrame.removed?[inputFrame]:[desk];
   setInterval(tick,650);
 }
 figma.ui.onmessage=async msg=>{
   try{
+    if(msg.kind==='ui-ready'){if(inputFrame&&!inputFrame.removed)figma.ui.postMessage({kind:'custom-source',name:inputFrame.name});else figma.ui.postMessage({kind:'blank-source'});return}
+    if(msg.kind==='new-screen'){await startScreen(msg.screen,[5,25,100].includes(msg.count)?msg.count:100);return}
+    if(['fleet-context','launch-fleet','apply','keep','snapshot'].includes(msg.kind)&&!targetFrame())await startSample();
     if(msg.kind==='fleet-context'){
       try{const f=targetFrame();if(!f)throw Error('Select a source frame.');
         const img=await f.exportAsync({format:'PNG',constraint:{type:'WIDTH',value:720}});
@@ -216,7 +297,6 @@ figma.ui.onmessage=async msg=>{
   }catch(e){figma.ui.postMessage({kind:'error',text:String(e)})}
 };
 figma.on('close',()=>{if(nativeRun)dropBoard(nativeRun);if(arrow&&!arrow.removed)arrow.remove()});
-start().catch(e=>figma.ui.postMessage({kind:'error',text:String(e)}));
 
 let nativeRun=null,starting=false;
 const inputFrame=figma.currentPage.selection.find(n=>n.type==='FRAME');
@@ -281,7 +361,7 @@ function stepFleet(){
     for(const j of run.jobs){if(j.finished){done++;continue}const t=Swarm.progress(j,run.elapsed);applyGroup(j,t);if(t>=1){j.finished=true;done++}}
     if(done!==run.done){run.done=done;postFleet('running',{done,total:run.jobs.length,frames:run.frames})}
     if(done===run.jobs.length){clearInterval(run.timer);run.timer=null;for(const j of run.jobs)if(!j.ptr.removed)j.ptr.remove();
-      run.board.name='Second Cursor · '+run.frames+' finished layouts';nativeRun=null;postFleet('finished',{done,total:done,frames:run.frames});figma.commitUndo()}
+      run.board.name='Iris · '+run.frames+' finished layouts';nativeRun=null;postFleet('finished',{done,total:done,frames:run.frames});figma.commitUndo()}
   }catch(e){stopFleet();figma.ui.postMessage({kind:'error',text:'Swarm stopped: '+e.message})}
 }
 async function launchFleet(count,brief,sourceKey,shared){
@@ -299,7 +379,7 @@ async function launchFleet(count,brief,sourceKey,shared){
     const fontList=new Map();
     for(const n of source.children)if(n.type==='TEXT'&&n.fontName!==figma.mixed)fontList.set(JSON.stringify(n.fontName),n.fontName);
     await Promise.all(Array.from(fontList.values()).map(f=>figma.loadFontAsync(f)));
-    board=figma.createFrame();board.name='Second Cursor · working layouts';board.setPluginData('sc-output','yes');board.resize(grid.width+144,grid.height+144);
+    board=figma.createFrame();board.name='Iris · working layouts';board.setPluginData('sc-output','yes');board.resize(grid.width+144,grid.height+144);
     const bounds=source.absoluteBoundingBox;board.x=bounds.x+bounds.width+650;board.y=bounds.y;
     for(const old of figma.currentPage.children){if(old!==board&&old.getPluginData('sc-output')==='yes'&&old.x===board.x)board.y=Math.max(board.y,old.y+old.height+160)}board.clipsContent=false;board.fills=paint('#E4E1E9');
     const jobs=[],pool=new Map();let frames=0;
@@ -350,7 +430,7 @@ function launchShared(source,count,brief){
   const origin=source.absoluteBoundingBox;
   const board=figma.createFrame();
   try{
-    board.name='Second Cursor · shared canvas';board.setPluginData('sc-output','yes');board.resize(source.width,source.height);
+    board.name='Iris · shared canvas';board.setPluginData('sc-output','yes');board.resize(source.width,source.height);
     board.x=origin.x+origin.width+140;board.y=origin.y;
     for(const prev of figma.currentPage.children)if(prev!==board&&prev.getPluginData('sc-output')==='yes'&&Math.abs(prev.x-board.x)<1)board.y=Math.max(board.y,prev.y+prev.height+100);
     board.fills=[];board.clipsContent=false;
@@ -383,6 +463,7 @@ function stepShared(run){
     if(Math.abs(j.ptr.width-width)>width*.04)j.ptr.rescale(width/j.ptr.width);
     j.ptr.visible=t<1;j.ptr.x=p.x;j.ptr.y=p.y;
   },(target,phase)=>{
+    if(run.build){run.build(target);return}
     if(target.applied||phase!==1)return;
     target.applied=true;
     if(target.free){
@@ -394,7 +475,36 @@ function stepShared(run){
   if(count.done!==run.done||count.active!==run.active){run.done=count.done;run.active=count.active;postFleet('running',{shared:true,active:run.active,done:run.done,total:run.jobs.length,frames:1})}
   if(run.done===run.jobs.length){
     clearInterval(run.timer);for(const j of run.jobs)j.ptr.remove();
-    run.board.name='Second Cursor · shared canvas · completed';nativeRun=null;figma.commitUndo();
+    if(run.build){run.board.clipsContent=true;figma.currentPage.selection=[run.board]}else{run.board.name='Iris · shared canvas · completed'}nativeRun=null;figma.commitUndo();
     postFleet('finished',{shared:true,done:run.done,total:run.done,active:0,frames:1});
   }
+}
+
+async function startScreen(raw,count){
+  if(nativeRun||starting)return;
+  const screen=Screens.check(raw);
+  starting=true;
+  let board;
+  try{
+    const regular={family:'Inter',style:'Regular'},bold={family:'Inter',style:'Bold'};
+    await Promise.all([figma.loadFontAsync(regular),figma.loadFontAsync(bold)]);
+    board=figma.createFrame();board.name=screen.name;board.resize(screen.width,screen.height);board.fills=paint(screen.background);board.clipsContent=false;
+    const existing=figma.currentPage.children.filter(n=>n!==board&&n.visible);
+    board.x=existing.reduce((right,n)=>{const b=n.absoluteBoundingBox;return b?Math.max(right,b.x+b.width+120):right},figma.viewport.center.x-screen.width/2);
+    board.y=Math.round(figma.viewport.center.y-screen.height/2);
+    const jobs=screenJobs(count,screen),created=[];
+    figma.viewport.scrollAndZoomIntoView([board]);
+    for(const j of jobs){const ptr=figma.createNodeFromSvg(Shared.badge(j.id));board.appendChild(ptr);ptr.name='Cursor '+(j.id+1);ptr.visible=false;ptr.locked=true;j.ptr=ptr}
+    function build(slice){
+      for(let i=slice.first;i<slice.last;i++){
+        const v=screen.layers[i];let n;
+        if(v.kind==='text'){n=figma.createText();n.fontName=v.bold?bold:regular;n.characters=v.text;n.fontSize=v.size;n.lineHeight={unit:'PERCENT',value:116};n.textAutoResize='NONE';n.resize(v.w,v.h)}
+        else {n=v.kind==='ellipse'?figma.createEllipse():figma.createRectangle();n.resize(v.w,v.h);if(v.kind==='rect')n.cornerRadius=Math.min(v.radius||0,v.w/2,v.h/2)}
+        const below=created.reduce((sum,index)=>sum+(index<i?1:0),0);
+        board.insertChild(below,n);created.push(i);n.name=v.name;n.fills=paint(v.fill);n.x=v.x;n.y=v.y;
+      }
+    }
+    nativeRun={board,jobs,build,frames:1,shared:true,elapsed:0,last:Date.now(),done:0,active:0,paused:false,timer:null};
+    nativeRun.timer=setInterval(stepFleet,40);postFleet('running',{done:0,active:0,total:count,frames:1,shared:true});
+  }catch(e){if(board&&!board.removed)board.remove();throw e}finally{starting=false}
 }

@@ -2,7 +2,7 @@ function launchShared(source,count,brief){
   const origin=source.absoluteBoundingBox;
   const board=figma.createFrame();
   try{
-    board.name='Second Cursor · shared canvas';board.setPluginData('sc-output','yes');board.resize(source.width,source.height);
+    board.name='Iris · shared canvas';board.setPluginData('sc-output','yes');board.resize(source.width,source.height);
     board.x=origin.x+origin.width+140;board.y=origin.y;
     for(const prev of figma.currentPage.children)if(prev!==board&&prev.getPluginData('sc-output')==='yes'&&Math.abs(prev.x-board.x)<1)board.y=Math.max(board.y,prev.y+prev.height+100);
     board.fills=[];board.clipsContent=false;
@@ -35,6 +35,7 @@ function stepShared(run){
     if(Math.abs(j.ptr.width-width)>width*.04)j.ptr.rescale(width/j.ptr.width);
     j.ptr.visible=t<1;j.ptr.x=p.x;j.ptr.y=p.y;
   },(target,phase)=>{
+    if(run.build){run.build(target);return}
     if(target.applied||phase!==1)return;
     target.applied=true;
     if(target.free){
@@ -46,7 +47,7 @@ function stepShared(run){
   if(count.done!==run.done||count.active!==run.active){run.done=count.done;run.active=count.active;postFleet('running',{shared:true,active:run.active,done:run.done,total:run.jobs.length,frames:1})}
   if(run.done===run.jobs.length){
     clearInterval(run.timer);for(const j of run.jobs)j.ptr.remove();
-    run.board.name='Second Cursor · shared canvas · completed';nativeRun=null;figma.commitUndo();
+    if(run.build){run.board.clipsContent=true;figma.currentPage.selection=[run.board]}else{run.board.name='Iris · shared canvas · completed'}nativeRun=null;figma.commitUndo();
     postFleet('finished',{shared:true,done:run.done,total:run.done,active:0,frames:1});
   }
 }
