@@ -56,6 +56,7 @@ function stepFleet(){
   try{
     if(run.board.removed){stopFleet();return}
     const now=Date.now();run.elapsed+=(now-run.last)/1000;run.last=now;
+    if(run.shared){stepShared(run);return}
     let done=0;
     for(const j of run.jobs){if(j.finished){done++;continue}const t=Swarm.progress(j,run.elapsed);applyGroup(j,t);if(t>=1){j.finished=true;done++}}
     if(done!==run.done){run.done=done;postFleet('running',{done,total:run.jobs.length,frames:run.frames})}
@@ -63,11 +64,12 @@ function stepFleet(){
       run.board.name='Second Cursor · '+run.frames+' finished layouts';nativeRun=null;postFleet('finished',{done,total:done,frames:run.frames});figma.commitUndo()}
   }catch(e){stopFleet();figma.ui.postMessage({kind:'error',text:'Swarm stopped: '+e.message})}
 }
-async function launchFleet(count,brief,sourceKey){
+async function launchFleet(count,brief,sourceKey,shared){
   if(nativeRun||starting)return;
   const source=targetFrame();
   if(!source||source.removed||!source.children.some(n=>n.visible)){throw Error('Select a Figma frame with a visible child layer.')}
   if(sourceKey&&sourceKey!==source.id)throw Error('Source selection changed. Launch again for this frame.');
+  if(shared){launchShared(source,count,brief);return}
   starting=true;
   let board;
   try{
@@ -121,5 +123,5 @@ async function launchFleet(count,brief,sourceKey){
 }
 function pauseFleet(){
   if(!nativeRun)return;nativeRun.paused=!nativeRun.paused;nativeRun.last=Date.now();
-  postFleet(nativeRun.paused?'paused':'running',{done:Math.max(0,nativeRun.done),total:nativeRun.jobs.length,frames:nativeRun.frames});
+  postFleet(nativeRun.paused?'paused':'running',{done:Math.max(0,nativeRun.done),total:nativeRun.jobs.length,frames:nativeRun.frames,shared:nativeRun.shared,active:nativeRun.active});
 }

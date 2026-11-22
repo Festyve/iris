@@ -4,7 +4,7 @@
 </style></head><body><header><i class="mark"></i><b>Second Cursor</b><span>Responsive design studio</span></header><main>
 <section class="stage"><div id="fleet-preview" hidden><div class="fleet-top"><b>Responsive layouts</b><button id="back">Back to desktop</button></div><svg id="fleet-canvas" aria-label="Responsive layouts with live cursor assignments"></svg><p class="note">Click a layout to inspect it. Click again to see the full set.</p></div><div class="boards"><figure><figcaption>Desktop · your canvas</figcaption><svg id="desktop" class="board" aria-label="Editable desktop poster"></svg></figure><figure><figcaption>Mobile · second cursor</figcaption><svg id="mobile" class="board" aria-label="Mobile proposal"></svg></figure></div><p>Drag the headline or flower on desktop to art-direct the mobile version.</p><div id="saved" class="saved"></div></section>
 <section class="panel"><h1>Second Cursor</h1><p class="note">You design desktop. Your coworker handles mobile.</p>
-<section class="swarm-controls"><h2>Cursor swarm</h2><div class="row"><select id="workers" aria-label="Cursor count"><option value="100">100 cursors</option><option value="25">25 cursors</option><option value="5">5 cursors</option></select><button id="launch" class="primary">Launch swarm</button></div><progress id="meter" max="1" value="0"></progress><p class="note" role="status" id="fleet-status">Ready</p><div class="row"><button id="pause" hidden>Pause</button><button id="cancel" hidden>Cancel run</button></div></section><div class="browser-only"><label for="scale">Flower size</label><input id="scale" type="range" min="260" max="780" value="500"><label for="headline">Headline</label><input id="headline" value="After / Hours" maxlength="32"></div>
+<section class="swarm-controls"><h2>Cursor swarm</h2><select id="formation" aria-label="Swarm view"><option value="shared">Shared canvas</option><option value="grid">Responsive grid</option></select><div class="row"><select id="workers" aria-label="Cursor count"><option value="100">100 cursors</option><option value="25">25 cursors</option><option value="5">5 cursors</option></select><button id="launch" class="primary">Launch swarm</button></div><progress id="meter" max="1" value="0"></progress><p class="note" role="status" id="fleet-status">Ready</p><div class="row"><button id="pause" hidden>Pause</button><button id="cancel" hidden>Cancel run</button></div></section><div class="browser-only"><label for="scale">Flower size</label><input id="scale" type="range" min="260" max="780" value="500"><label for="headline">Headline</label><input id="headline" value="After / Hours" maxlength="32"></div>
 <label>Mobile composition</label><div class="row" id="presets"></div><button id="keep" class="wide">Keep this mobile version</button>
 <hr class="rule"><label for="brief">Art direction</label><textarea id="brief" maxlength="700" placeholder="Keep the overlap. Put the date at the top."></textarea><label id="watchLabel" hidden><input id="watch" type="checkbox" style="width:auto"> AI review after desktop edits</label><div class="row"><button id="apply" class="primary">Ask coworker</button><button id="voice">Record note</button><button id="audiofile" hidden>Use audio file</button><input id="file" type="file" accept="audio/*" hidden></div><p class="status" role="status" id="status">Local mode · try “keep the overlap” or “stack the title.”</p>
 <details id="settings"><summary>Connect local AI service</summary><label for="token">Session key from server</label><input id="token" type="password" autocomplete="off"><button style="margin-top:6px" id="connect">Connect</button></details></section></main><script>
@@ -118,9 +118,53 @@ const Swarm = (() => {
   return {adjustment,adjust,configs,layout,worker,progress,position,colors,roles};
 })();
 
+// The same tagged pointer and time-based choreography run in Figma and the browser.
+const Shared = (() => {
+  const palette=['#1475F0','#A145C9','#00998F','#E95839','#4764D9','#DA4083','#287D49','#8853CB','#A55C19','#007DB7'];
+  const digitPaths=['M0 0h3v5H0z','M2 0v5','M0 0h3v2.5H0V5h3','M0 0h3v5H0M0 2.5h3','M0 0v2.5h3M3 0v5','M3 0H0v2.5h3V5H0','M3 0H0v5h3V2.5H0','M0 0h3L1 5','M0 0h3v5H0zM0 2.5h3','M3 5V0H0v2.5h3'];
+  function badge(id){
+    const color=palette[id%palette.length],digits=String(id+1).padStart(2,'0');
+    const paths=digits.split('').map((d,i)=>'<path transform="translate('+(19+i*5)+' 16)" d="'+digitPaths[Number(d)]+'"/>').join('');
+    return '<svg xmlns="http://www.w3.org/2000/svg" width="39" height="25" viewBox="0 0 39 25"><path d="M1 1l4 14 3-5 5-2z" fill="'+color+'" stroke="white" stroke-width="1.1"/><rect x="11" y="12" width="27" height="12" rx="3" fill="'+color+'"/><g fill="none" stroke="white" stroke-linecap="round" stroke-linejoin="round" stroke-width="1">'+paths+'</g></svg>';
+  }
+  function timing(id,count){return {enter:1.8*(id/Math.max(1,count-1))+((id*31)%17)/100,duration:9+((id*47)%38)/10}}
+  function motion(id,t,points){
+    const k=Math.min(points.length-2,Math.floor(t*(points.length-1))),u=Math.min(1,(t*(points.length-1)-k)/.73);
+    const s=u*u*(3-2*u),a=points[k],b=points[k+1],curve=Math.sin(Math.PI*u)*.055*(id%2?1:-1);
+    return {x:a.x+(b.x-a.x)*s+(b.y-a.y)*curve,y:a.y+(b.y-a.y)*s-(b.x-a.x)*curve,stage:k,arrived:u>=1};
+  }
+  function route(id,total,targets,w,h){
+    const anchor=(i)=>targets[Math.floor((id/total*targets.length+i*targets.length*.317)%targets.length)];
+    return {indices:[anchor(0),anchor(1),anchor(2)],start:{x:((id*71)%101)/100*w,y:id%2?-h*.025:h*1.025}};
+  }
+  function makeJobs(count,targets,w,h){
+    return Array.from({length:count},(_,id)=>{
+      const routeData=route(id,count,targets,w,h),points=[routeData.start];
+      for(const target of routeData.indices){
+        points.push({x:Math.max(0,Math.min(w,target.x+target.w*(.14+((id*37)%71)/100))),y:Math.max(0,Math.min(h,target.y+target.h*(.14+((id*59)%71)/100)))});
+      }
+      return {id,clock:timing(id,count),points,targets:routeData.indices,visited:0,finished:false};
+    });
+  }
+  function advance(jobs,elapsed,draw,visit){
+    let active=0,done=0;
+    for(const j of jobs){
+      if(j.finished){done++;continue}
+      if(elapsed<j.clock.enter)continue;
+      const t=Math.min(1,(elapsed-j.clock.enter)/j.clock.duration),p=motion(j.id,t,j.points);
+      const reached=t===1?3:p.stage+(p.arrived?1:0);
+      while(j.visited<reached){visit(j.targets[j.visited],j.visited,j.id);j.visited++}
+      draw(j,p,t);
+      if(t===1){done++;j.finished=true}else active++;
+    }
+    return {active,done};
+  }
+  return {badge,timing,motion,makeJobs,advance};
+})();
+
 </script><script>
 const byId=id=>document.getElementById(id);
-const plugin=parent!==window,api='http://127.0.0.1:4739';
+const plugin=parent!==window,api='http://localhost:4739';
 if(plugin)document.body.classList.add('plugin');
 let source=SC.base(),plan={...SC.initial},connected=false,version=0,focus='Title',recording,stream,token='',keepCount=0;
 let customSource=false;
@@ -237,19 +281,24 @@ if(!plugin&&location.hash.startsWith('#key=')){byId('token').value=decodeURIComp
 const fleetEl=id=>document.getElementById(id);
 let fleetState='idle',browserRun=null;
 const numberInput=fleetEl('workers'),fleetPanel=fleetEl('fleet-preview');
-function fleetView(state,done,total,frames){
+function fleetView(state,done,total,frames,active){
   fleetState=state;
   const busy=state==='running'||state==='paused'||state==='starting';
-  fleetEl('launch').disabled=busy;numberInput.disabled=busy;
+  fleetEl('launch').disabled=busy;numberInput.disabled=busy;fleetEl('formation').disabled=busy;
   fleetEl('pause').hidden=!['running','paused'].includes(state);fleetEl('pause').textContent=state==='paused'?'Resume':'Pause';
   fleetEl('cancel').hidden=!['running','paused'].includes(state);
   fleetEl('fleet-status').textContent=state==='running'?done+' / '+total+' cursors finished · '+frames+' layouts':
     state==='paused'?'Paused · '+done+' / '+total+' finished':state==='finished'?frames+' layouts ready · '+done+' cursor assignments complete':
     state==='starting'?'Preparing editable layers…':'Ready';
+  if(fleetEl('formation').value==='shared'){
+    if(state==='running')fleetEl('fleet-status').textContent=(active||0)+' active / '+total+' cursors · '+done+' finished';
+    if(state==='finished')fleetEl('fleet-status').textContent='Shared canvas ready · '+done+' cursor assignments complete';
+  }
   fleetEl('meter').max=total||1;fleetEl('meter').value=done||0;
 }
 function makeSvg(tag,attrs){const n=document.createElementNS('http://www.w3.org/2000/svg',tag);for(const [k,v]of Object.entries(attrs||{}))n.setAttribute(k,String(v));return n}
 function buildOverview(count,brief){
+  document.querySelector('.fleet-top b').textContent='Responsive layouts';fleetPanel.querySelector('.note').hidden=false;
   const grid=Swarm.configs(count),jobs=[],svg=fleetEl('fleet-canvas');
   svg.replaceChildren();const overview=[-48,-85,grid.width+96,grid.height+145].join(' ');svg.setAttribute('viewBox',overview);
   const cursorLayer=makeSvg('g',{'pointer-events':'none'});let zoom=null;
@@ -280,6 +329,7 @@ function buildOverview(count,brief){
 function browserTick(now){
   const r=browserRun;if(!r||fleetState!=='running')return;
   r.elapsed+=(now-r.last)/1000;r.last=now;let done=0;
+  if(r.shared){tickSharedBrowser(r);return}
   const camera=fleetEl('fleet-canvas').getScreenCTM();const pointerScale=camera?0.36/camera.a:1;
   for(const j of r.jobs){
     if(j.finished){done++;continue}const t=Swarm.progress(j,r.elapsed),s=t*t*(3-2*t);
@@ -309,18 +359,18 @@ async function getFleetContext(){
   });
 }
 fleetEl('launch').onclick=async()=>{
-  const count=Number(numberInput.value);fleetView('starting',0,count,0);
+  const shared=fleetEl('formation').value==='shared',count=Number(numberInput.value);fleetView('starting',0,count,0);
   try{
     let brief=[],sourceKey=null;
     if(connected&&service.design){
       fleetEl('fleet-status').textContent='Art director is assigning layer edits…';
       const context=await getFleetContext();sourceKey=context.sourceKey;
-      const note=byId('brief').value.trim()||'Adapt this design to compact, medium and wide product screens.';
+      const note=byId('brief').value.trim()||(shared?'Polish the selected design on a single shared canvas at its current width.':'Adapt this design to compact, medium and wide product screens.');
       const result=await call('/swarm',JSON.stringify({source:context.source,png:context.png,note,plan}));
       brief=result.patches;say(result.reason);
     }
-    if(plugin){parent.postMessage({pluginMessage:{kind:'launch-fleet',count,brief,sourceKey}},'*');return}
-    browserRun=buildOverview(count,brief);fleetView('running',0,browserRun.jobs.length,browserRun.frames);
+    if(plugin){parent.postMessage({pluginMessage:{kind:'launch-fleet',count,brief,sourceKey,shared}},'*');return}
+    browserRun=shared?buildShared(count,brief):buildOverview(count,brief);fleetView('running',0,browserRun.jobs.length,browserRun.frames);
     browserRun.anim=requestAnimationFrame(browserTick);
   }catch(e){fleetView('idle',0,0,0);fleetEl('fleet-status').textContent=e.message}
 };
@@ -333,8 +383,40 @@ fleetEl('pause').onclick=()=>{
 fleetEl('cancel').onclick=()=>{if(plugin)parent.postMessage({pluginMessage:{kind:'stop-fleet'}},'*');else hideOverview()};
 window.addEventListener('message',e=>{const m=e.data&&e.data.pluginMessage;if(!m)return;
   if(m.kind==='custom-source'){customSource=true;fleetEl('fleet-status').textContent='Source · '+m.name;byId('keep').hidden=true;byId('presets').hidden=true;byId('presets').previousElementSibling.hidden=true;byId('apply').hidden=true;byId('brief').placeholder='Art direction for this frame’s responsive layouts';}
-  if(m.kind==='fleet')fleetView(m.state,m.done||0,m.total||0,m.frames||0);
+  if(m.kind==='fleet')fleetView(m.state,m.done||0,m.total||0,m.frames||0,m.active);
   if(m.kind==='error'&&fleetState==='starting'){fleetView('idle',0,0,0);fleetEl('fleet-status').textContent=m.text}
 });
+
+function buildShared(count,brief){
+  const svg=fleetEl('fleet-canvas'),w=source.width,h=source.height;
+  svg.setAttribute('viewBox',[0,0,w,h].join(' '));svg.innerHTML=sceneSvg(source);
+  fleetPanel.hidden=false;document.querySelector('.boards').hidden=true;
+  document.querySelector('.stage > p').hidden=true;document.querySelector('.fleet-top b').textContent='Shared canvas';
+  fleetPanel.querySelector('.note').hidden=true;
+  const targets=Swarm.roles.map((role,index)=>{
+    const n=source.layers[role],el=svg.querySelector('[data-role="'+role+'"]');
+    const group=makeSvg('g');el.before(group);group.appendChild(el);
+    return {x:n.x,y:n.y,w:n.w,h:n.h,group,patch:Swarm.adjustment(brief,index,w)};
+  });
+  const jobs=Shared.makeJobs(count,targets,w,h);
+  for(const j of jobs){
+    j.ptr=makeSvg('g',{'data-worker':j.id,visibility:'hidden','pointer-events':'none'});
+    j.ptr.innerHTML=Shared.badge(j.id);svg.appendChild(j.ptr);
+  }
+  return {shared:true,jobs,frames:1,elapsed:0,last:performance.now(),anim:0,lastDone:0,active:0};
+}
+function tickSharedBrowser(r){
+  const ctm=fleetEl('fleet-canvas').getScreenCTM(),k=ctm?1/ctm.a:1;
+  const stats=Shared.advance(r.jobs,r.elapsed,(j,p,t)=>{
+    j.ptr.setAttribute('visibility','visible');j.ptr.setAttribute('transform','translate('+p.x+' '+p.y+') scale('+k+')');if(t===1)j.ptr.remove();
+  },(n,phase)=>{
+    if(phase!==1||n.applied)return;n.applied=true;
+    const dest=Swarm.adjust(n,n.patch,source.width,source.height),scale=n.patch?n.patch.scale:1;
+    n.group.setAttribute('transform','translate('+Math.round(dest.x)+' '+Math.round(dest.y)+') scale('+scale+') translate('+(-n.x)+' '+(-n.y)+')');
+  });
+  r.lastDone=stats.done;r.active=stats.active;
+  if(stats.done===r.jobs.length){fleetView('finished',stats.done,stats.done,1,0);return}
+  fleetView('running',stats.done,r.jobs.length,1,stats.active);r.anim=requestAnimationFrame(browserTick);
+}
 
 </script></body></html>

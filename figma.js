@@ -53,7 +53,7 @@ figma.ui.onmessage=async msg=>{
         const img=await f.exportAsync({format:'PNG',constraint:{type:'WIDTH',value:720}});
         figma.ui.postMessage({kind:'fleet-context',id:msg.id,sourceKey:f.id,source:{name:f.name,width:f.width,height:f.height,layers:f.children.slice(0,64).map((n,index)=>({index,name:n.name,type:n.type,x:n.x,y:n.y,w:n.width,h:n.height}))},png:figma.base64Encode(img)});
       }catch(e){figma.ui.postMessage({kind:'fleet-context',id:msg.id,error:e.message})}return}
-    if(msg.kind==='launch-fleet'){await launchFleet([5,25,100].includes(msg.count)?msg.count:100,msg.brief,msg.sourceKey);return}
+    if(msg.kind==='launch-fleet'){await launchFleet([5,25,100].includes(msg.count)?msg.count:100,msg.brief,msg.sourceKey,msg.shared);return}
     if(msg.kind==='pause-fleet'){pauseFleet();return}
     if(msg.kind==='stop-fleet'){stopFleet();return}
     if(msg.kind==='snapshot'){try{const img=await desk.exportAsync({format:'PNG',constraint:{type:'WIDTH',value:720}});figma.ui.postMessage({kind:'snapshot',id:msg.id,png:figma.base64Encode(img)})}catch(e){figma.ui.postMessage({kind:'snapshot',id:msg.id})}return}

@@ -1,19 +1,24 @@
 const fleetEl=id=>document.getElementById(id);
 let fleetState='idle',browserRun=null;
 const numberInput=fleetEl('workers'),fleetPanel=fleetEl('fleet-preview');
-function fleetView(state,done,total,frames){
+function fleetView(state,done,total,frames,active){
   fleetState=state;
   const busy=state==='running'||state==='paused'||state==='starting';
-  fleetEl('launch').disabled=busy;numberInput.disabled=busy;
+  fleetEl('launch').disabled=busy;numberInput.disabled=busy;fleetEl('formation').disabled=busy;
   fleetEl('pause').hidden=!['running','paused'].includes(state);fleetEl('pause').textContent=state==='paused'?'Resume':'Pause';
   fleetEl('cancel').hidden=!['running','paused'].includes(state);
   fleetEl('fleet-status').textContent=state==='running'?done+' / '+total+' cursors finished · '+frames+' layouts':
     state==='paused'?'Paused · '+done+' / '+total+' finished':state==='finished'?frames+' layouts ready · '+done+' cursor assignments complete':
     state==='starting'?'Preparing editable layers…':'Ready';
+  if(fleetEl('formation').value==='shared'){
+    if(state==='running')fleetEl('fleet-status').textContent=(active||0)+' active / '+total+' cursors · '+done+' finished';
+    if(state==='finished')fleetEl('fleet-status').textContent='Shared canvas ready · '+done+' cursor assignments complete';
+  }
   fleetEl('meter').max=total||1;fleetEl('meter').value=done||0;
 }
 function makeSvg(tag,attrs){const n=document.createElementNS('http://www.w3.org/2000/svg',tag);for(const [k,v]of Object.entries(attrs||{}))n.setAttribute(k,String(v));return n}
 function buildOverview(count,brief){
+  document.querySelector('.fleet-top b').textContent='Responsive layouts';fleetPanel.querySelector('.note').hidden=false;
   const grid=Swarm.configs(count),jobs=[],svg=fleetEl('fleet-canvas');
   svg.replaceChildren();const overview=[-48,-85,grid.width+96,grid.height+145].join(' ');svg.setAttribute('viewBox',overview);
   const cursorLayer=makeSvg('g',{'pointer-events':'none'});let zoom=null;
@@ -44,6 +49,7 @@ function buildOverview(count,brief){
 function browserTick(now){
   const r=browserRun;if(!r||fleetState!=='running')return;
   r.elapsed+=(now-r.last)/1000;r.last=now;let done=0;
+  if(r.shared){tickSharedBrowser(r);return}
   const camera=fleetEl('fleet-canvas').getScreenCTM();const pointerScale=camera?0.36/camera.a:1;
   for(const j of r.jobs){
     if(j.finished){done++;continue}const t=Swarm.progress(j,r.elapsed),s=t*t*(3-2*t);
@@ -73,18 +79,18 @@ async function getFleetContext(){
   });
 }
 fleetEl('launch').onclick=async()=>{
-  const count=Number(numberInput.value);fleetView('starting',0,count,0);
+  const shared=fleetEl('formation').value==='shared',count=Number(numberInput.value);fleetView('starting',0,count,0);
   try{
     let brief=[],sourceKey=null;
     if(connected&&service.design){
       fleetEl('fleet-status').textContent='Art director is assigning layer edits…';
       const context=await getFleetContext();sourceKey=context.sourceKey;
-      const note=byId('brief').value.trim()||'Adapt this design to compact, medium and wide product screens.';
+      const note=byId('brief').value.trim()||(shared?'Polish the selected design on a single shared canvas at its current width.':'Adapt this design to compact, medium and wide product screens.');
       const result=await call('/swarm',JSON.stringify({source:context.source,png:context.png,note,plan}));
       brief=result.patches;say(result.reason);
     }
-    if(plugin){parent.postMessage({pluginMessage:{kind:'launch-fleet',count,brief,sourceKey}},'*');return}
-    browserRun=buildOverview(count,brief);fleetView('running',0,browserRun.jobs.length,browserRun.frames);
+    if(plugin){parent.postMessage({pluginMessage:{kind:'launch-fleet',count,brief,sourceKey,shared}},'*');return}
+    browserRun=shared?buildShared(count,brief):buildOverview(count,brief);fleetView('running',0,browserRun.jobs.length,browserRun.frames);
     browserRun.anim=requestAnimationFrame(browserTick);
   }catch(e){fleetView('idle',0,0,0);fleetEl('fleet-status').textContent=e.message}
 };
@@ -97,6 +103,6 @@ fleetEl('pause').onclick=()=>{
 fleetEl('cancel').onclick=()=>{if(plugin)parent.postMessage({pluginMessage:{kind:'stop-fleet'}},'*');else hideOverview()};
 window.addEventListener('message',e=>{const m=e.data&&e.data.pluginMessage;if(!m)return;
   if(m.kind==='custom-source'){customSource=true;fleetEl('fleet-status').textContent='Source · '+m.name;byId('keep').hidden=true;byId('presets').hidden=true;byId('presets').previousElementSibling.hidden=true;byId('apply').hidden=true;byId('brief').placeholder='Art direction for this frame’s responsive layouts';}
-  if(m.kind==='fleet')fleetView(m.state,m.done||0,m.total||0,m.frames||0);
+  if(m.kind==='fleet')fleetView(m.state,m.done||0,m.total||0,m.frames||0,m.active);
   if(m.kind==='error'&&fleetState==='starting'){fleetView('idle',0,0,0);fleetEl('fleet-status').textContent=m.text}
 });
