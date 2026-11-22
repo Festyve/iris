@@ -3,6 +3,7 @@ import {join} from 'node:path';
 import vm from 'node:vm';
 import {catalog} from './catalog.mjs';
 import Match from './match.js';
+import {brands,brandCopy} from './captures.mjs';
 import {Doc,edit} from '../designer.mjs';
 
 const sites=JSON.parse(await readFile(new URL('sites.json',import.meta.url),'utf8'));
@@ -11,7 +12,7 @@ const libraries=new Map();
 async function library(root) {
   if (!libraries.has(root)) {
     const loading=catalog(root).then(media=>vm.runInNewContext(source+'\nWebsites',
-      {Doc,ReferenceSites:sites,ReferenceMedia:media,ReferenceMatch:Match}));
+      {Doc,ReferenceBrands:brands,ReferenceCopy:brandCopy,ReferenceSites:sites,ReferenceMedia:media,ReferenceMatch:Match}));
     libraries.set(root,loading);
     loading.catch(()=>libraries.delete(root));
   }

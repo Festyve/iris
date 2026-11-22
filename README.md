@@ -12,6 +12,14 @@ Custom website briefs search names, subjects, aesthetics and image captions. The
 
 The site templates are committed in `references/sites.json`. `npm run build` refreshes the searchable image catalog. To retrace changed captures, run the two commands in `scripts/trace-sites.py` before building.
 
+### Organize all reference websites in Figma
+
+Open **Iris → Website library → Build vault library** with the local service connected. Iris creates a dedicated page with one named section per website, arranged in three columns. Each section contains the original-size rebranded desktop capture, an editable reconstruction, a navigation panel and a hero detail. Reopening the library fills missing sections and keeps completed ones. The gallery runs entirely on the laptop and uses no model calls.
+
+For a single site, try **recreate Stripe**. Its design opens as **Asterpay**. Custom website builds also get an organized section with editable details. Source provenance stays in the vault and build history. In the photographic reference, pixels outside the brand replacement regions match the source PNG. In the editable reconstruction, detailed imagery and fonts are approximations.
+
+To refresh the reference data after changing a capture, extract source text with the Vision script, run `scripts/trace-sites.py` on that OCR, then run `python3 scripts/brand-captures.py /tmp/iris-branded` and `python3 scripts/trace-sites.py /tmp/iris-branded/observations.json /tmp/iris-branded`. Rebuild the plugin.
+
 ## What the cursors do
 
 | Task | What the cursor does |

@@ -159,6 +159,31 @@
     } catch (e) { toast('Microphone unavailable here. Type instead.'); }
   };
 
+  let libraryBusy=false;
+  let nextCapture=null;
+  function libraryStatus(message,active) {
+    libraryBusy=active; $('build-library').disabled=active; $('library-status').textContent=message;
+    $('build').disabled=active || busy;
+  }
+  async function fetchCapture(id) {
+    return (await call('/vault-capture?id='+encodeURIComponent(id),null,null,30000)).png;
+  }
+  $('build-library').onclick=()=>{
+    if(!isPlugin || busy || pluginState==='running' || pluginState==='starting') return;
+    if(!connected) {libraryStatus('Connect the local Iris service in Settings to read the vault images.',false);$('settings').hidden=false;return;}
+    libraryStatus('Opening the website library…',true);
+    parent.postMessage({pluginMessage:{kind:'library-open'}},'*');
+  };
+  async function libraryEntry(m) {
+    try {
+      libraryStatus((m.done+1)+' of '+m.total+' · '+ReferenceBrands[m.id],true);
+      const png=await fetchCapture(m.id);
+      const next=Doc.clean(Websites.build('recreate '+m.id));
+      const b=Screens.checkBoard(Doc.compile(next));
+      parent.postMessage({pluginMessage:{kind:'build',board:b,doc:next,png,libraryId:m.id,count,speed:4}},'*');
+    } catch(error) {libraryStatus('Paused. '+error.message+' Open the library again to resume.',false);}
+  }
+
   /* ---------- designing and editing ---------- */
   // While Claude works, the headline counts the seconds so it's clear something is happening.
   let busyTimer = 0, busyHead = '';
@@ -175,7 +200,7 @@
     }
   }
   async function go() {
-    if (busy) return;
+    if (busy || libraryBusy) return;
     const text = brief.value.trim();
     if (mode === 'edit' && doc) { if (text) await change(text); return; }
     const prompt = text || Kit.samples[0];
@@ -198,6 +223,11 @@
           detail = 'Used the local reference build. ' + error.message;
         }
       } else next = Doc.fromBoard(Screens.checkBoard(Kit.build(prompt)));
+      nextCapture=null;
+      if(isPlugin && reference?.exact && connected) {
+        try {nextCapture=await fetchCapture(reference.id);}
+        catch(error) {detail='Editable panels ready. The desktop capture requires the updated local service.';}
+      }
       setBusy(false);
       revisions = []; rev = -1;
       const label = 'Built from “' + prompt + '”' + (usedModel && profileSel.value ? ' · ' + profileName() : '');
@@ -267,7 +297,7 @@
     status = new Array(P.layers.length).fill(-1); who = new Array(P.layers.length).fill(-1); lastRow.length = 0;
     buildTree(); buildActs(); lastFeedKey = '';
     if (!keepCamera || !userMoved) { fit(true); userMoved = false; }
-    if (isPlugin) { pluginState = 'starting'; parent.postMessage({pluginMessage: {kind: 'build', board, prev: prevBoard || null, doc, count, speed}}, '*'); }
+    if (isPlugin) { pluginState = 'starting'; parent.postMessage({pluginMessage: {kind: 'build', board, prev: prevBoard || null, doc, count, speed,png:nextCapture}}, '*'); nextCapture=null; }
     setPlayIcon();
   }
 
@@ -806,6 +836,12 @@
   }
   window.addEventListener('message', e => {
     const m = e.data && e.data.pluginMessage; if (!m) return;
+    if(m.kind==='library-next') {libraryEntry(m);return;}
+    if(m.kind==='library-done') {libraryStatus(m.total+' sections · '+(m.total*4)+' panels ready',false);pluginState='idle';return;}
+    if(libraryBusy) {
+      if(m.kind==='error' || m.kind==='library-error' || m.kind==='cancelled') libraryStatus(m.text || 'Import paused. Open the library to resume.',false);
+      return;
+    }
     if (m.kind === 'tick') { t = m.t; pluginState = m.state; setPlayIcon(); }
     if (m.kind === 'done') { t = P ? P.total : 0; pluginState = 'done'; setPlayIcon(); }
     if (m.kind === 'cancelled') {

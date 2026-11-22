@@ -2,7 +2,12 @@
 const Websites = (() => {
   function artwork(key) {
     if (typeof key !== 'string') return null;
-    const [id,index] = key.split('/');
+    const [id,version,index] = key.split('/');
+    if (!index) {
+      const old = typeof LegacyOutlines!=='undefined' && Object.prototype.hasOwnProperty.call(LegacyOutlines,id) && LegacyOutlines[id][Number(version)];
+      return old ? {w:old[0],h:old[1],path:old[2]} : null;
+    }
+    if(version!=='v2')return null;
     const row = Object.prototype.hasOwnProperty.call(ReferenceSites,id) && ReferenceSites[id].shapes[Number(index)];
     return row && row[5] ? {w:row[2]/3,h:row[3]/3,path:row[5]} : null;
   }
@@ -75,14 +80,18 @@ const Websites = (() => {
   function build(note,m=match(note)) {
     const site=ReferenceSites[m.id];
     if (!m.exact && m.id==='metalforge' && ReferenceMatch.poker(note)) return lobby(note,m);
-    const name=m.exact?m.site.title:titleOf(note), d=base(name,m,site.bg);
+    const name=m.exact?ReferenceBrands[m.id]:titleOf(note), d=base(name,m,site.bg);
     site.shapes.forEach(([x,y,w,h,fill,path],i)=>{
       const band=y<95?'Header':y>670?'Lower section':'Hero';
       const n=shape(d,band+' · '+(path?'artwork':'surface')+' '+(i+1),x,y,w,h,fill);
-      if(path)n.art=m.id+'/'+i;
+      if(path)n.art=m.id+'/v2/'+i;
     });
     if (m.exact) {
-      for(const [x,y,w,h,size,weight,color,label] of site.text) text(d,label,x,y,w,h,size,color,weight);
+      for(const [x,y,w,h,size,weight,color,label] of site.text) {
+        const copy=ReferenceCopy[m.id][label] || label;
+        text(d,copy,x,y,w,h,size,color,weight);
+      }
+      d.reference.capture=true;
       return d;
     }
     const slots=site.text.filter(s=>s[2]>=34 && s[3]>=10);

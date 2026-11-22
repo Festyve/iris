@@ -91,5 +91,8 @@ def trace(path, observations):
     return {'bg':hexcolor(palette[colors[0]]),'shapes':pieces,'text':labels}
 
 ocr = json.loads(Path(sys.argv[1]).read_text())
-sites = {p.stem:trace(p,ocr[p.stem]) for p in sorted(Path('vault/assets/sites').glob('*.png'))}
+folder = Path(sys.argv[2]) if len(sys.argv)>2 else Path('vault/assets/sites')
+sites = {p.stem:trace(p,ocr[p.stem]) for p in sorted(folder.glob('*.png'))}
+if len(sys.argv)==2:
+    Path('references/source-text.json').write_text(json.dumps({k:v['text'] for k,v in sites.items()},ensure_ascii=False,separators=(',',':'))+'\n')
 Path('references/sites.json').write_text(json.dumps(sites,ensure_ascii=False,separators=(',',':'))+'\n')

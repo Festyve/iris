@@ -32,7 +32,7 @@ async function loadFont(weight) {
 // Find what Iris built earlier for this design, by the ids stored on each node.
 function scan(design) {
   const frames = new Map(), nodes = new Map();
-  for (const f of figma.currentPage.children) {
+  for (const f of VaultSections.taggedFrames(figma.currentPage)) {
     if (f.type !== 'FRAME') continue;
     const sid = f.getPluginData(SCREEN_KEY);
     if (!sid || f.getPluginData(DESIGN_KEY) !== design) continue;
@@ -56,13 +56,17 @@ async function start(m) {
   const found = scan(design), page = figma.currentPage, B = P.bounds;
   let dx, dy;
   const anchor = board.screens.concat(prev ? prev.screens : []).find(s => found.frames.has(s.id));
-  if (prev && anchor) { const f = found.frames.get(anchor.id); dx = f.x - anchor.x; dy = f.y - anchor.y; }
+  if (prev && anchor) { const f = found.frames.get(anchor.id); dx = f.absoluteTransform[0][2] - anchor.x; dy = f.absoluteTransform[1][2] - anchor.y; }
   else {
     let ox = Math.round(figma.viewport.center.x - B.w / 2), oy = Math.round(figma.viewport.center.y - B.h / 2);
     const existing = page.children.map(n => n.absoluteBoundingBox).filter(Boolean);
     if (existing.length) { ox = Math.max(...existing.map(b => b.x + b.width)) + 400; oy = Math.min(...existing.map(b => b.y)); }
     dx = ox - B.x; dy = oy - B.y;
   }
+  if(m.libraryId) {
+    const at=VaultSections.position(VaultSections.checkImport(m.libraryId));dx=at.x+64;dy=at.y+102;
+  }
+  const captureHash=m.png?figma.createImage(figma.base64Decode(m.png)).hash:null;
   // A fresh build never reuses frames from an older design on the page.
   if (!prev) { found.frames.clear(); found.nodes.clear(); }
 
@@ -80,7 +84,7 @@ async function start(m) {
   // Board order of every layer, used to keep Figma's stacking order in step.
   const order = new Map();
   P.screens.forEach(E => { for (let li = E.range[0]; li < E.range[1]; li++) order.set(E.S.id + '/' + P.layers[li].L.id, li); });
-  run = {P, board, prev, design, doc: m.doc, dx, dy, fonts, crewLayer, t: 0, speed: m.speed || 1, paused: false, last: Date.now(), lastPost: 0,
+  run = {P, board, prev, design, captureHash, libraryId:m.libraryId, doc: m.doc, dx, dy, fonts, crewLayer, t: 0, speed: m.speed || 1, paused: false, last: Date.now(), lastPost: 0,
     frames: found.frames, nodes: found.nodes, cache: new Map(), order, cursors: [], cursorScale: 1};
   run.timer = setInterval(step, 70);
   post({kind: 'tick', t: 0, state: 'running'});
@@ -264,11 +268,13 @@ function finish(silent) {
     const f = r.frames.get(S.id); if (!f || f.removed) continue;
     S.layers.forEach((L, i) => { const n = r.nodes.get(S.id + '/' + L.id); if (n && !n.removed) f.insertChild(Math.min(i, f.children.length - 1), n); });
   }
-  if (r.doc) figma.currentPage.setPluginData(DOC_KEY, JSON.stringify(r.doc));
+  const frames = r.board.screens.map(S => r.frames.get(S.id)).filter(f => f && !f.removed);
+  const section=VaultSections.organize(r,frames);
+  if (r.doc && !r.libraryId) figma.currentPage.setPluginData(DOC_KEY, JSON.stringify(r.doc));
   figma.commitUndo();
   if (silent) return;
-  const frames = r.board.screens.map(S => r.frames.get(S.id)).filter(f => f && !f.removed);
-  if (!r.prev) { figma.currentPage.selection = frames; figma.viewport.scrollAndZoomIntoView(frames); }
+  if(r.libraryId) {VaultSections.next();return;}
+  if (!r.prev) { figma.currentPage.selection = frames; figma.viewport.scrollAndZoomIntoView(section?[section]:frames); }
   figma.notify(r.prev ? 'Iris applied the change.' : 'Iris built ' + frames.length + ' editable screens.');
   post({kind: 'done', t: r.P.total});
 }
@@ -302,7 +308,8 @@ figma.ui.onmessage = async m => {
       try { const k = await figma.clientStorage.getAsync('iris-key'); if (k) post({kind: 'key', key: k}); } catch (e) { /* storage unavailable */ }
       const saved = figma.currentPage.getPluginData(DOC_KEY);
       if (saved) { try { const doc = JSON.parse(saved); if (scan(doc.id).frames.size) post({kind: 'restore', doc}); } catch (e) { /* ignore a damaged record */ } }
-    } else if (m.kind === 'save-key') await figma.clientStorage.setAsync('iris-key', String(m.key || ''));
+    } else if(m.kind==='library-open') await VaultSections.openLibrary();
+    else if (m.kind === 'save-key') await figma.clientStorage.setAsync('iris-key', String(m.key || ''));
     else if (m.kind === 'build') await start(m);
     else if (m.kind === 'readback') post({kind: 'readback', id: m.id, read: run ? null : readback(m.design)});
     else if (m.kind === 'pause' && run) { run.paused = true; post({kind: 'tick', t: run.t, state: 'paused'}); }

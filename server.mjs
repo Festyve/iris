@@ -9,6 +9,7 @@ import {fileURLToPath} from 'node:url';
 import {ElevenLabsClient} from '@elevenlabs/elevenlabs-js';
 import {design, edit} from './designer.mjs';
 import {loadProfiles, profileStyle} from './profiles.mjs';
+import {capture} from './references/captures.mjs';
 import {websiteDesign} from './references/planner.mjs';
 
 // The session key survives restarts (kept in .iris-session, never committed), so you paste it
@@ -166,6 +167,10 @@ const server = http.createServer(async (req, res) => {
     if (req.method === 'POST' && url.pathname === '/bridge/result') return await relayResult(req, res);
     if (req.method === 'POST' && url.pathname === '/critique') return await critique(req, res);
     if (req.method === 'GET' && url.pathname === '/references') return await references(url, res);
+    if (req.method === 'GET' && url.pathname === '/vault-capture') {
+      const bytes=await capture(vaultDir,url.searchParams.get('id'));
+      return json(res,200,{png:bytes.toString('base64')});
+    }
     if (req.method === 'GET' && url.pathname === '/profiles') return json(res, 200, {profiles: (await loadProfiles(vaultDir)).map(({id, name, tagline}) => ({id, name, tagline}))});
     if (req.method === 'POST' && (req.url === '/board' || req.url === '/edit')) {
       const body = JSON.parse((await collect(req, 4_000_000)).toString());

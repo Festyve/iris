@@ -6,10 +6,11 @@ const [spec, icons, layout, kit, crew, studio, page, main, voice] = await Promis
 const {catalog} = await import('./references/catalog.mjs');
 const [sites, media, matcher, websites] = await Promise.all([read('references/sites.json'), catalog(fileURLToPath(new URL('vault',root))), read('references/match.js'), read('references/websites.js')]);
 const literal = data => JSON.stringify(data).replace(/</g,'\\u003c');
-const library = ['const ReferenceSites = '+literal(JSON.parse(sites))+';', 'const ReferenceMedia = '+literal(media)+';', matcher, websites].join('\n');
+const {brands,brandCopy} = await import('./references/captures.mjs');
+const library = ['const LegacyOutlines = '+await read('references/legacy-outlines.json')+';', 'const ReferenceBrands = '+literal(brands)+';','const ReferenceCopy = '+literal(brandCopy)+';','const ReferenceSites = '+literal(JSON.parse(sites))+';', 'const ReferenceMedia = '+literal(media)+';', matcher, websites].join('\n');
 const engine = [spec, icons, layout, kit, crew, library].join('\n');
 const esbuild = await import('esbuild');
-const native = await esbuild.transform([engine, main].join('\n'), {target:'es2017',charset:'utf8',minifyWhitespace:true});
+const native = await esbuild.transform([engine,await read('references/sections.js'), main].join('\n'), {target:'es2017',charset:'utf8',minifyWhitespace:true});
 await Promise.all([
   writeFile(new URL('plugin.js', root), native.code),
   writeFile(new URL('ui.html', root), page.replace('/* ENGINE */', () => engine).replace('/* APP */', () => studio + '\n' + voice))
