@@ -77,7 +77,8 @@ export async function serviceRoute(req, res, json, collect) {
       const tool = url.pathname.slice('/project-tools/'.length);
       if (!Object.hasOwn(methods,tool)) return false;
       const input = await body();
-      const args = tool === 'identity' ? {actionId:'github-profile',context:{projectId:'local-studio'}} : input;
+      const args = tool === 'identity' ? {actionId:'github-profile',context:{projectId:'local-studio'}}
+        : ['decision','memory'].includes(tool) ? {...input,projectId:'local-studio'} : input;
       result = await sponsors[methods[tool]]({...args,signal:stop.signal});
       if (result.error) { json(res,result.status || 503,result); return true; }
     } else return false;

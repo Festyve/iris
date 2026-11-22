@@ -27,6 +27,13 @@ async function inspect(width, file) {
   await page.evaluate(() => document.querySelector('.workspace').scrollTo(0,0));
   assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), 'Overflow at '+width);
   assert.ok(await page.locator('img').evaluateAll(imgs=>imgs.every(i=>!i.complete || i.naturalWidth>0)), 'Broken image');
+  for (const surface of page.frames()) {
+    await surface.evaluate(async()=> {
+      window.scrollTo(0,0);
+      await document.fonts.ready;
+      await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+    });
+  }
   await page.screenshot({path:join(out,file)});
 }
 try {

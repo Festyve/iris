@@ -167,10 +167,11 @@ function Studio({ initial }) {
               {project.versions.map(v => <option value={v.version} key={v.version}>v{v.version} · {v.plan.title}</option>)}</select></label>}
           {current && <details className="checks"><summary>Editable Figma screen</summary><p>Iris builds single screens from editable layers. Its local starters cover transit, a task board, and spending.</p>
             <a href={'poster.html#studio-brief=' + encodeURIComponent(current.plan.brief)} target="_blank" rel="noreferrer">Open this brief in Iris ↗</a></details>}
+          <details className="checks"><summary>Project services</summary>
           {current && <Review key={current.id} artifact={current} references={refs} sessionKey={key}
             configured={services.reviewer?.configured && services.reviewer?.runtimeReady} onSave={studio.saveReview}/>}
           {current && <Archive project={project} sessionKey={key}/>}
-          <ProjectTools refresh={async()=>setServices(await studioRequest(key,'/status'))} sessionKey={key} services={services} artifact={current} addNote={addNote}/>
+          <ProjectTools refresh={async()=>setServices(await studioRequest(key,'/status'))} sessionKey={key} services={services} artifact={current} addNote={addNote}/></details>
           {services.elevenAgent?.configured ? <React.Suspense fallback={<p>Loading voice tools…</p>}>
             <ElevenAgent api="" token={key} onBrief={onBrief} onBuild={onBuild}
               onCancel={async () => { await studio.cancel(); return studio.read().run; }}
