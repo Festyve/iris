@@ -6,7 +6,7 @@
   const Iris = window.Iris, api = 'http://localhost:4739';
   if (!Iris || !$('talk')) return;
   let talk = null, meter = 0, bridge = null, lastKey = '';
-  const LABELS = {look_at_canvas: 'Looking at the design', build_design: 'Designing a new product', change_design: 'Changing the design', get_design: 'Reading the design', undo_redo: 'Stepping through versions', control_build: 'Directing the crew', find_references: 'Searching the reference vault'};
+  const LABELS = {look_at_canvas: 'Looking at the design', build_design: 'Designing a new product', change_design: 'Changing the design', get_design: 'Reading the design', undo_redo: 'Stepping through versions', control_build: 'Directing the crew', find_references: 'Searching the reference vault', set_profile: 'Switching house style'};
   const token = () => { try { return $('token').value.trim(); } catch (e) { return ''; } };
 
   function line(who, text) {
@@ -45,12 +45,23 @@
     async look_at_canvas({question}) {
       const seen = Iris.isPlugin ? await figmaLook() : canvasLook();
       let critique = '';
-      if (Iris.connected && Iris.service.design) try { critique = (await Iris.call('/critique', JSON.stringify({png: seen.png, frame: seen.frame, texts: seen.texts, question}), null, 90000)).critique; } catch (e) { critique = ''; }
+      if (Iris.connected && Iris.service.design) try { critique = (await Iris.call('/critique', JSON.stringify({png: seen.png, frame: seen.frame, texts: seen.texts, question, profile: Iris.profile.id}), null, 90000)).critique; } catch (e) { critique = ''; }
       return {frame: seen.frame.name, size: seen.frame.width + ' by ' + seen.frame.height, selected: seen.selected, copy: seen.texts.slice(0, 25),
         critique: critique || 'No visual critique is available (Claude is not connected), so judge from the copy and say you cannot see the pixels.'};
     },
-    build_design: ({brief}) => Iris.build(brief),
-    change_design: ({change}) => Iris.change(change),
+    async build_design({brief, profile}) {
+      if (profile !== undefined && !Iris.setProfile(profile)) return {error: 'Unknown design profile ' + profile + '. Options: ' + Iris.profiles.map(p => p.id).join(', ')};
+      const out = await Iris.build(brief);
+      return out.error ? out : {...out, style: Iris.profile.name};
+    },
+    async change_design({change, profile}) {
+      if (profile !== undefined && !Iris.setProfile(profile)) return {error: 'Unknown design profile ' + profile + '.'};
+      return await Iris.change(change);
+    },
+    set_profile({profile}) {
+      if (!Iris.setProfile(profile)) return {error: 'Unknown design profile. Options: none, ' + Iris.profiles.map(p => p.id).join(', ')};
+      return {style: Iris.profile.name, note: 'Future builds and changes use this house style.'};
+    },
     get_design: () => Iris.state(),
     undo_redo: ({action}) => Iris.history(action === 'redo' ? 'redo' : 'undo'),
     control_build: ({action}) => Iris.control(action),

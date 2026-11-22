@@ -276,6 +276,13 @@ body.thinking .build{background:var(--surface-3);color:var(--text-2)}
 .plugin .side.right{border:0;overflow:visible}
 .plugin .browser-only{display:none!important}
 body:not(.plugin) .plugin-only{display:none!important}
+/* ---------- style picker (design profiles from the vault) ---------- */
+.style-pick{width:100%;height:30px;padding:0 26px 0 8px;border-radius:var(--r);background:var(--surface);border:1px solid var(--line);color:var(--text);font-size:11.5px;appearance:none;-webkit-appearance:none;cursor:pointer;background-image:linear-gradient(45deg,transparent 50%,var(--text-3) 50%),linear-gradient(135deg,var(--text-3) 50%,transparent 50%);background-position:calc(100% - 13px) 13px,calc(100% - 9px) 13px;background-size:4px 4px;background-repeat:no-repeat;transition:border-color .12s}
+.style-pick:hover:not(:disabled){border-color:var(--line-2)}
+.style-pick:focus-visible{outline:none;border-color:var(--accent)}
+.style-pick:disabled{opacity:.5;cursor:default}
+#style-block h2{margin-bottom:10px}
+#profile-note{margin:8px 0 0;font-size:11px;line-height:1.45;color:var(--text-3)}
 </style>
 </head>
 <body>
@@ -330,6 +337,11 @@ body:not(.plugin) .plugin-only{display:none!important}
     </div>
   </section>
   <aside class="side right" aria-label="Crew">
+    <div class="block" id="style-block">
+      <h2>Style <span>from the vault</span></h2>
+      <select id="profile" class="style-pick" aria-label="Design profile" disabled><option value="">No house style</option></select>
+      <p id="profile-note">Connect Claude to design in a house style from the reference vault.</p>
+    </div>
     <div class="block">
       <h2>Build <span id="mode-label">Local kit</span></h2>
       <div class="hero-stat">

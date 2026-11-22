@@ -276,6 +276,13 @@ body.thinking .build{background:var(--surface-3);color:var(--text-2)}
 .plugin .side.right{border:0;overflow:visible}
 .plugin .browser-only{display:none!important}
 body:not(.plugin) .plugin-only{display:none!important}
+/* ---------- style picker (design profiles from the vault) ---------- */
+.style-pick{width:100%;height:30px;padding:0 26px 0 8px;border-radius:var(--r);background:var(--surface);border:1px solid var(--line);color:var(--text);font-size:11.5px;appearance:none;-webkit-appearance:none;cursor:pointer;background-image:linear-gradient(45deg,transparent 50%,var(--text-3) 50%),linear-gradient(135deg,var(--text-3) 50%,transparent 50%);background-position:calc(100% - 13px) 13px,calc(100% - 9px) 13px;background-size:4px 4px;background-repeat:no-repeat;transition:border-color .12s}
+.style-pick:hover:not(:disabled){border-color:var(--line-2)}
+.style-pick:focus-visible{outline:none;border-color:var(--accent)}
+.style-pick:disabled{opacity:.5;cursor:default}
+#style-block h2{margin-bottom:10px}
+#profile-note{margin:8px 0 0;font-size:11px;line-height:1.45;color:var(--text-3)}
 </style>
 </head>
 <body>
@@ -330,6 +337,11 @@ body:not(.plugin) .plugin-only{display:none!important}
     </div>
   </section>
   <aside class="side right" aria-label="Crew">
+    <div class="block" id="style-block">
+      <h2>Style <span>from the vault</span></h2>
+      <select id="profile" class="style-pick" aria-label="Design profile" disabled><option value="">No house style</option></select>
+      <p id="profile-note">Connect Claude to design in a house style from the reference vault.</p>
+    </div>
     <div class="block">
       <h2>Build <span id="mode-label">Local kit</span></h2>
       <div class="hero-stat">
@@ -1961,6 +1973,7 @@ const Crew = (() => {
       if (doc && service.design && mode !== 'edit') { setMode('edit'); brief.value = ''; }
       updateNotice(service.design ? null : 'The service is running but has no Anthropic key. Set ANTHROPIC_API_KEY and restart it.');
       if (service.design) $('settings').hidden = true;
+      loadProfiles();
     } catch (e) {
       const why = /401|session key/i.test(e.message) ? 'The session key doesn’t match. Copy the key that node server.mjs prints.' : 'Can’t reach the Claude service. Start it with node server.mjs in the iris folder.';
       $('ai-state').textContent = why;
@@ -1968,6 +1981,32 @@ const Crew = (() => {
     }
   }
   $('connect').onclick = connect;
+
+  /* ---------- design profiles (house styles from the reference vault) ---------- */
+  let profiles = [];
+  const profileSel = $('profile');
+  const profileName = () => { const p = profiles.find(x => x.id === profileSel.value); return p ? p.name : 'No house style'; };
+  function showProfile() {
+    const p = profiles.find(x => x.id === profileSel.value);
+    $('profile-note').textContent = !canDesign() ? 'Connect Claude to design in a house style from the reference vault.'
+      : p ? p.tagline + '. Claude also sees its three reference images.' : profiles.length ? 'Claude picks the style. Choose a house style to steer it.' : 'No profiles found. Add notes to vault/Profiles.';
+  }
+  function setProfile(id) {
+    id = String(id || '').trim(); if (id === 'none') id = '';
+    if (id && !profiles.some(p => p.id === id)) return false;
+    profileSel.value = id; showProfile();
+    try { localStorage.setItem('iris-profile', id); } catch (e) { /* storage may be unavailable */ }
+    return true;
+  }
+  async function loadProfiles() {
+    try { profiles = (await call('/profiles', null, null, 8000)).profiles || []; } catch (e) { profiles = []; }
+    profileSel.replaceChildren(new Option('No house style', ''), ...profiles.map(p => new Option(p.name, p.id)));
+    profileSel.disabled = !canDesign() || !profiles.length;
+    let saved = null; try { saved = localStorage.getItem('iris-profile'); } catch (e) { /* storage may be unavailable */ }
+    profileSel.value = saved !== null && (saved === '' || profiles.some(p => p.id === saved)) ? saved : profiles.some(p => p.id === 'general') ? 'general' : '';
+    showProfile();
+  }
+  profileSel.onchange = () => setProfile(profileSel.value);
 
   let recorder = null;
   $('mic').onclick = async () => {
@@ -2011,11 +2050,11 @@ const Crew = (() => {
       let next;
       if (canDesign()) {
         setBusy(true, 'Claude is designing…', 'Opus 5.5 is planning screens, layout and copy for your brief. This usually takes one to three minutes.');
-        next = Doc.clean((await call('/board', JSON.stringify({note: prompt}))).doc);
+        next = Doc.clean((await call('/board', JSON.stringify({note: prompt, profile: profileSel.value}))).doc);
       } else next = Doc.fromBoard(Screens.checkBoard(Kit.build(prompt)));
       setBusy(false);
       revisions = []; rev = -1;
-      commit(next, 'Built from “' + prompt + '”', null, null);
+      commit(next, 'Built from “' + prompt + '”' + (canDesign() && profileSel.value ? ' · ' + profileName() : ''), null, null);
       if (canDesign()) { setMode('edit'); brief.value = ''; }
     } catch (e) { setBusy(false, 'Could not build that', e.message); }
   }
@@ -2034,7 +2073,7 @@ const Crew = (() => {
           if (m.notes.length) { base = m.doc; baseBoard = Screens.checkBoard(Doc.compile(base), true); setHead(busyHead, 'Including your edits in Figma: ' + m.notes.slice(0, 3).join(', ') + (m.notes.length > 3 ? '…' : '')); }
         }
       }
-      const r = await call('/edit', JSON.stringify({doc: base, note: text}));
+      const r = await call('/edit', JSON.stringify({doc: base, note: text, profile: profileSel.value}));
       const res = Doc.apply(base, r.ops || []);
       setBusy(false);
       if (!res.applied.length) { setHead('No changes made', r.summary || 'Claude could not map that request onto this design. Try rephrasing it.'); return; }
@@ -2650,7 +2689,8 @@ const Crew = (() => {
       copy: s.layers.filter(L => L.kind === 'text').map(L => L.text.replace(/\n/g, ' ')).filter(x => x.trim()).slice(0, 12)}))};
   }
   window.Iris = {
-    isPlugin, call,
+    isPlugin, call, setProfile,
+    get profile() { return {id: profileSel.value, name: profileName()}; }, get profiles() { return profiles.map(({id, name, tagline}) => ({id, name, tagline})); },
     get connected() { return connected; }, get service() { return service; }, get busy() { return busy; },
     state: () => ({design: outline(), version: rev + 1, versions: revisions.length, running: !!P && !runFinished(), status: headText(), canEdit: canDesign()}),
     async build(text) {
@@ -2733,7 +2773,7 @@ const Crew = (() => {
   const Iris = window.Iris, api = 'http://localhost:4739';
   if (!Iris || !$('talk')) return;
   let talk = null, meter = 0, bridge = null, lastKey = '';
-  const LABELS = {look_at_canvas: 'Looking at the design', build_design: 'Designing a new product', change_design: 'Changing the design', get_design: 'Reading the design', undo_redo: 'Stepping through versions', control_build: 'Directing the crew', find_references: 'Searching the reference vault'};
+  const LABELS = {look_at_canvas: 'Looking at the design', build_design: 'Designing a new product', change_design: 'Changing the design', get_design: 'Reading the design', undo_redo: 'Stepping through versions', control_build: 'Directing the crew', find_references: 'Searching the reference vault', set_profile: 'Switching house style'};
   const token = () => { try { return $('token').value.trim(); } catch (e) { return ''; } };
 
   function line(who, text) {
@@ -2772,12 +2812,23 @@ const Crew = (() => {
     async look_at_canvas({question}) {
       const seen = Iris.isPlugin ? await figmaLook() : canvasLook();
       let critique = '';
-      if (Iris.connected && Iris.service.design) try { critique = (await Iris.call('/critique', JSON.stringify({png: seen.png, frame: seen.frame, texts: seen.texts, question}), null, 90000)).critique; } catch (e) { critique = ''; }
+      if (Iris.connected && Iris.service.design) try { critique = (await Iris.call('/critique', JSON.stringify({png: seen.png, frame: seen.frame, texts: seen.texts, question, profile: Iris.profile.id}), null, 90000)).critique; } catch (e) { critique = ''; }
       return {frame: seen.frame.name, size: seen.frame.width + ' by ' + seen.frame.height, selected: seen.selected, copy: seen.texts.slice(0, 25),
         critique: critique || 'No visual critique is available (Claude is not connected), so judge from the copy and say you cannot see the pixels.'};
     },
-    build_design: ({brief}) => Iris.build(brief),
-    change_design: ({change}) => Iris.change(change),
+    async build_design({brief, profile}) {
+      if (profile !== undefined && !Iris.setProfile(profile)) return {error: 'Unknown design profile ' + profile + '. Options: ' + Iris.profiles.map(p => p.id).join(', ')};
+      const out = await Iris.build(brief);
+      return out.error ? out : {...out, style: Iris.profile.name};
+    },
+    async change_design({change, profile}) {
+      if (profile !== undefined && !Iris.setProfile(profile)) return {error: 'Unknown design profile ' + profile + '.'};
+      return await Iris.change(change);
+    },
+    set_profile({profile}) {
+      if (!Iris.setProfile(profile)) return {error: 'Unknown design profile. Options: none, ' + Iris.profiles.map(p => p.id).join(', ')};
+      return {style: Iris.profile.name, note: 'Future builds and changes use this house style.'};
+    },
     get_design: () => Iris.state(),
     undo_redo: ({action}) => Iris.history(action === 'redo' ? 'redo' : 'undo'),
     control_build: ({action}) => Iris.control(action),
