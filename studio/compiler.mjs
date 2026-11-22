@@ -1,5 +1,14 @@
 // Pure, browser-compatible planning and compilation. Only enumerated decisions reach CSS.
 const profiles = {
+  music: {
+    title: 'Listening Room', label: 'Listening archive', section: 'Listening notes',
+    intro: 'Listen for one detail at a time and file the moments worth playing again.',
+    entries: [
+      ['Opening bars', 'Listen for the first instrument to enter. Note what changes when the bass arrives.'],
+      ['Room tone', 'Compare the tail of a snare hit with the space around the vocal.'],
+      ['Return passage', 'Replay the final chorus and mark the harmony that differs from its first appearance.']
+    ]
+  },
   program: {
     title: 'Founder Studio', label: 'Founder program', section: 'Program guide',
     intro: 'Turn a company idea into something you can put in front of customers.',
@@ -81,6 +90,8 @@ function referenceDecision(ref, plan, brief) {
     feature = 'contents'; rationale = 'Give the collection a compact jump link in the masthead';
   } else if (/hierarchy|typography|headline|poster/.test(note)) {
     feature = 'display'; rationale = 'Set the title as a large display line above a separate logistics band';
+  } else if (/motion|transition|animation/.test(note)) {
+    feature = 'reveal'; rationale = 'Slide the reading note into place when its entry opens';
   } else if (/onboarding|preview|progressive|disclosure/.test(note)) {
     feature = 'preview'; rationale = 'Open the first entry to show how to explore the collection';
   } else return null;
@@ -121,6 +132,7 @@ export function planBuild({ brief, refs = [], previous = null, direction } = {})
   const profile = /\b(founders?|startups?|accelerator)\b/i.test(brief) ? 'program'
     : /\b(event|festival|meetup|concert|conference|after hours|gathering)\b/i.test(brief) ? 'event'
     : /\b(portfolio|photography|ceramics|artist|creative studio|design studio)\b/i.test(brief) ? 'portfolio'
+    : /\b(music|albums?|record shop|playlists?|vinyl|listening)\b/i.test(brief) ? 'music'
     : /\b(recipe|recipes|food|cooking|kitchen|bakery)\b/i.test(brief) ? 'food'
     : /\b(task|tasks|projects?|tracker|workflow|planning)\b/i.test(brief) ? 'project' : 'library';
   const subject = brief.match(/\bfor (.+?)(?:\s+(?:with|that|using|featuring)\b|[.,;!?]|$)/i)?.[1];
@@ -142,6 +154,16 @@ export function planBuild({ brief, refs = [], previous = null, direction } = {})
 
 const runtime = `(() => {
   const byId = id => document.getElementById(id);
+  for (const link of document.querySelectorAll('a[href^="#"]')) {
+    link.addEventListener('click', event => {
+      const target = byId(link.hash.slice(1));
+      if (!target) return;
+      event.preventDefault();
+      if (target.matches('summary')) target.parentElement.open = true;
+      target.focus();
+      target.scrollIntoView({ block: 'start' });
+    });
+  }
   const list = byId('entries');
   const query = byId('search');
   const onlySaved = byId('only-saved');
@@ -213,7 +235,7 @@ const runtime = `(() => {
 })();`;
 
 // Host this document with <iframe sandbox="allow-scripts" srcdoc="…">.
-const policy = "default-src 'none'; base-uri 'none'; form-action 'none'; style-src 'unsafe-inline'; script-src 'sha256-eBNXttFX314RJ0kIN+oGx5i1sDeC3cn3UNW7QNC+P30='";
+const policy = "default-src 'none'; base-uri 'none'; form-action 'none'; style-src 'unsafe-inline'; script-src 'sha256-xvHGW/7JIZ/9ypXmEnEk2SlqukI4cc6ns7W8JJfT+8k='";
 const style = `
 *{box-sizing:border-box}
 :root{color-scheme:light;font:16px/1.55 system-ui,sans-serif;color:#22251e;background:#f8f6ee}
@@ -258,13 +280,20 @@ textarea{min-height:6rem}
 .index .hero{padding:0}
 .index h1{font:700 clamp(2.6rem,5vw,5rem)/.98 system-ui,sans-serif;letter-spacing:-.06em}
 .index .band{border-top:4px solid var(--accent)}
-.editorial .hero{position:relative;padding-right:32%}
-.imprint{position:absolute;right:3%;top:24%;width:20%;aspect-ratio:1.32;transform:rotate(-8deg);color:var(--accent);pointer-events:none}
-.imprint i{position:absolute;inset:0;border:2px solid;border-radius:50%;transform:rotate(-40deg)}
-.imprint i:nth-child(2){transform:rotate(20deg)}
-.imprint i:nth-child(3){transform:rotate(80deg)}
+.editorial .hero:has(.contents){display:grid;grid-template-columns:2fr 1fr;gap:0 5%;align-items:start}
+.hero > .action{justify-self:start}
+.contents{align-self:start;grid-area:1/2/5/3;display:grid;border-top:4px solid var(--accent)}
+.contents a{padding:.7rem 0;border-bottom:1px solid;text-decoration:none;font-weight:600}
+.contents a:hover{text-decoration:underline}
+.entry:has(details[open]){border-bottom-color:var(--accent)}
+@media(prefers-reduced-motion:no-preference){
+  .entry details[open] > p{animation:unfold-note .2s ease-out}
+  .reveal .entry details[open] > p{animation:slide-note .28s ease-out}
+  @keyframes unfold-note{from{opacity:.35;transform:translateY(-.3rem)}}
+  @keyframes slide-note{from{opacity:.35;transform:translateX(-.8rem)}}
+}
 @media(max-width:380px){.display h1{font-size:clamp(2.4rem,13vw,3rem)}}
-@media(max-width:700px){.index .page{display:block;padding-top:2rem}.index .hero{padding-bottom:2rem}.editorial .hero{padding-right:0}.imprint{display:none}.entry{gap:.55rem}.entry button{padding-inline:.65rem}.compose label{width:100%}}
+@media(max-width:700px){.index .page{display:block;padding-top:2rem}.index .hero{padding-bottom:2rem}.editorial .hero{padding-right:0}.editorial .hero:has(.contents){display:flex;flex-direction:column}.contents{display:none}.entry{gap:.55rem}.entry button{padding-inline:.65rem}.compose label{width:100%}}
 `;
 
 function readableInk(hex) {
@@ -275,8 +304,8 @@ function readableInk(hex) {
   return .2126*r + .7152*g + .0722*b > .179 ? '#000' : '#fff';
 }
 
-function entry(title, note, app, open) {
-  return `<li class="entry"><details${open ? ' open' : ''}><summary>${escape(title)}</summary><p>${escape(note)}</p></details>${app ? '<button type="button" aria-pressed="false">Shortlist</button>' : ''}</li>`;
+function entry(title, note, app, open, index) {
+  return `<li class="entry"><details${open ? ' open' : ''}><summary${index == null ? '' : ` id="entry-${index}"`}>${escape(title)}</summary><p>${escape(note)}</p></details>${app ? '<button type="button" aria-pressed="false">Shortlist</button>' : ''}</li>`;
 }
 
 const application = `<button type="button" class="action" id="apply" data-primary aria-controls="application" aria-expanded="false">Apply</button>
@@ -296,18 +325,18 @@ export function compileArtifact(plan) {
   const has = feature => plan.decisions.some(d => d.feature === feature);
   const app = kind === 'app';
   const eligibility = !app && profile === 'program' && has('eligibility');
-  const action = app ? composer : eligibility ? application : `<a data-primary class="action" href="#collection">Explore the ${profile === 'event' ? 'programme' : 'guide'} ↓</a>`;
+  const action = app ? composer : eligibility ? application : `<a data-primary class="action" href="#collection">${escape(content.section)} ↓</a>`;
   const controls = app ? `<div class="tools">${plan.search ? '<label>Search entries<input id="search" type="search"></label>' : ''}${plan.filter ? '<label><input type="checkbox" id="only-saved"> Shortlisted only</label>' : ''}<output id="result" aria-live="polite"></output></div>` : '';
   return `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="${policy}"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${escape(title)}</title><style>:root{--accent:${accent};--on-accent:${readableInk(accent)}}${style}</style></head>
-<body class="${direction}${has('display') ? ' display' : ''}"><main>
+<body class="${direction}${has('display') ? ' display' : ''}${has('reveal') ? ' reveal' : ''}"><main>
 <header><span>${content.label}</span>${has('contents') ? `<a href="#collection">${content.section} ↓</a>` : ''}</header>
 <div class="page"><section class="hero"><h1>${escape(title)}</h1>
-${direction === 'editorial' ? '<span class="imprint" aria-hidden="true"><i></i><i></i><i></i></span>' : ''}
-<p>${content.intro}</p>${eligibility ? '<p class="eligibility"><strong>Who it’s for</strong><br>Founders working on a startup idea or early product.</p>' : ''}${action}</section>
+<p>${content.intro}</p>${eligibility ? '<p class="eligibility"><strong>Who it’s for</strong><br>Founders working on a startup idea or early product.</p>' : ''}${action}
+${direction === 'editorial' && !app ? `<nav class="contents" aria-label="${content.section}">${content.entries.map(([name],i) => `<a href="#entry-${i}">${escape(name)}</a>`).join('')}</nav>` : ''}</section>
 <section id="collection" tabindex="-1" aria-labelledby="section-title"><div class="band"><h2 id="section-title">${content.section}</h2>${app ? '<small>Session notebook</small>' : ''}</div>
-${controls}<ol id="entries">${content.entries.map(([name,note],i) => entry(name,note,app,!i && has('preview'))).join('')}</ol>
+${controls}<ol id="entries">${content.entries.map(([name,note],i) => entry(name,note,app,!i && has('preview'),i)).join('')}</ol>
 ${app ? `<template id="entry-template">${entry('', 'Added in this session.', true, false)}</template>` : ''}</section></div></main><script>${runtime}</script></body></html>`;
 }
 

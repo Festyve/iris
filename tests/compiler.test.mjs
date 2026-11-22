@@ -31,7 +31,7 @@ test('directions and suggestions produce distinct, reproducible artifacts', () =
       assert.match(html, /(?:<summary|<a|<button)[^>]*data-primary/);
       const next = edit(p,p.suggestion);
       assert.notEqual(compileArtifact(next),html);
-      assert.equal(html.includes('class="imprint"'),direction === 'editorial');
+      assert.equal(html.includes('class="contents"'),p.kind === 'landing' && direction === 'editorial');
     }
   }
 });
@@ -78,7 +78,7 @@ test('application draft action prepares entered text locally and restores the cl
     application: {hidden:true}, pitch: {value:'  Help teams sort field notes  ',focus:() => nodes.pitch.focused = true},
     prepare: {addEventListener: (_, fn) => events.prepare = fn}, draft: {}
   };
-  runInNewContext(html.match(/<script>([\s\S]*?)<\/script>/)[1],{document:{getElementById: id => nodes[id]}});
+  runInNewContext(html.match(/<script>([\s\S]*?)<\/script>/)[1],{document:{querySelectorAll:() => [],getElementById: id => nodes[id]}});
   events.open();
   assert.equal(nodes.application.hidden,false);
   assert.equal(nodes.pitch.focused,true);
@@ -112,7 +112,7 @@ test('app script filters, shortlists and adds an entry from a filtered empty sta
   const nodes = {entries:list, search:element(), 'only-saved':element(), result:{}, add:element(),
     'new-entry':element(), 'entry-template':{content:{firstElementChild:{cloneNode:() => row('')}}}};
   const html = compileArtifact(initial('A portfolio app with search and filters'));
-  runInNewContext(html.match(/<script>([\s\S]*?)<\/script>/)[1],{document:{getElementById:id => nodes[id]}});
+  runInNewContext(html.match(/<script>([\s\S]*?)<\/script>/)[1],{document:{querySelectorAll:() => [],getElementById:id => nodes[id]}});
   nodes['only-saved'].checked = true;
   nodes['only-saved'].listeners.change();
   assert.equal(original.hidden,true);
@@ -134,4 +134,14 @@ test('app script filters, shortlists and adds an entry from a filtered empty sta
   assert.equal(nodes.search.value,'');
   assert.equal(nodes['only-saved'].checked,false);
   assert.equal(nodes.result.textContent,'2 entries');
+});
+
+test('a motion reference selects an original disclosure treatment', () => {
+  const ref = { id: 'motion-study', title: 'Reading transition', tags: ['motion'], artwork: 'https://example.test/print.jpg' };
+  const plan = initial('A vinyl landing page', [ref]);
+  assert.deepEqual(plan.referenceIds, [ref.id]);
+  assert.match(plan.mechanism, /Reading transition.*when its entry opens/);
+  const html = compileArtifact(plan);
+  assert.match(html, /<body class="editorial reveal">/);
+  assert.ok(!html.includes(ref.artwork));
 });
