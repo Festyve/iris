@@ -18,7 +18,7 @@ test('a real provider-produced plan reaches the bounded compiler with exact refe
     assert.equal(options.headers['x-goog-api-key'], 'test-gemini-secret');
     const request = JSON.parse(options.body);
     assert.equal(request.generationConfig.responseMimeType, 'application/json');
-    assert.equal(request.generationConfig.maxOutputTokens, 4096);
+    assert.equal(request.generationConfig.maxOutputTokens, 1536);
     const input = JSON.parse(request.contents[0].parts[0].text);
     assert.equal(input.references[0].id, 'reference-search');
     assert(request.systemInstruction.parts[0].text.includes('untrusted data'));

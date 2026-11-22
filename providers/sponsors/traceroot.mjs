@@ -30,7 +30,17 @@ export function createTracing({ env, tracerootLoader = () => import('@traceroot-
           captureInput: false, captureOutput: false }, async () => {
           invoked = true;
           if (receipt) Object.assign(receipt, {id:module.getCurrentTraceId(), destination:local ? 'local OTLP' : 'TraceRoot Cloud', exported:false});
-          try { value = await fn(); return { outcome: 'success' }; }
+          try {
+            value = await fn();
+            const attributes = {'second_cursor.operation':task};
+            if (Array.isArray(value?.reviews)) attributes['second_cursor.persona_count']=value.reviews.length;
+            if (Array.isArray(value?.data?.companies)) attributes['second_cursor.company_count']=value.data.companies.length;
+            if (Array.isArray(value?.data?.citations)) attributes['second_cursor.citation_count']=value.data.citations.length;
+            if (typeof value?.status === 'number') attributes['second_cursor.http_status']=value.status;
+            if (value?.error) attributes['second_cursor.provider_failed']=true;
+            module.updateCurrentSpan?.({attributes});
+            return { outcome: value?.error ? 'provider_error' : 'success' };
+          }
           catch (error) { failure = error; throw new Error('Second Cursor task failed.'); }
         });
         await module.TraceRoot.flush();

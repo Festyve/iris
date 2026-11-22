@@ -1,3 +1,4 @@
+import {outputCaps} from './provider-budget.mjs';
 import { compileArtifact } from './compiler.mjs';
 
 export class AiPlanningError extends Error {
@@ -142,6 +143,8 @@ export function createAiPlanner({ apiKey = '', model = 'gemini-2.5-flash', fetch
       if (direction != null && !directions.includes(direction)) throw fail(400, 'invalid_direction', 'Choose editorial or index.');
       const refs = normalizedReferences(references);
       const prior = previousContext(previous);
+      while (refs.length && Buffer.byteLength(JSON.stringify({brief,references:refs,previous:prior,direction})) > 16384) refs.pop();
+      if (Buffer.byteLength(JSON.stringify({brief,references:refs,previous:prior,direction})) > 16384) throw fail(400, 'context_budget', 'Shorten the brief or previous design context.');
       const signal = AbortSignal.any([AbortSignal.timeout(timeoutMs), ...(externalSignal ? [externalSignal] : [])]);
       if (signal.aborted) throw safeError(null, signal);
       try {
@@ -150,7 +153,7 @@ export function createAiPlanner({ apiKey = '', model = 'gemini-2.5-flash', fetch
           body: JSON.stringify({
             systemInstruction: { parts: [{ text: instructions }] },
             contents: [{ role: 'user', parts: [{ text: JSON.stringify({ brief: clean(brief, 2400), references: refs, previous: prior, direction: direction ?? null }) }] }],
-            generationConfig: { responseMimeType: 'application/json', responseSchema, temperature: 0.3, maxOutputTokens: 4096 },
+            generationConfig: { responseMimeType: 'application/json', responseSchema, temperature: 0.3, maxOutputTokens: outputCaps.plan },
           }),
         });
         if (!response.ok) {

@@ -31,7 +31,7 @@ function cleanRequest({ htmlSummary = '', plan = {}, brief, references = [] } = 
     return {
       id: String(ref.id || '').slice(0, 160), title: String(ref.title || '').slice(0, 300),
       observation: String(ref.observation || ref.adaptation || ref.body || '').slice(0, 1600),
-      features: Array.isArray(ref.features) ? ref.features.slice(0, 12).map(tag => String(tag).slice(0, 80)) : []
+      features: Array.isArray(ref.features ?? ref.tags) ? (ref.features ?? ref.tags).slice(0, 12).map(tag => String(tag).slice(0, 80)) : []
     };
   });
   const summary = htmlSummary.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '')
@@ -80,7 +80,7 @@ export function createExpectedParrotReviewer({
       if (signal && (typeof signal.addEventListener !== 'function' || typeof signal.removeEventListener !== 'function')) throw invalid('Provide a valid cancellation signal.');
       const payload = cleanRequest(input);
       const serialized = JSON.stringify(payload);
-      if (Buffer.byteLength(serialized) > 60000) throw invalid('The review content is too large. Shorten the summary or selected references.');
+      if (Buffer.byteLength(serialized) > 16384) throw invalid('The review content is too large. Shorten the summary or selected references.');
       if (signal?.aborted) throw new ExpectedParrotError(499, 'cancelled', 'The simulated review was cancelled.');
       if (!key || /[\r\n\0]/.test(key)) throw new ExpectedParrotError(503, 'not_configured', 'Add EXPECTED_PARROT_API_KEY to the server environment to enable simulated review.');
       if (!status().runtimeReady) throw new ExpectedParrotError(503, 'runtime_missing', 'Install the Expected Parrot Python environment using providers/expected-parrot/README.md.');

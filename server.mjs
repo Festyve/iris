@@ -6,6 +6,8 @@ import { createVoiceService, VoiceServiceError } from './voice-service.mjs';
 import { createAiPlanner, AiPlanningError } from './studio/ai-planner.mjs';
 import { serviceRoute, integrationStatus, sponsors } from './studio/services.mjs';
 import { serveStudio, handleVoice } from './studio/server.mjs';
+import {openBudget, outputCaps} from './studio/provider-budget.mjs';
+const budget=openBudget();
 const secret=randomBytes(24).toString('hex');
 const port=Number(process.env.STUDIO_PORT || 4739);
 if (!Number.isInteger(port) || port < 1 || port > 65535) throw Error('Invalid STUDIO_PORT.');
@@ -23,8 +25,9 @@ const schema={type:'OBJECT',properties:{
 const artDirection='You are the mobile art director for a print fair poster. You have an editable 390 by 670 mobile frame. The input describes the desktop design and current mobile controls. Interpret the new instruction, retaining prior choices unless superseded. For big art and legible logistics, put the date on the quieter edge. For an expressive or loud design, try intentional overlap and a larger hero. For precise, editorial hierarchy, stack the title and image and share a left edge. These are references, not requirements. Supported edits: composition (stack/overlap/auto), mobile title, date and venue alignment (left/right), scale of the hero (0.65 to 1.35), and date position (top/bottom). Choose the closest supported edit; if impossible keep previous values and explain. Return one short specific sentence describing the choice and the primary affected layer as focus.';
 async function collect(req,limit){const chunks=[];let total=0;for await(const c of req){total+=c.length;if(total>limit)throw Error('Request is too large');chunks.push(c)}return Buffer.concat(chunks)}
 function json(res,status,value){res.writeHead(status,{'Content-Type':'application/json','Cache-Control':'no-store'});res.end(JSON.stringify(value))}
-async function requestPlan(instruction,format,parts){
-  const r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/'+encodeURIComponent(model)+':generateContent',{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':designKey},signal:AbortSignal.timeout(28000),body:JSON.stringify({systemInstruction:{parts:[{text:instruction}]},contents:[{role:'user',parts}],generationConfig:{responseMimeType:'application/json',responseSchema:format}})});
+async function requestPlan(instruction,format,parts,maxOutputTokens=outputCaps.poster){
+  if (Buffer.byteLength(JSON.stringify([instruction,format,parts.map(p=>p.text || '')]))>32768) throw Error('Design context exceeds the 32 KiB text budget. Select fewer layers.');
+  const r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/'+encodeURIComponent(model)+':generateContent',{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':designKey},signal:AbortSignal.timeout(28000),body:JSON.stringify({systemInstruction:{parts:[{text:instruction}]},contents:[{role:'user',parts}],generationConfig:{maxOutputTokens,responseMimeType:'application/json',responseSchema:format}})});
   if(!r.ok)throw Error('Design service returned '+r.status+'. Check the model, key and quota.');
   const raw=await r.json();return JSON.parse(raw.candidates?.[0]?.content?.parts?.filter(x=>!x.thought).map(x=>x.text||'').join('')||'{}');
 }
@@ -38,7 +41,7 @@ async function newScreen(req,res){
   const format={type:'OBJECT',properties:{name:str,width:integer,height:integer,background:str,layers:{type:'ARRAY',items:layer}},required:['name','width','height','background','layers']};
   const prompt='You are Iris, a product designer. Design exactly one original, polished UI screen for the user brief. Choose a suitable mobile or desktop viewport (240–1920 wide, 240–2400 high). Return ordered editable primitives from back to front, ideally 25–65 layers. Every layer must be fully within the frame, with positive w and h, a useful name and a six-digit hex fill. Background is also a six-digit hex color. For text, supply text, size 8–110, optional bold, and enough height and width for all characters. Use short realistic copy specific to the product. Use whitespace, hierarchy, distinct information regions and legible contrast. Use rects with radius, ellipses and text for components. No external assets or code.';
   try{
-    const generated=await requestPlan(prompt,format,[{text:note}]);
+    const generated=await requestPlan(prompt,format,[{text:note}],outputCaps.screen);
     return json(res,200,{screen:Screens.check(generated)});
   }catch(e){return json(res,502,{error:e.message||'Could not generate the screen. Try again.'})}
 }
@@ -74,6 +77,12 @@ const server=http.createServer(async(req,res)=>{
     if(await serveStudio(req,res))return;
     if(req.method==='GET'&&req.url==='/'){res.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store'});return res.end(await readFile(new URL('./ui.html',import.meta.url)))}
     if(req.headers.authorization!=='Bearer '+secret)return json(res,401,{error:'Invalid session key.'});
+    const path=new URL(req.url,'http://localhost').pathname;
+    if(req.method==='GET' && path==='/provider-usage')return json(res,200,budget.status());
+    if(req.method==='POST' && !budget.admit(path)) {
+      res.setHeader('Retry-After',String(86400-Math.floor(Date.now()/1000)%86400));
+      return json(res,429,{code:'daily_provider_limit',error:'Daily provider allowance reached. It resets at midnight UTC.'});
+    }
     if(req.method==='GET'&&req.url==='/status')return json(res,200,{design:!!designKey,voice:speech.status().transcriptionConfigured,...speech.status(),...integrationStatus()});
     if(await serviceRoute(req,res,json,collect))return;
     if(req.method==='POST'&&req.url==='/studio-plan'){

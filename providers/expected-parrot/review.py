@@ -28,13 +28,13 @@ def build_job(payload, model_name=None):
             "Using only the supplied brief, semantic content, plan and reference observations, give at most three "
             "specific improvements. For each, state the observation, why it matters, and the concrete change. "
             "Do not claim to have seen a screenshot, measured contrast, used a browser or interviewed people. "
-            "If a property cannot be judged from the provided content, say so. Keep the response under 350 words."
+            "If a property cannot be judged from the provided content, say so. Use at most 150 words. Cite a supplied reference or control by name when relevant. Prioritize one change and describe how to verify it."
         ),
     )
     job = Survey([question]).by(agents).by(Scenario({"design_data": json.dumps(payload, ensure_ascii=False)}))
     if model_name:
         from edsl import Model
-        job = job.by(Model(model_name))
+        job = job.by(Model(model_name, max_tokens=384))
     return job
 
 

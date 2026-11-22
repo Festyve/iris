@@ -34,3 +34,17 @@ Do not count logos, empty adapters, mocked responses or documentation queries as
 ## Runtime configuration
 
 Keep server secrets in the ignored `.env`. Gemini uses `GEMINI_API_KEY`. ElevenLabs transcription uses `ELEVENLABS_API_KEY`, speech playback additionally uses `ELEVENLABS_VOICE_ID`, and conversational sessions require `ELEVENLABS_AGENT_ID`. Restart the server after changing credentials. Use the session link printed by the server for authenticated calls.
+
+## Studio server usage limits
+
+Authenticated `GET /provider-usage` reports reservations and limits for the current UTC day. All local studio server instances under the same OS account share `~/.second-cursor/usage.sqlite`. A full bucket returns HTTP 429 with Retry-After before provider dispatch. Reservations count attempted requests, including failures and cancellations. Midnight UTC starts a new allowance.
+
+| Operation | Upper bound |
+| --- | --- |
+| Model generation | 16,384 requested output tokens per UTC day across Gemini and hosted design critique. One studio plan or poster edit reserves 1,536, a new editable screen reserves 4,096, and a three-persona review reserves 3 × 384. |
+| Model context | 16 KiB of serialized user context for studio planning and review. Legacy Figma requests allow 32 KiB of text alongside the existing bounded screenshot input. Provider instructions, schemas and image accounting are additional. |
+| ElevenLabs | 12 transcriptions, 24 speech requests and 4 signed session requests per day. |
+| Codevisor | 4 repository task dispatch requests per day. |
+| External project tools | 24 combined company, audience, memory and permission requests per day. |
+
+Provider-managed conversation duration, downstream worker tokens, provider retries and account-wide billing require limits in the corresponding provider account. Local artifact generation and the Maritime read-only repo lookup consume no model reservation. Design reviews include compiler checks, button labels and reference feature tags. TraceRoot spans record operation counts and response status without sending note contents or critique text.

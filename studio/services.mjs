@@ -78,6 +78,16 @@ export async function serviceRoute(req, res, json, collect) {
       result = await sponsors.withTrace({runId,taskId:'reference-research'},()=>({matches:retrieve(refs,brief,pinned)}));
     } else if (req.method === 'POST' && url.pathname === '/persona-review') {
       const data = await body();
+      // Derive evidence from the same bounded compiler that produces the artifact.
+      // Earlier clients may supply only a summary and a partial plan.
+      if (data.plan?.planningMode && data.plan?.kind && Array.isArray(data.plan.decisions)) {
+        const html = compileArtifact(data.plan);
+        const checks = verifyArtifact(html,data.plan);
+        const controls = [...html.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi,'').matchAll(/<button\b[^>]*>([^<]{1,100})<\/button>/gi)]
+          .slice(0,8).map(match=>match[1]);
+        data.htmlSummary = [String(data.htmlSummary || '').slice(0,1600), 'Compiler checks: '+JSON.stringify(checks),
+          'Buttons in compiled HTML: '+controls.join(', ')].join('\n');
+      }
       result = await sponsors.withTrace({runId:data.runId || 'studio',taskId:'persona-review'},
         () => reviewer.review({...data, signal:stop.signal}));
     } else if (req.method === 'POST' && url.pathname === '/artifact-build') {
@@ -97,7 +107,7 @@ export async function serviceRoute(req, res, json, collect) {
       const args = tool === 'identity' ? {actionId:'github-profile',context:{projectId:'local-studio'}}
         : tool === 'repo-permission' ? {actionId:'github-iris-metadata',context:{repo:input.repo ?? 'Festyve/iris',method:input.method ?? 'GET',projectId:'local-studio'}}
         : ['decision','memory'].includes(tool) ? {...input,projectId:'local-studio'} : input;
-      result = await sponsors[methods[tool]]({...args,signal:stop.signal});
+      result = await sponsors.withTrace({runId:'local-studio',taskId:'provider-'+tool}, () => sponsors[methods[tool]]({...args,signal:stop.signal}));
       if (result.error) { json(res,result.status || 503,result); return true; }
     } else return false;
     json(res, 200, result?.agentId ? {...result,taskId:result.agentId} : result);
