@@ -14,3 +14,4 @@
 .version-picker{display:block;font-size:13px;margin-top:12px}.version-picker select{display:block;width:100%;margin-top:4px;font:inherit;padding:6px;background:var(--paper);color:var(--ink);border:1px solid var(--line)}
 .checks label input:not([type=checkbox]){display:block;width:100%;padding:6px;margin:5px 0 8px}
 .checks output{white-space:pre-wrap;overflow-wrap:anywhere}
+@media(max-width:360px){.section-title{gap:6px}.section-title h1{font-size:32px}.local-dot{font-size:11px}.canvas-foot{padding-inline:10px}.canvas-foot button{font-size:12px;white-space:nowrap}}

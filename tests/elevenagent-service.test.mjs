@@ -166,7 +166,7 @@ test('invalid tool arguments and missing callbacks cannot trigger actions', asyn
 });
 
 test('tool results redact credential fields and secret-shaped errors before returning to the agent', async () => {
-  const tools = createAgentClientTools({ getContext: async () => ({ title: 'My repo', apiKey: 'do-not-share', authorization: 'do-not-share', nested: { token: 'do-not-share' } }),
+  const tools = createAgentClientTools({ getContext: async () => ({ title: 'My repo', apiKey: 'do-not-share', authorization: 'do-not-share', nested: { token: 'do-not-share', localSessionToken: 'do-not-share' } }),
     onRepoTask: async () => { throw Error('bad sk-0123456789abcdefgh'); } });
   const context = await tools.get_project_context();
   assert(!context.includes('do-not-share'));

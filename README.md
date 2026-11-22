@@ -4,14 +4,13 @@ Build a working landing page or small application from a brief and your own refe
 
 ## Run locally
 
-Use Node 22.12 or later for the React studio. From this directory run:
+Use Node 24.22.1 or later and Wasp 0.26.1 for the studio with its SQLite project archive. On this machine the dependencies and archive database are installed. From this directory run:
 
 ```sh
-npm ci
-node build.mjs
-npm run build:studio
-node --env-file-if-exists=.env server.mjs
+npm start
 ```
+
+For a fresh checkout, run `npm ci` and follow the initial database setup in [the Wasp archive runbook](wasp-studio/README.md). The launcher builds the studio and starts or reuses the local services. The archive API runs on port 3002 and its browser on 3003.
 
 Open **http://localhost:4739/studio/**. For server-backed features, use the private studio link printed by the server. The fragment contains a temporary session key. The Iris browser adapter remains at **http://localhost:4739/** and the Figma development plugin still loads from `manifest.json`.
 
@@ -25,7 +24,11 @@ Open **http://localhost:4739/studio/**. For server-backed features, use the priv
 
 Local planning uses bounded rules, two compositions and a set of subject profiles. Gemini can choose a structured design plan when the server has `GEMINI_API_KEY`. The compiler produces the HTML, checks it, and renders it in isolated frames at 390 and 1024 pixels before saving a version. A failed or cancelled run keeps the previous deliverable.
 
+**Talk to your repository** uses a private ElevenAgents WebSocket session. Its six client tools can inspect this project, propose and build a design, cancel a run, dispatch a Codevisor worktree task and read its result. The server signs sessions with `ELEVENLABS_API_KEY` and `ELEVENLABS_AGENT_ID`. Successful dispatch returns a task ID; the completed task report identifies any code changes or commit.
+
 Set secrets in the ignored `.env`. Scribe transcription requires `ELEVENLABS_API_KEY`. Spoken feedback also requires `ELEVENLABS_VOICE_ID`. The studio lets you edit a transcript in the companion before submitting it. Integration availability and evidence are recorded in [the integration map](docs/INTEGRATIONS.md).
+
+The checked-in browser evidence shows the working companion, the revised mobile app, and the landing page informed by the founder reference. [Desktop build](docs/evidence/studio-desktop.png) · [Mobile revision](docs/evidence/studio-mobile.png) · [Founder landing](docs/evidence/founder-landing.png)
 
 ## Verify the studio
 

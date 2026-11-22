@@ -263,6 +263,7 @@ textarea{min-height:6rem}
 .imprint i{position:absolute;inset:0;border:2px solid;border-radius:50%;transform:rotate(-40deg)}
 .imprint i:nth-child(2){transform:rotate(20deg)}
 .imprint i:nth-child(3){transform:rotate(80deg)}
+@media(max-width:380px){.display h1{font-size:clamp(2.4rem,13vw,3rem)}}
 @media(max-width:700px){.index .page{display:block;padding-top:2rem}.index .hero{padding-bottom:2rem}.editorial .hero{padding-right:0}.imprint{display:none}.entry{gap:.55rem}.entry button{padding-inline:.65rem}.compose label{width:100%}}
 `;
 

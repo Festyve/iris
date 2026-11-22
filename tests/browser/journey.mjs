@@ -68,6 +68,7 @@ try {
   await send('Build a searchable app named "Field Index" for design references');
   await build();
   await frame.getByRole('heading',{name:'Field Index',exact:true}).waitFor();
+  await page.screenshot({path:join(out,'companion-build.png')});
   await button('Dismiss companion').click();
   await frame.locator('[data-primary]').click();
   await frame.locator('#entry-title, #entry-name, #new-entry').first().fill('Hansel print study');
