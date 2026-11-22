@@ -8,7 +8,8 @@ A design-reference library for the Iris agent and for humans. Open this folder a
 How it plugs into Iris:
 1. **Profiles** in `Profiles/` are selectable house styles. Each has a brief, colour tokens, type and layout rules, and 3 reference images, written so a designer model can follow them.
 2. **Aesthetic notes** collect references by style, each image linked to its source.
-3. The wiring that sends a chosen profile and its images to the designer, plus a `set_profile` voice tool, was built on the pre-rebuild code and lives on the `feat/elevenlabs-voice-agent` branch. Porting it into `designer.mjs` is a follow-up.
+3. Website builds now match the captures and image captions here automatically. Named site reconstructions run locally. For custom website briefs the connected designer also sees the source screenshot and a related visual.
+4. The wiring that sends a chosen profile and its images to the designer, plus a `set_profile` voice tool, was built on the pre-rebuild code and lives on the `feat/elevenlabs-voice-agent` branch. Porting it into `designer.mjs` is a follow-up.
 
 ## Profiles
 | Profile | Style |

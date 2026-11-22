@@ -138,6 +138,11 @@ function place(r, f, S, li, n) {
 function makeNode(r, L, ls) {
   let n;
   if (L.kind === 'text') { n = figma.createText(); n.textAutoResize = 'WIDTH_AND_HEIGHT'; }
+  else if (Websites.artwork(L.art)) {
+    n = figma.createVector();
+    n.vectorPaths = [{windingRule:'EVENODD',data:Websites.artwork(L.art).path}]; n.strokes = [];
+    n.setPluginData('iris-art',L.art);
+  }
   else if (L.kind === 'line') { n = figma.createVector(); n.fills = []; n.strokeCap = 'ROUND'; n.strokeJoin = 'ROUND'; }
   else if (L.kind === 'icon') { n = figma.createNodeFromSvg(Icons.svg(ls.icon, 24, ls.color, L.sw || 2)); n.clipsContent = false; if (L.w !== 24) n.rescale(L.w / 24); }
   else n = L.kind === 'ellipse' ? figma.createEllipse() : figma.createRectangle();
@@ -149,9 +154,9 @@ function layer(r, f, S, ref, ls, li) {
   let n = r.nodes.get(id), c = r.cache.get(id);
   if (n && n.removed) n = null;
   if (!c) { c = {}; r.cache.set(id, c); }
-  const wantType = L.kind === 'text' ? 'TEXT' : L.kind === 'line' ? 'VECTOR' : L.kind === 'icon' ? 'FRAME' : L.kind === 'ellipse' ? 'ELLIPSE' : 'RECTANGLE';
+  const wantType = L.kind === 'text' ? 'TEXT' : L.kind === 'line' || Websites.artwork(L.art) ? 'VECTOR' : L.kind === 'icon' ? 'FRAME' : L.kind === 'ellipse' ? 'ELLIPSE' : 'RECTANGLE';
   // Icons are rebuilt when their glyph or colour changes; any node of the wrong type is replaced.
-  if (n && (n.type !== wantType || (L.kind === 'icon' && c.glyph !== undefined && c.glyph !== ls.icon + ls.color) || (L.kind === 'icon' && c.glyph === undefined && ref.prev && (ref.prev.icon !== ls.icon || ref.prev.stroke !== ls.color)))) { n.remove(); n = null; }
+  if (n && (n.type !== wantType || (n.type === 'VECTOR' && (n.getPluginData('iris-art') || '') !== (L.art || '')) || (L.kind === 'icon' && c.glyph !== undefined && c.glyph !== ls.icon + ls.color) || (L.kind === 'icon' && c.glyph === undefined && ref.prev && (ref.prev.icon !== ls.icon || ref.prev.stroke !== ls.color)))) { n.remove(); n = null; }
   if (!n) {
     n = makeNode(r, L, ls); n.name = L.name; n.setPluginData(LAYER_KEY, L.id);
     place(r, f, S, li, n); r.nodes.set(id, n);
@@ -207,7 +212,7 @@ function layer(r, f, S, ref, ls, li) {
     if (L.stroke || (!L.fill && placeholder)) { n.strokes = [solid(placeholder && !L.fill ? Crew.PLACEHOLDER : L.stroke)]; n.strokeWeight = L.sw || 1; n.strokeAlign = 'CENTER'; } else n.strokes = [];
     n.effects = L.shadow && !placeholder ? [{type: 'DROP_SHADOW', color: S.dark ? {r: 0, g: 0, b: 0, a: .5} : {r: .086, g: .086, b: .19, a: .13}, offset: {x: 0, y: 10}, radius: 30, spread: 0, visible: true, blendMode: 'NORMAL', showShadowBehindNode: false}] : [];
   }
-  if (L.kind === 'rect') { const rad = exact ? ls.radius : Math.round(ls.radius * 2) / 2; if (c.r !== rad) { c.r = rad; n.cornerRadius = rad; } }
+  if (n.type === 'RECTANGLE') { const rad = exact ? ls.radius : Math.round(ls.radius * 2) / 2; if (c.r !== rad) { c.r = rad; n.cornerRadius = rad; } }
 }
 
 function makeCursor(r, c) {
@@ -284,7 +289,7 @@ function readback(design) {
     const out = {id: id.slice(id.indexOf('/') + 1), x: n.x, y: n.y, w: n.width, h: n.height};
     const first = list => Array.isArray(list) && list[0] && list[0].type === 'SOLID' ? toHex(list[0].color) : undefined;
     if (n.type === 'TEXT') { out.text = n.characters; out.fill = first(n.fills); }
-    else if (n.type === 'VECTOR') out.fill = first(n.strokes);
+    else if (n.type === 'VECTOR') out.fill = first(n.getPluginData('iris-art') ? n.fills : n.strokes);
     else if (n.type === 'RECTANGLE' || n.type === 'ELLIPSE') out.fill = first(n.fills);
     nodes.push(out);
   }

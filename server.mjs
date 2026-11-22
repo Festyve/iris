@@ -8,6 +8,7 @@ import {join, basename} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {ElevenLabsClient} from '@elevenlabs/elevenlabs-js';
 import {design, edit} from './designer.mjs';
+import {websiteDesign} from './references/planner.mjs';
 
 // The session key survives restarts (kept in .iris-session, never committed), so you paste it
 // into the browser or the Figma plugin once and it keeps working.
@@ -157,17 +158,20 @@ const server = http.createServer(async (req, res) => {
     if (req.method === 'GET' && url.pathname === '/voice.js') { res.writeHead(200, {'Content-Type': 'text/javascript; charset=utf-8', 'Cache-Control': 'no-store'}); return res.end(await readFile(new URL('./voice.bundle.js', import.meta.url))); }
     if (req.method === 'GET' && url.pathname === '/bridge') { if (url.searchParams.get('key') !== secret) return json(res, 401, {error: 'Invalid session key.'}); return openBridge(req, res); }
     if (req.headers.authorization !== 'Bearer ' + secret) return json(res, 401, {error: 'Invalid session key.'});
-    if (req.method === 'GET' && req.url === '/status') return json(res, 200, {design: !!client, voice: !!voiceKey, model: MODEL, agent: !!(eleven && agentId), studio: studios.size > 0});
+    if (req.method === 'GET' && req.url === '/status') return json(res, 200, {design: !!client, vaultWebsites: true, voice: !!voiceKey, model: MODEL, agent: !!(eleven && agentId), studio: studios.size > 0});
     if (req.method === 'GET' && url.pathname === '/voice/session') return await voiceSession(res);
     if (req.method === 'POST' && url.pathname === '/bridge/command') return await relay(req, res);
     if (req.method === 'POST' && url.pathname === '/bridge/result') return await relayResult(req, res);
     if (req.method === 'POST' && url.pathname === '/critique') return await critique(req, res);
     if (req.method === 'GET' && url.pathname === '/references') return await references(url, res);
     if (req.method === 'POST' && (req.url === '/board' || req.url === '/edit')) {
-      if (!client) return json(res, 503, {error: 'Set ANTHROPIC_API_KEY (or run ant auth login) and restart the server.'});
       const body = JSON.parse((await collect(req, 4_000_000)).toString());
       const started = Date.now();
-      const out = req.url === '/board' ? await design(body.note, ask) : await edit(body.doc, body.note, ask);
+      let out = req.url === '/board' ? await websiteDesign(body.note,vaultDir,client ? ask : null) : null;
+      if (!out) {
+        if (!client) return json(res,503,{error:'Connect Claude to design an app or apply edits.'});
+        out = req.url === '/board' ? await design(body.note,ask) : await edit(body.doc,body.note,ask);
+      }
       console.log((req.url === '/board' ? 'Designed ' : 'Edited ') + 'in ' + ((Date.now() - started) / 1000).toFixed(1) + 's: ' + (out.summary || ''));
       return json(res, 200, out);
     }
