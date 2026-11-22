@@ -9,7 +9,7 @@ import {readFile, readdir, stat} from 'node:fs/promises';
 import {readFileSync, writeFileSync} from 'node:fs';
 import {join, basename} from 'node:path';
 import {fileURLToPath} from 'node:url';
-import {ElevenLabsClient} from '@elevenlabs/elevenlabs-js';
+import {createElevenAgentService} from './studio/elevenagent-service.mjs';
 import {design, edit} from './designer.mjs';
 import {loadProfiles, profileStyle} from './profiles.mjs';
 import {capture} from './references/captures.mjs';
@@ -25,9 +25,9 @@ const port = Number(process.env.STUDIO_PORT || 4739);
 const origin = 'http://localhost:'+port;
 const voiceKey = process.env.ELEVENLABS_API_KEY;
 const MODEL = 'claude-opus-5-5';
-const eleven = voiceKey ? new ElevenLabsClient({apiKey: voiceKey}) : null;
 let agentId = process.env.ELEVENLABS_AGENT_ID || '';
 if (!agentId) try { agentId = JSON.parse(await readFile(new URL('./.iris-agent.json', import.meta.url), 'utf8')).agentId || ''; } catch (e) { /* run npm run agent */ }
+const irisVoice = createElevenAgentService({apiKey: voiceKey, agentId});
 let vaultDir = process.env.IRIS_VAULT || '';
 if (!vaultDir) try { if ((await stat(new URL('./vault', import.meta.url))).isDirectory()) vaultDir = fileURLToPath(new URL('./vault', import.meta.url)); } catch (e) { /* no reference vault */ }
 
@@ -91,10 +91,8 @@ async function voice(req, res) {
 
 // ---------- Talk to Iris: ElevenLabs agent sessions, plugin bridge, critique, references ----------
 async function voiceSession(res) {
-  if (!eleven) return json(res, 503, {error: 'Set ELEVENLABS_API_KEY and restart the server.'});
-  if (!agentId) return json(res, 503, {error: 'No Iris voice agent yet. Run npm run agent, then restart the server.'});
-  try { const r = await eleven.conversationalAi.conversations.getWebrtcToken({agentId}); json(res, 200, {conversationToken: r.token}); }
-  catch (e) { json(res, 502, {error: 'ElevenLabs could not start a voice session (' + (e.statusCode || e.message) + '). Check the key and agent.'}); }
+  try { json(res, 200, await irisVoice.createSession()); }
+  catch (error) { json(res, error.status || 502, {error: error.message}); }
 }
 // The Figma plugin holds an event stream open here; a voice session in the browser sends tool calls through it.
 const studios = new Set(), pending = new Map(); let commandNo = 0;
@@ -171,7 +169,7 @@ const server = http.createServer(async (req, res) => {
     if (req.method === 'GET' && url.pathname === '/voice.js') { res.writeHead(200, {'Content-Type': 'text/javascript; charset=utf-8', 'Cache-Control': 'no-store'}); return res.end(await readFile(new URL('./voice.bundle.js', import.meta.url))); }
     if (req.method === 'GET' && url.pathname === '/bridge') { if (url.searchParams.get('key') !== secret) return json(res, 401, {error: 'Invalid session key.'}); return openBridge(req, res); }
     if (req.headers.authorization !== 'Bearer ' + secret) return json(res, 401, {error: 'Invalid session key.'});
-    if (req.method === 'GET' && req.url === '/status') return json(res, 200, {design: !!client, vaultWebsites: true, voice: !!voiceKey, model: MODEL, agent: !!(eleven && agentId), studio: studios.size > 0});
+    if (req.method === 'GET' && req.url === '/status') return json(res, 200, {design: !!client, vaultWebsites: true, voice: !!voiceKey, model: MODEL, agent: irisVoice.status().configured, studio: studios.size > 0});
     if (req.method === 'GET' && url.pathname === '/voice/session') { reserve('/eleven-agent/session'); return await voiceSession(res); }
     if (req.method === 'POST' && url.pathname === '/bridge/command') return await relay(req, res);
     if (req.method === 'POST' && url.pathname === '/bridge/result') return await relayResult(req, res);
