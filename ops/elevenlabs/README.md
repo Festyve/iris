@@ -2,7 +2,7 @@
 
 This is a real conversational agent connection, separate from voice-note transcription and reply playback.
 
-The server needs `ELEVENLABS_API_KEY` and `ELEVENLABS_AGENT_ID` in its ignored environment. The key needs access to the configured ElevenLabs agent and conversation-session issuance. Keep the key out of browser code, prompts, logs and Git. An agent created through another account cannot be accessed by an unrelated key.
+The server needs `ELEVENLABS_API_KEY` and `ELEVENLABS_STUDIO_AGENT_ID` for the repository assistant. Root Iris uses `ELEVENLABS_AGENT_ID` in its ignored environment. The key needs access to the configured ElevenLabs agent and conversation-session issuance. Keep the key out of browser code, prompts, logs and Git. An agent created through another account cannot be accessed by an unrelated key.
 
 `studio/elevenagent-service.mjs` issues a new private-agent signed URL per conversation. The authenticated `POST /eleven-agent/session` route should return `createSession()` with `Cache-Control: no-store`. It must never return the API key.
 
@@ -33,6 +33,8 @@ The user must choose Start and grant microphone access. End releases the SDK ses
 
 ```sh
 node --test tests/elevenagent-service.test.mjs
+# With the local server running under the same environment
+node --env-file=.env ops/elevenlabs/verify-sessions.mjs
 ```
 
 Tests mock the remote API and exercise real local client-tool handlers. A successful signed-URL test or configured environment alone does not prove a live conversation. Final verification requires a microphone conversation in the browser and a client tool that demonstrably changes or reads the project.
@@ -43,3 +45,5 @@ Official references:
 - https://elevenlabs.io/docs/api-reference/conversations/get-signed-url
 - https://elevenlabs.io/docs/eleven-agents/customization/tools/client-tools
 - https://elevenlabs.io/docs/eleven-agents/customization/authentication
+
+Root `GET /voice/session` now returns `signedUrl` and `connectionType: "websocket"`. Existing WebRTC callers that consume `conversationToken` must migrate before using this endpoint. The live verifier starts two short provider sessions and closes each after initialization, without microphone input or tool execution.

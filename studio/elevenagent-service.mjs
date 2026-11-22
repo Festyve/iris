@@ -31,7 +31,7 @@ export function createElevenAgentService({ apiKey = '', agentId = '', fetchImpl 
     status: () => ({ configured: keyConfigured && agentConfigured, provider: 'elevenlabs', transport: 'websocket' }),
     async createSession({ signal: externalSignal } = {}) {
       if (!keyConfigured) throw fail(503, 'eleven_agent_not_configured', 'Set ELEVENLABS_API_KEY on the server to start a live agent conversation.');
-      if (!agentConfigured) throw fail(503, 'eleven_agent_missing', 'Set ELEVENLABS_AGENT_ID on the server to start a live agent conversation.');
+      if (!agentConfigured) throw fail(503, 'eleven_agent_missing', 'Configure the conversation agent ID on the server to start a live agent conversation.');
       const signal = AbortSignal.any([AbortSignal.timeout(timeoutMs), ...(externalSignal ? [externalSignal] : [])]);
       if (signal.aborted) throw safeError(null, signal);
       try {
@@ -44,7 +44,7 @@ export function createElevenAgentService({ apiKey = '', agentId = '', fetchImpl 
         if (!response.ok) {
           response.body?.cancel().catch(() => {});
           if ([401, 403].includes(response.status)) throw fail(502, 'eleven_agent_auth', 'ElevenLabs rejected conversation access. Check the server key, Agents permission and ownership of the configured agent.');
-          if (response.status === 404) throw fail(503, 'eleven_agent_missing', 'The configured ElevenLabs agent could not be found. Check ELEVENLABS_AGENT_ID.');
+          if (response.status === 404) throw fail(503, 'eleven_agent_missing', 'The configured ElevenLabs agent could not be found. Check the configured agent ID.');
           if (response.status === 429) throw fail(429, 'eleven_agent_quota', 'ElevenLabs conversation quota or rate limit reached. Try again later.');
           throw fail(502, 'eleven_agent_rejected', 'ElevenLabs could not start a conversation. Check the agent configuration.');
         }

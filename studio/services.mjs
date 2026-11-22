@@ -12,7 +12,7 @@ import { compileArtifact, verifyArtifact } from './compiler.mjs';
 export const sponsors = createSponsorHub({});
 const reviewer = createExpectedParrotReviewer();
 const repo = createRepoGateway({ repoPath: fileURLToPath(new URL('../', import.meta.url)) });
-const agent = createElevenAgentService({ apiKey: process.env.ELEVENLABS_API_KEY, agentId: process.env.ELEVENLABS_AGENT_ID });
+const agent = createElevenAgentService({ apiKey: process.env.ELEVENLABS_API_KEY, agentId: process.env.ELEVENLABS_STUDIO_AGENT_ID });
 export function integrationStatus() {
   return { elevenAgent: agent.status(), repo: repo.status(), reviewer:reviewer.status(), sponsors:sponsors.status() };
 }

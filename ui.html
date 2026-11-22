@@ -3060,6 +3060,17 @@ const Websites = (() => {
       return {frame: seen.frame.name, size: seen.frame.width + ' by ' + seen.frame.height, selected: seen.selected, copy: seen.texts.slice(0, 25),
         critique: critique || 'No visual critique is available (Claude is not connected), so judge from the copy and say you cannot see the pixels.'};
     },
+    build_screen({brief, cursors, profile}) {
+      if (cursors) {
+        const choice = Array.from($('crew-size').children).find(button => button.title === cursors + ' cursors');
+        if (!choice) return {error: 'This canvas does not support that crew size.'};
+        choice.click();
+      }
+      return tools.build_design({brief, profile});
+    },
+    refine_design({direction, mode, profile}) {
+      return tools.change_design({change: mode === 'grid' ? 'Adapt the design for responsive breakpoints. ' + direction : direction, profile});
+    },
     async build_design({brief, profile}) {
       if (profile !== undefined && !Iris.setProfile(profile)) return {error: 'Unknown design profile ' + profile + '. Options: ' + Iris.profiles.map(p => p.id).join(', ')};
       const out = await Iris.build(brief);
@@ -3126,7 +3137,7 @@ const Websites = (() => {
   }
   async function start() {
     if (!Iris.connected) { $('settings').hidden = false; state('idle', 'Connect the local service first: paste the session key in ⚙.'); return; }
-    if (!Iris.service.agent) { state('idle', 'No voice agent. Set ELEVENLABS_API_KEY, run npm run agent and restart the server.'); return; }
+    if (!Iris.service.agent) { state('idle', 'No voice agent. Configure the server key and Iris agent ID, then restart the server.'); return; }
     state('connecting', 'Asking for the microphone…');
     try { const s = await navigator.mediaDevices.getUserMedia({audio: true}); s.getTracks().forEach(x => x.stop()); }
     catch (e) {
@@ -3137,10 +3148,10 @@ const Websites = (() => {
     try {
       state('connecting', 'Connecting to Iris…');
       await loadClient();
-      const {conversationToken} = await Iris.call('/voice/session', null, null, 15000);
+      const {signedUrl} = await Iris.call('/voice/session', null, null, 15000);
       const clientTools = {}; for (const name of Object.keys(tools)) clientTools[name] = args => voiceTool(name, args);
       talk = await window.IrisVoice.Conversation.startSession({
-        conversationToken, connectionType: 'webrtc', clientTools,
+        signedUrl, connectionType: 'websocket', clientTools,
         onConnect: () => { state('listening', 'Say what you want to design or change.'); animate(); },
         onDisconnect: () => { talk = null; state('idle', 'Conversation ended.'); },
         onError: m => state(talk ? 'listening' : 'idle', String(m || 'Voice error')),

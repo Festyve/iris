@@ -1,13 +1,13 @@
 {
-  "agentId": "agent_6401m825d6ebemq8gxpw8w6ry2zf",
+  "agentId": "agent_9701m82bq2czetjaf81mtd74hctg",
   "privateAuthentication": true,
   "recordVoice": false,
   "toolIds": {
-    "get_project_context": "tool_3201m825fmaheg8t59kvn89csn36",
-    "submit_design_brief": "tool_4201m825hdkdfdbbja2mf9wqb0xq",
-    "build_current_plan": "tool_8801m825fhk3fn0s5nyq9kny0vzx",
-    "cancel_build": "tool_6901m825fgerfpcage3wqacc280j",
-    "send_repo_task": "tool_0201m825fnebf8jvn7x9sy01yrs0",
-    "get_repo_task_status": "tool_1901m825ffdveyb95wdrkwv4eqtq"
+    "get_project_context": "tool_5501m82bphcvepfr8tsfmdgkfv06",
+    "submit_design_brief": "tool_2101m82bq21kftz920xhwmnbqnpe",
+    "build_current_plan": "tool_1801m82bq23nez4afg9nn3vzyw3z",
+    "cancel_build": "tool_7401m82bq25ffx6vtnnq5vmgsb2g",
+    "send_repo_task": "tool_4901m82bq27beh781jnsgh4q6d3t",
+    "get_repo_task_status": "tool_4601m82bq29aewwbf4ff74k29fke"
   }
 }

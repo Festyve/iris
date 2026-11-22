@@ -1,5 +1,5 @@
 import { timingSafeEqual } from 'node:crypto';
-import { snapshot } from './repo-evidence.mjs';
+import { snapshot as bundled } from './repo-evidence.mjs';
 
 export function authorized(header, token) {
   if (!token || token.length < 32 || typeof header !== 'string') return false;
@@ -12,7 +12,7 @@ function words(text) {
   return new Set((text.toLowerCase().match(/[a-z]{3,}/g) || []).filter(word => !stop.has(word)));
 }
 
-export function answerQuestion(body) {
+export function answerQuestion(body,snapshot=bundled) {
   if (typeof body?.question !== 'string' || !body.question.trim() || body.question.length > 1000)
     throw new TypeError('Provide a question between 1 and 1000 characters.');
   const question = body.question.trim();
@@ -27,7 +27,7 @@ export function answerQuestion(body) {
     .sort((a,b) => b.score-a.score);
   const top = ranks[0];
   if (!top.score || top.score === ranks[1].score)
-    return {...result,status:'clarification',answer:'Which part of Second Cursor do you mean: starting the studio, importing references, checking previews, running tests, or rebuilding the Figma plugin?'};
+    return {...result,status:'clarification',answer:'Which part of Second Cursor do you mean: starting the studio, importing references, checking previews, running tests, usage limits, or rebuilding the Figma plugin?'};
   const {path,line,excerpt} = top.row;
   return {...result,status:'answered',answer:excerpt,citations:[{path,line,commit:snapshot.commit}]};
 }

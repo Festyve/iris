@@ -5,7 +5,7 @@ Runtime evidence for the Second Cursor studio, 22 November 2026. A configured se
 | Provider | Job | Evidence and runtime status |
 | --- | --- | --- |
 | Codevisor | Develop and verify the project, dispatch scoped repository work | **Verified dispatch and completion.** The actual ElevenAgent client tool submitted task `4fabbf20-3ba1-4dfd-824b-5a71219b9f7e` through the authenticated repo gateway. Its isolated worker committed Wasp regression tests in `b99b5fa`. The task-status tool returned that commit. We ran the tools programmatically without a microphone session. Git push to the team origin returned 403. |
-| ElevenLabs | Speak the test question and transcribe it for Maritime | **TTS and Scribe verified.** Flash returned 32,644 bytes of audio. Scribe transcribed the question and Wasp returned the cited answer. Signed WebSocket issuance succeeded for Iris, the five-tool agent accessible to the supplied account. The six-tool agent in the project manifest returned 404 under this account. |
+| ElevenLabs | Speak the test question and transcribe it for Maritime | **TTS and Scribe verified.** Flash returned 32,644 bytes of audio. Scribe transcribed the question and Wasp returned the cited answer. Both authenticated session routes issued signed WebSockets and received conversation initialization metadata. The root Iris agent currently exposes six canvas tools. The dedicated private studio agent exposes the six repository/design tools in ops/elevenlabs/agent-config.mjs. |
 | assistant-ui | Floating conversation, attachments, plan approval, task and delivery cards | **Verified in Chromium.** Attached a selected note to a real runtime message and built and revised an artifact from its tool cards. Read-only Codevisor documentation queries also succeeded. |
 | Fiber AI | Research the deployment partner and inform verification UI | Codevisor company lookup returned Maritime, YC ID `ycombinator_38061`. This informed the run ID, state and preview/log design. Studio runtime search also returned HTTP 200 for both name and domain filters. Chromium saved the maritime.sh result as a selected reference and confirmed it survived reload. [Lookup](evidence/partner-context.md) |
 | Wasp | Persistent project records | **Verified Wasp 0.26.1 and SQLite.** Health, save, get and list returned 200. The browser journey saved Founder Workshop at archive revision 4. Wasp rejects stale writes with 409. The full HTML and reference images remain in IndexedDB. |
@@ -33,7 +33,7 @@ Do not count logos, empty adapters, mocked responses or documentation queries as
 
 ## Runtime configuration
 
-Keep server secrets in the ignored `.env`. Gemini uses `GEMINI_API_KEY`. ElevenLabs transcription uses `ELEVENLABS_API_KEY`, speech playback additionally uses `ELEVENLABS_VOICE_ID`, and conversational sessions require `ELEVENLABS_AGENT_ID`. Restart the server after changing credentials. Use the session link printed by the server for authenticated calls.
+Keep server secrets in the ignored `.env`. Gemini uses `GEMINI_API_KEY`. ElevenLabs transcription uses `ELEVENLABS_API_KEY`, speech playback additionally uses `ELEVENLABS_VOICE_ID`, and conversational sessions use `ELEVENLABS_AGENT_ID` for root Iris and `ELEVENLABS_STUDIO_AGENT_ID` for the repository assistant. Restart the server after changing credentials. Use the session link printed by the server for authenticated calls.
 
 ## Studio server usage limits
 

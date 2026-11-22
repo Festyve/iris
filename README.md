@@ -139,7 +139,7 @@ Open **http://localhost:4739/studio/**. For server-backed features, use the priv
 
 Local planning uses bounded rules, two compositions and a set of subject profiles. Gemini can choose a structured design plan when the server has `GEMINI_API_KEY`. The compiler produces the HTML, checks it, and renders it in isolated frames at 390 and 1024 pixels before saving a version. A failed or cancelled run keeps the previous deliverable.
 
-**Talk to your repository** uses a private ElevenAgents WebSocket session. Its six client tools can inspect this project, propose and build a design, cancel a run, dispatch a Codevisor worktree task and read its result. The server signs sessions with `ELEVENLABS_API_KEY` and `ELEVENLABS_AGENT_ID`. Successful dispatch returns a task ID; the completed task report identifies any code changes or commit.
+**Talk to your repository** uses a private ElevenAgents WebSocket session. Its six client tools can inspect this project, propose and build a design, cancel a run, dispatch a Codevisor worktree task and read its result. The server signs sessions with `ELEVENLABS_API_KEY` and `ELEVENLABS_STUDIO_AGENT_ID`. Successful dispatch returns a task ID; the completed task report identifies any code changes or commit.
 
 Set secrets in the ignored `.env`. Scribe transcription requires `ELEVENLABS_API_KEY`. Spoken feedback also requires `ELEVENLABS_VOICE_ID`. The studio lets you edit a transcript in the companion before submitting it. Integration availability and evidence are recorded in [the integration map](docs/INTEGRATIONS.md).
 
