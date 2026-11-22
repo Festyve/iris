@@ -76,6 +76,7 @@ function Studio({ initial }) {
   const [selectedIds, setSelectedIds] = useState(initial.selectedIds);
   const selectionChange = useRef(0);
   const [problem, setProblem] = useState('');
+  const [studyView, setStudyView] = useState('Compare');
   const [narrow, setNarrow] = useState(false);
   const [key] = useState(localSession);
   const [services, setServices] = useState({});
@@ -155,8 +156,19 @@ function Studio({ initial }) {
         <div className="section-title"><h1>Design studio</h1><span className="local-dot">Local workspace</span></div>
         <div className="workbench"><div className="canvas">
           <div className="canvas-bar"><span>{sample ? 'Poster study' : 'Live preview'}</span>
-            {sample ? <span>Desktop + mobile</span> : <div className="device"><button aria-pressed={!narrow} onClick={() => setNarrow(false)}>Wide</button><button aria-pressed={narrow} onClick={() => setNarrow(true)}>Mobile</button></div>}</div>
-          {sample ? <div className="proof-sheet"><img className="desktop-proof" src={desktopShot} alt="After Hours desktop poster with oversized black type and orange flower"/><img className="mobile-proof" src={mobileShot} alt="Mobile composition of the same editable poster"/></div>
+            {sample ? <div className="device study-views" role="group" aria-label="Poster study view">
+              {['Compare', 'Desktop', 'Mobile'].map(view => <button key={view} aria-pressed={studyView === view} onClick={() => setStudyView(view)}>{view}</button>)}
+            </div> : <div className="device"><button aria-pressed={!narrow} onClick={() => setNarrow(false)}>Wide</button><button aria-pressed={narrow} onClick={() => setNarrow(true)}>Mobile</button></div>}</div>
+          {sample ? <div className="proof-sheet" data-view={studyView}>
+            {studyView !== 'Mobile' && <figure className="desktop-study">
+              <img src={desktopShot} width="724" height="453" alt="After Hours desktop poster with oversized black type and orange flower"/>
+              <figcaption>Desktop <span>724 × 453</span></figcaption>
+            </figure>}
+            {studyView !== 'Desktop' && <figure className="mobile-study">
+              <img src={mobileShot} width="362" height="623" alt="Mobile composition of the same editable poster"/>
+              <figcaption>Mobile <span>362 × 623</span></figcaption>
+            </figure>}
+          </div>
             : <div className="preview-well"><iframe sandbox="allow-scripts" title="Delivered interface" className={narrow ? 'narrow' : ''} srcDoc={current.html}/></div>}
           <div className="canvas-foot"><strong>{sample ? 'After Hours' : current.plan.title}</strong>{sample
             ? <a href="poster.html" target="_blank" rel="noreferrer">Edit poster ↗</a>

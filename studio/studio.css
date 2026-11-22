@@ -15,3 +15,27 @@
 .checks label input:not([type=checkbox]){display:block;width:100%;padding:6px;margin:5px 0 8px}
 .checks output{white-space:pre-wrap;overflow-wrap:anywhere}
 @media(max-width:360px){.section-title{gap:6px}.section-title h1{font-size:32px}.local-dot{font-size:11px}.canvas-foot{padding-inline:10px}.canvas-foot button{font-size:12px;white-space:nowrap}}
+
+/* Mount the two original references on one proof sheet, with a shared caption baseline. */
+.proof-sheet { align-items: end; background: #dce0d0; }
+.proof-sheet figure { margin: 0; min-width: 0; }
+.desktop-study { width: 71%; }
+.mobile-study { width: 20%; }
+.proof-sheet img { width: 100%; }
+.proof-sheet figcaption {
+  display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px 8px;
+  margin-top: 10px; padding-top: 6px; border-top: 1px solid #838a79;
+  color: #30392f; font: 12px/1.4 ui-monospace, monospace;
+}
+.proof-sheet[data-view="Desktop"] figure { width: min(100%, 724px); }
+.proof-sheet[data-view="Mobile"] figure { width: min(75%, 260px); }
+.study-views { display: flex; gap: 2px; }
+.study-views button { min-height: 32px; }
+.study-views button:focus-visible { outline-color: #f5ce75; }
+@media (max-width: 560px) {
+  .canvas-bar:has(.study-views) { flex-wrap: wrap; gap: 4px 10px; padding: 6px 10px; }
+  .study-views button { min-height: 40px; }
+  .proof-sheet[data-view="Compare"] { align-items: center; }
+  .proof-sheet[data-view="Compare"] .desktop-study { width: 65%; }
+  .proof-sheet[data-view="Compare"] .mobile-study { width: 30%; }
+}
