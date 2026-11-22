@@ -189,7 +189,7 @@ function Surface({ runtime, refs, selectedIds, project, run, busy, report, stora
               JSON.stringify({ title: canvas.plan?.title, brief: canvas.plan?.brief, mechanism: canvas.plan?.mechanism, version: canvas.version, path: canvas.path }))}>+ Canvas</button>
         </div>
         <div className="sc-attached"><ComposerPrimitive.Attachments>{() => <Attachment removable />}</ComposerPrimitive.Attachments></div>
-        <div className="sc-entry"><ComposerPrimitive.Input ref={input} aria-label="Design brief or change" placeholder="Ask for a design or change…" />
+        <div className="sc-entry"><ComposerPrimitive.Input ref={input} aria-label="Design brief or change" placeholder="Ask for a design, change, or /repo question…" />
           <ComposerPrimitive.Send className="sc-primary" disabled={busy}>Send</ComposerPrimitive.Send></div>
         <span role="status" className="sc-status">{storageError || (busy ? "Working…" : "")}</span>
       </ComposerPrimitive.Root>

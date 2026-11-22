@@ -36,6 +36,10 @@ export default function ProjectTools({ sessionKey, services, artifact, addNote, 
       <button disabled={busy || !query.trim() || !configured('ploid')} onClick={()=>run(()=>research(false))}>Find audience roles</button>
       <button disabled={busy || !memory || !configured('rowboat')} onClick={()=>run(async()=>{const r=await call('decision',memory); return 'Rowboat saved ' + r.data.path + ' · ' + r.state;})}>Save design decision</button>
       <button disabled={busy || !configured('rowboat')} onClick={()=>run(async()=>{const r=await call('memory',{projectId:'local-studio'}); return r.data.content || 'No saved decisions in this project.';})}>Read decision history</button>
+      <button disabled={busy || !sessionKey} onClick={()=>run(async()=>{
+        const r=await call('repo-permission',{repo:'Festyve/iris'});
+        return r.data.pending ? 'Awaiting Alter approval '+r.data.approvalId : 'Alter approved repository read · '+r.data.data.full_name+' · '+r.data.data.default_branch;
+      })}>Check repository read permission</button>
       <button disabled={busy || !configured('alter')} onClick={()=>run(async()=>{const r=await call('identity',{});return r.data.pending ? 'Awaiting Alter approval ' + r.data.approvalId : 'Delegated GitHub account · ' + (r.data.data?.login || r.data.statusCode);})}>Verify delivery account</button>
       <button disabled={busy || !sessionKey} onClick={()=>run(async()=>{
         const receipt = await studioRequest(sessionKey,'/repo/context');

@@ -7,7 +7,9 @@ import { createAiPlanner, AiPlanningError } from './studio/ai-planner.mjs';
 import { serviceRoute, integrationStatus, sponsors } from './studio/services.mjs';
 import { serveStudio, handleVoice } from './studio/server.mjs';
 const secret=randomBytes(24).toString('hex');
-const origin='http://localhost:4739';
+const port=Number(process.env.STUDIO_PORT || 4739);
+if (!Number.isInteger(port) || port < 1 || port > 65535) throw Error('Invalid STUDIO_PORT.');
+const origin='http://localhost:'+port;
 const designKey=process.env.GEMINI_API_KEY,voiceKey=process.env.ELEVENLABS_API_KEY;
 const speech = createVoiceService({apiKey:voiceKey,voiceId:process.env.ELEVENLABS_VOICE_ID,
   sttModel:process.env.ELEVENLABS_STT_MODEL,ttsModel:process.env.ELEVENLABS_TTS_MODEL});
@@ -67,7 +69,7 @@ async function design(req,res,swarm=false){
 const server=http.createServer(async(req,res)=>{
   res.setHeader('Access-Control-Allow-Origin','*');res.setHeader('Access-Control-Allow-Headers','Authorization, Content-Type');res.setHeader('Access-Control-Allow-Methods','GET, POST, OPTIONS');
   try{
-    if(!['localhost:4739','127.0.0.1:4739'].includes(req.headers.host))return json(res,403,{error:'Local host required.'});
+    if(!['localhost:'+port,'127.0.0.1:'+port].includes(req.headers.host))return json(res,403,{error:'Local host required.'});
     if(req.method==='OPTIONS'){res.writeHead(204);return res.end()}
     if(await serveStudio(req,res))return;
     if(req.method==='GET'&&req.url==='/'){res.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store'});return res.end(await readFile(new URL('./ui.html',import.meta.url)))}
@@ -91,4 +93,4 @@ const server=http.createServer(async(req,res)=>{
     json(res,400,{error:e.name==='TimeoutError'?'Service timed out. Try again.':'Request could not be completed. Check the input and service connection.'})}
 });
 server.on('error',e=>{console.error('Could not start local service: '+e.message);process.exitCode=1});
-server.listen(4739,'127.0.0.1',()=>console.log('Second Cursor\nStudio: '+origin+'/studio/#key='+secret+'\nIris adapter: '+origin+'/#key='+secret+'\nFigma session key: '+secret));
+server.listen(port,'127.0.0.1',()=>console.log('Second Cursor\nStudio: '+origin+'/studio/#key='+secret+'\nIris adapter: '+origin+'/#key='+secret+'\nFigma session key: '+secret));

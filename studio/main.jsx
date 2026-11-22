@@ -124,7 +124,15 @@ function Studio({ initial }) {
   }
   const current = currentArtifact(project);
   const plan = project.pending || current?.plan;
-  const onBrief = (text, ids = []) => studio.brief(text, ids, refs);
+  const onBrief = async (text, ids = []) => {
+    if (!/^\/repo(?:\s|$)/i.test(text)) return studio.brief(text, ids, refs);
+    const question = text.slice(5).trim();
+    if (!question) return {message:'What would you like to know about Festyve/iris?'};
+    const data = await studioRequest(key,'/repo/question',{question});
+    const source = data.citations.map(c => c.path+' line '+c.line+' · '+c.commit).join('\n');
+    const trace = data.trace && data.trace.destination+' trace '+data.trace.id;
+    return {message:[data.answer,source,trace].filter(Boolean).join('\n\n')};
+  };
   const onBuild = direction => studio.build(direction, refs);
   const onCancel = () => studio.cancel().catch(error);
   const onRetry = async () => {

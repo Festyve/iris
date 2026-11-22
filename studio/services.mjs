@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { fileURLToPath } from 'node:url';
@@ -25,6 +26,22 @@ export async function serviceRoute(req, res, json, collect) {
   try {
     let result;
     if (req.method === 'POST' && url.pathname === '/eleven-agent/session') result = await agent.createSession({signal:stop.signal});
+    else if (req.method === 'POST' && url.pathname === '/repo/question') {
+      const {question} = await body();
+      const endpoint = new URL(process.env.REPO_BACKEND_URL || 'http://127.0.0.1:3002');
+      if (!(endpoint.protocol === 'https:' || (endpoint.protocol === 'http:' && endpoint.hostname === '127.0.0.1')) ||
+          !process.env.REPO_QUESTION_TOKEN) {
+        json(res,503,{error:'Configure REPO_BACKEND_URL and REPO_QUESTION_TOKEN on the studio server.'}); return true;
+      }
+      const receipt = {};
+      const reply = await sponsors.withTrace({runId:randomUUID(),taskId:'repo-question',receipt},async () => {
+        const remote = await fetch(new URL('/studio-api/repo/question',endpoint),{method:'POST',redirect:'error',
+          headers:{Authorization:'Bearer '+process.env.REPO_QUESTION_TOKEN,'Content-Type':'application/json'},
+          body:JSON.stringify({question}),signal:AbortSignal.any([stop.signal,AbortSignal.timeout(60000)])});
+        return {status:remote.status,data:await remote.json()};
+      });
+      json(res,reply.status,{...reply.data,...(receipt.id ? {trace:receipt} : {})}); return true;
+    }
     else if (req.method === 'GET' && ['/repo/context','/repo-context'].includes(url.pathname)) result = await repo.getContext();
     else if (req.method === 'POST' && url.pathname === '/repo/tasks') {
       const {instruction} = await body();
@@ -72,12 +89,13 @@ export async function serviceRoute(req, res, json, collect) {
       });
     } else if (req.method === 'POST' && url.pathname.startsWith('/project-tools/')) {
       const methods = {
-        company: 'companyContext', audience: 'audienceSearch', decision: 'saveDecision', memory:'readMemory', identity:'scopedAction'
+        company: 'companyContext', audience: 'audienceSearch', decision: 'saveDecision', memory:'readMemory', identity:'scopedAction', 'repo-permission':'scopedAction'
       };
       const tool = url.pathname.slice('/project-tools/'.length);
       if (!Object.hasOwn(methods,tool)) return false;
       const input = await body();
       const args = tool === 'identity' ? {actionId:'github-profile',context:{projectId:'local-studio'}}
+        : tool === 'repo-permission' ? {actionId:'github-iris-metadata',context:{repo:input.repo ?? 'Festyve/iris',method:input.method ?? 'GET',projectId:'local-studio'}}
         : ['decision','memory'].includes(tool) ? {...input,projectId:'local-studio'} : input;
       result = await sponsors[methods[tool]]({...args,signal:stop.signal});
       if (result.error) { json(res,result.status || 503,result); return true; }
