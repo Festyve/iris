@@ -1,5 +1,7 @@
 // Local service for Iris: Claude designs and edits; ElevenLabs transcribes spoken briefs and runs the Talk to Iris voice agent.
 import Anthropic from '@anthropic-ai/sdk';
+import {studioRoute} from './studio-http.mjs';
+import {serveStudio} from './studio/server.mjs';
 import http from 'node:http';
 import {randomBytes} from 'node:crypto';
 import {readFile, readdir, stat} from 'node:fs/promises';
@@ -16,7 +18,8 @@ const keyFile = new URL('./.iris-session', import.meta.url);
 let secret = '';
 try { secret = readFileSync(keyFile, 'utf8').trim(); } catch { /* first run */ }
 if (!/^[0-9a-f]{48}$/.test(secret)) { secret = randomBytes(24).toString('hex'); writeFileSync(keyFile, secret + '\n', {mode: 0o600}); }
-const origin = 'http://localhost:4739';
+const port = Number(process.env.STUDIO_PORT || 4739);
+const origin = 'http://localhost:'+port;
 const voiceKey = process.env.ELEVENLABS_API_KEY;
 const MODEL = 'claude-opus-5-5';
 const eleven = voiceKey ? new ElevenLabsClient({apiKey: voiceKey}) : null;
@@ -152,8 +155,9 @@ async function references(url, res) {
 const server = http.createServer(async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*'); res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type'); res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   try {
-    if (!['localhost:4739', '127.0.0.1:4739'].includes(req.headers.host)) return json(res, 403, {error: 'Local host required.'});
+    if (!['localhost:'+port, '127.0.0.1:'+port].includes(req.headers.host)) return json(res, 403, {error: 'Local host required.'});
     if (req.method === 'OPTIONS') { res.writeHead(204); return res.end(); }
+    if (await serveStudio(req,res)) return;
     if (req.method === 'GET' && (req.url === '/' || req.url.startsWith('/?'))) { res.writeHead(200, {'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store'}); return res.end(await readFile(new URL('./ui.html', import.meta.url))); }
     const url = new URL(req.url, origin);
     if (req.method === 'GET' && url.pathname === '/voice.js') { res.writeHead(200, {'Content-Type': 'text/javascript; charset=utf-8', 'Cache-Control': 'no-store'}); return res.end(await readFile(new URL('./voice.bundle.js', import.meta.url))); }
@@ -176,7 +180,7 @@ const server = http.createServer(async (req, res) => {
       return json(res, 200, out);
     }
     if (req.method === 'POST' && req.url === '/voice') return await voice(req, res);
-    json(res, 404, {error: 'Unknown endpoint.'});
+    return await studioRoute(req,res);
   } catch (e) {
     if (res.headersSent) return res.end();
     const [status, message] = failure(e);
@@ -185,8 +189,9 @@ const server = http.createServer(async (req, res) => {
   }
 });
 server.on('error', e => { console.error('Could not start local service: ' + e.message); process.exitCode = 1; });
-server.listen(4739, '127.0.0.1', () => console.log([
+server.listen(port, '127.0.0.1', () => console.log([
   'Iris is running.', 'Designer: ' + (client ? MODEL : 'not configured (set ANTHROPIC_API_KEY)'), '',
+  'Studio: '+origin+'/studio/#key='+secret,
   'Browser:  ' + origin + '/#key=' + secret,
   'Figma:    open the Iris plugin, click the gear (⚙) and paste this session key once:', '          ' + secret, '',
   'Leave this running while you design. Press Ctrl-C to stop.'].join('\n')));

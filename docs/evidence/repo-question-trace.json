@@ -1,0 +1,23 @@
+{
+  "question": "Which command starts the studio locally?",
+  "repo": "Festyve/iris",
+  "commit": "ce329d24c1163f708ab86a0f5378baee39b899ad",
+  "citations": [
+    {
+      "path": "README.md",
+      "line": 10,
+      "commit": "ce329d24c1163f708ab86a0f5378baee39b899ad"
+    }
+  ],
+  "status": "answered",
+  "answer": "npm start",
+  "trace": {
+    "id": "276cc6ab5eea066653801a543c681662",
+    "destination": "local OTLP",
+    "exported": true,
+    "span": "second-cursor.repo-question",
+    "spanId": "3857e90e4a99fb3f",
+    "startUnixNano": "1795371301687000000",
+    "endUnixNano": "1795371302043648500"
+  }
+}

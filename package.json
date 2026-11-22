@@ -3,22 +3,35 @@
   "private": true,
   "description": "A crew of cursors that designs: describe a product, change it with words, and watch hundreds of cursors build it in the browser or in Figma.",
   "scripts": {
-    "start": "node build.mjs && node --env-file-if-exists=.env --env-file-if-exists=.env.local server.mjs",
+    "start": "node --env-file-if-exists=.env --env-file-if-exists=.env.local studio/start.mjs",
     "build": "node build.mjs",
     "agent": "node --env-file-if-exists=.env --env-file-if-exists=.env.local scripts/agent.mjs",
-    "test": "node --test tests/*.test.cjs tests/*.test.mjs",
-    "fiber": "node --env-file-if-exists=.env --env-file-if-exists=.env.local scripts/fiber-designers.mjs"
+    "test": "node --test tests/*.cjs tests/*.mjs poster-adapter/tests/*.cjs",
+    "fiber": "node --env-file-if-exists=.env --env-file-if-exists=.env.local scripts/fiber-designers.mjs",
+    "studio": "vite --host 127.0.0.1",
+    "build:studio": "vite build"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.12.0",
     "@elevenlabs/client": "^1.37.1",
     "@elevenlabs/elevenlabs-js": "^2.79.0",
-    "@fiberai/sdk": "^0.0.66"
+    "@fiberai/sdk": "^0.0.66",
+    "@alter-ai/alter-sdk": "^0.34.1",
+    "@assistant-ui/react": "^0.15.37",
+    "@elevenlabs/react": "^1.23.1",
+    "@modelcontextprotocol/sdk": "^1.32.2",
+    "@traceroot-ai/traceroot": "^0.8.1",
+    "idb-keyval": "^6.3.0",
+    "js-yaml": "^5.5.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
   },
   "engines": {
     "node": ">=22"
   },
   "devDependencies": {
-    "esbuild": "^0.28.2"
+    "esbuild": "^0.28.2",
+    "@playwright/test": "^1.65.1",
+    "vite": "^8.3.8"
   }
 }

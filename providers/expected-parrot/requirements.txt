@@ -1,0 +1,2 @@
+# Pinned official source because the available package index serves obsolete EDSL 0.1.x.
+edsl @ git+https://github.com/expectedparrot/edsl.git@9d23af3d9cfbb7741528b3304b2d57f0bf566957
