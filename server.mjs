@@ -1,0 +1,63 @@
+import http from 'node:http';
+import { randomBytes } from 'node:crypto';
+import { readFile } from 'node:fs/promises';
+const secret=randomBytes(24).toString('hex');
+const origin='http://127.0.0.1:4739';
+const designKey=process.env.GEMINI_API_KEY,voiceKey=process.env.ELEVENLABS_API_KEY;
+const model=process.env.GEMINI_MODEL||'gemini-2.5-flash';
+const schema={type:'OBJECT',properties:{
+  composition:{type:'STRING',enum:['auto','stack','overlap']},align:{type:'STRING',enum:['left','right']},
+  heroScale:{type:'NUMBER'},datePosition:{type:'STRING',enum:['top','bottom']},
+  focus:{type:'STRING',enum:['Hero','Title','Date','Venue','Label']},reason:{type:'STRING'}
+},required:['composition','align','heroScale','datePosition','focus','reason']};
+const artDirection='You are the mobile art director for a print fair poster. You have an editable 390 by 670 mobile frame. The input describes the desktop design and current mobile controls. Interpret the new instruction, retaining prior choices unless superseded. For big art and legible logistics, put the date on the quieter edge. For an expressive or loud design, try intentional overlap and a larger hero. For precise, editorial hierarchy, stack the title and image and share a left edge. These are references, not requirements. Supported edits: composition (stack/overlap/auto), mobile title, date and venue alignment (left/right), scale of the hero (0.65 to 1.35), and date position (top/bottom). Choose the closest supported edit; if impossible keep previous values and explain. Return one short specific sentence describing the choice and the primary affected layer as focus.';
+async function collect(req,limit){const chunks=[];let total=0;for await(const c of req){total+=c.length;if(total>limit)throw Error('Request is too large');chunks.push(c)}return Buffer.concat(chunks)}
+function json(res,status,value){res.writeHead(status,{'Content-Type':'application/json','Cache-Control':'no-store'});res.end(JSON.stringify(value))}
+async function design(req,res,swarm=false){
+  if(!designKey)return json(res,503,{error:'Set GEMINI_API_KEY and restart the server.'});
+  const d=JSON.parse((await collect(req,3_500_000)).toString());
+  if(!d.source?.layers||!d.plan||typeof d.note!=='string'||!d.note.trim()||d.note.length>700)return json(res,400,{error:'Invalid design request.'});
+  const parts=[{text:JSON.stringify({desktop:d.source,currentMobile:d.plan,instruction:d.note})}];
+  if(d.png&&typeof d.png==='string'&&d.png.startsWith('iVBOR')&&/^[A-Za-z0-9+/=]+$/.test(d.png))parts.push({inlineData:{mimeType:'image/png',data:d.png}});
+  const fleetSchema={type:'OBJECT',properties:{reason:{type:'STRING'},patches:{type:'ARRAY',items:{type:'OBJECT',properties:{index:{type:'INTEGER'},band:{type:'STRING',enum:['compact','medium','wide']},dx:{type:'NUMBER'},dy:{type:'NUMBER'},scale:{type:'NUMBER'}},required:['index','band','dx','dy','scale']}}},required:['reason','patches']};
+  const fleetPrompt='Act as the art director coordinating layout workers on a shared Figma product. Examine the source PNG, its indexed child layers, and the user direction. Return a few purposeful responsive adjustments to a proportionally adapted base layout, by actual layer index and viewport band: compact below 600, medium below 950, wide otherwise. dx and dy are offsets in fractions of frame width/height, -0.25 to 0.25. Scale is 0.7 to 1.35. Keep important text legible and preserve intentional relationships. You may leave a band or layer alone. Use at most 24 patches, one per index and band. Explain what you are directing in one sentence.';
+  const r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/'+encodeURIComponent(model)+':generateContent',{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':designKey},signal:AbortSignal.timeout(28000),body:JSON.stringify({systemInstruction:{parts:[{text:swarm?fleetPrompt:artDirection}]},contents:[{role:'user',parts}],generationConfig:{responseMimeType:'application/json',responseSchema:swarm?fleetSchema:schema}})});
+  if(!r.ok)return json(res,502,{error:'Design service returned '+r.status+'. Check the model, key and quota.'});
+  const raw=await r.json();const p=JSON.parse(raw.candidates?.[0]?.content?.parts?.filter(x=>!x.thought).map(x=>x.text||'').join('')||'{}');
+  if(swarm){
+    if(!Array.isArray(p.patches)||typeof p.reason!=='string'||!Array.isArray(d.source.layers))return json(res,502,{error:'Invalid cursor assignments.'});
+    const seen=new Set(),patches=[];
+    for(const v of p.patches.slice(0,24)){
+      if(!v||!Number.isInteger(v.index)||v.index<0||v.index>=d.source.layers.length||!['compact','medium','wide'].includes(v.band)||![v.dx,v.dy,v.scale].every(Number.isFinite))continue;
+      const key=v.index+'/'+v.band;if(seen.has(key))continue;seen.add(key);
+      patches.push({index:v.index,band:v.band,dx:Math.max(-.25,Math.min(.25,v.dx)),dy:Math.max(-.25,Math.min(.25,v.dy)),scale:Math.max(.7,Math.min(1.35,v.scale))});
+    }
+    return json(res,200,{patches,reason:p.reason.slice(0,350)});
+  }
+  if(!schema.properties.composition.enum.includes(p.composition)||!schema.properties.align.enum.includes(p.align)||!schema.properties.datePosition.enum.includes(p.datePosition)||!schema.properties.focus.enum.includes(p.focus)||!Number.isFinite(p.heroScale)||typeof p.reason!=='string')return json(res,502,{error:'The design service returned an incomplete layout. Try again.'});
+  json(res,200,{plan:{composition:p.composition,align:p.align,datePosition:p.datePosition,heroScale:Math.max(.65,Math.min(1.35,p.heroScale))},focus:p.focus,reason:p.reason.slice(0,350)});
+}
+async function voice(req,res){
+  if(!voiceKey)return json(res,503,{error:'Set ELEVENLABS_API_KEY and restart the server.'});
+  const bytes=await collect(req,6_000_000),mime=(req.headers['content-type']||'audio/webm').split(';')[0];
+  const form=new FormData();form.append('model_id','scribe_v2');form.append('file',new Blob([bytes],{type:mime}),'note.'+(mime.split('/')[1]||'webm'));
+  const r=await fetch('https://api.elevenlabs.io/v1/speech-to-text',{method:'POST',headers:{'xi-api-key':voiceKey},body:form,signal:AbortSignal.timeout(28000)});
+  if(!r.ok)return json(res,502,{error:'ElevenLabs returned '+r.status+'. Check audio, key and quota.'});
+  const result=await r.json();json(res,200,{text:String(result.text||'').slice(0,700)});
+}
+const server=http.createServer(async(req,res)=>{
+  res.setHeader('Access-Control-Allow-Origin','*');res.setHeader('Access-Control-Allow-Headers','Authorization, Content-Type');res.setHeader('Access-Control-Allow-Methods','GET, POST, OPTIONS');
+  try{
+    if(req.headers.host!=='127.0.0.1:4739')return json(res,403,{error:'Local host required.'});
+    if(req.method==='OPTIONS'){res.writeHead(204);return res.end()}
+    if(req.method==='GET'&&req.url==='/'){res.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store'});return res.end(await readFile(new URL('./ui.html',import.meta.url)))}
+    if(req.headers.authorization!=='Bearer '+secret)return json(res,401,{error:'Invalid session key.'});
+    if(req.method==='GET'&&req.url==='/status')return json(res,200,{design:!!designKey,voice:!!voiceKey});
+    if(req.method==='POST'&&req.url==='/swarm')return await design(req,res,true);
+    if(req.method==='POST'&&req.url==='/design')return await design(req,res);
+    if(req.method==='POST'&&req.url==='/voice')return await voice(req,res);
+    json(res,404,{error:'Unknown endpoint.'});
+  }catch(e){json(res,400,{error:e.name==='TimeoutError'?'Service timed out. Try again.':'Request could not be completed. Check the input and service connection.'})}
+});
+server.on('error',e=>{console.error('Could not start local service: '+e.message);process.exitCode=1});
+server.listen(4739,'127.0.0.1',()=>console.log('Second Cursor\nBrowser: '+origin+'/#key='+secret+'\nFigma session key: '+secret));

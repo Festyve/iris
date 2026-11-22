@@ -1,0 +1,301 @@
+const SC = (() => {
+  const roles = ['Label','Hero','Title','Date','Venue'];
+  const paper = '#F6EEDB', ink = '#231D31', accent = '#D94422';
+  function base() {
+    return {width:960,height:600,bg:paper,layers:{
+      Label:{x:40,y:32,w:620,h:24,size:15,text:'TORONTO  /  INDEPENDENT PRINT FAIR',fill:ink},
+      Hero:{x:454,y:36,w:500,h:500,fill:accent},
+      Title:{x:36,y:158,w:570,h:240,size:108,text:'After\nHours',fill:ink},
+      Date:{x:40,y:528,w:460,h:32,size:23,text:'NOV 28—29',fill:ink},
+      Venue:{x:40,y:566,w:640,h:22,size:15,text:'THE FOUNDRY    /    6 PM TIL LATE',fill:ink}
+    }};
+  }
+  // A cut-paper rosette. All coordinates are normalized to a 400-unit square.
+  function petals() {
+    let d='';
+    for(let i=0;i<18;i++) d+='<path transform="rotate('+i*20+' 200 200)" d="M191 196 Q154 157 158 92 Q159 49 176 13 Q190 79 211 104 Q231 143 204 194 Z"/>';
+    // Negative space through the petals makes their twist readable at mobile scale.
+    for(let i=0;i<18;i++) d+='<path transform="rotate('+i*20+' 200 200)" d="M197 193 Q168 146 171 81 Q171 135 207 173Z" fill="#F6EEDB"/>';
+    return d+'<circle cx="200" cy="200" r="22"/>';
+  }
+  function art(color) {return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400"><g fill="'+color+'">'+petals()+'</g></svg>'}
+  function bounded(v,min,max){return Math.max(min,Math.min(max,v))}
+  const initial={composition:'auto',heroScale:1,align:'left',datePosition:'bottom'};
+  function normalize(plan) {
+    const p=plan||{};
+    return {composition:['auto','overlap','stack'].includes(p.composition)?p.composition:'auto',
+      heroScale:bounded(Number(p.heroScale)||1,.65,1.35),align:p.align==='right'?'right':'left',
+      datePosition:p.datePosition==='top'?'top':'bottom'};
+  }
+  function mobile(source,direction) {
+    const p=normalize(direction), l=source.layers, a=l.Hero,t=l.Title;
+    const ix=Math.max(0,Math.min(t.x+t.w,a.x+a.w)-Math.max(t.x,a.x));
+    const iy=Math.max(0,Math.min(t.y+t.h,a.y+a.h)-Math.max(t.y,a.y));
+    const overlap=p.composition==='overlap'||(p.composition==='auto'&&ix*iy>t.w*t.h*.14);
+    const m=JSON.parse(JSON.stringify(source));m.width=390;m.height=670;
+    const r=m.layers;
+    const top=p.datePosition==='top';
+    const font=bounded(t.size*.60,40,80), hero=bounded(a.w*.59*p.heroScale,170,420);
+    Object.assign(r.Label,{x:20,y:22,w:350,h:20,size:11});
+    Object.assign(r.Title,{x:20,y:overlap?(top?150:110):(top?95:60),w:350,h:Math.ceil(font*2.24),size:font,align:p.align});
+    Object.assign(r.Hero,{x:overlap?(p.align==='right'?-36:390-hero+25):(390-hero)/2,y:overlap?(top?175:145):(top?255:222),w:hero,h:hero*a.h/a.w});
+    Object.assign(r.Date,{x:20,y:top?57:591,w:350,h:34,size:23,align:p.align});
+    Object.assign(r.Venue,{x:20,y:640,w:350,h:20,size:12,align:p.align});
+    return m;
+  }
+  return {roles,base,art,petals,initial,normalize,mobile,ink,accent};
+})();
+
+// Shared timeline. Both renderers use the same worker assignments and target sizes.
+const Swarm = (() => {
+  const colors=['#DC3B52','#6244D7','#00816D','#2164BC','#A14D00'];
+  const roles=['Label','Hero','Title','Date','Venue'];
+  const widths=[320,360,390,430,480,540,600,640,680,720,768,800,840,900,960,1024,1080,1152,1280,1440];
+  function configs(count) {
+    const total=Math.max(1,Math.min(20,Math.ceil(count/5)));
+    const all=Array.from({length:total},(_,i)=>{
+      const w=widths[Math.round(i*(widths.length-1)/Math.max(1,total-1))];
+      return {index:i,width:w,height:w<700?Math.round(670+(w-390)*.25):Math.round(560+w*.13)};
+    });
+    const cols=Math.ceil(Math.sqrt(total)),gap=108,rows=Math.ceil(total/cols);
+    const xs=[0],ys=[0];
+    for(let col=0;col<cols;col++)xs.push(xs[col]+Math.max(...all.filter((_,i)=>i%cols===col).map(c=>c.width))+gap);
+    for(let row=0;row<rows;row++)ys.push(ys[row]+Math.max(...all.slice(row*cols,(row+1)*cols).map(c=>c.height))+gap);
+    for(const c of all){c.x=xs[c.index%cols];c.y=ys[Math.floor(c.index/cols)]}
+    return {items:all,width:xs[cols]-gap,height:ys[rows]-gap};
+  }
+  function layout(source,plan,c){
+    const result=SC.mobile(source,plan),r=result.layers,w=c.width,h=c.height,p=SC.normalize(plan);
+    result.width=w;result.height=h;
+    if(w<700){
+      const sx=w/390,sy=h/670;
+      for(const n of Object.values(r)){n.x*=sx;n.y*=sy;n.w*=sx;n.h*=n.text?sy:sx;if(n.size)n.size*=Math.min(1.2,sx)}
+    }else{
+      const sx=w/source.width,sy=h/source.height,margin=Math.round(w*.045);
+      for(const role of roles){const original=source.layers[role],n=r[role];Object.assign(n,original);
+        n.x*=sx;n.w*=sx;n.y*=sy;n.h*=sy;if(n.size)n.size*=Math.min(sx,sy)}
+      r.Hero.w*=p.heroScale;r.Hero.h=r.Hero.w*source.layers.Hero.h/source.layers.Hero.w;
+      if(p.composition==='stack'){r.Title.y=h*.13;r.Hero.y=h*.35;r.Hero.w=Math.min(r.Hero.w,h*.52);r.Hero.h=r.Hero.w*source.layers.Hero.h/source.layers.Hero.w}
+      if(p.composition==='overlap'){r.Hero.x=w*.32;r.Hero.y=h*.12}
+      for(const role of ['Title','Date','Venue'])if(p.align==='right'){r[role].align='right';r[role].x=w-r[role].w-margin}
+      if(p.datePosition==='top')r.Date.y=Math.max(r.Label.y+r.Label.h+10,h*.09);
+    }
+    return result;
+  }
+  function worker(id,frameIndex,target){
+    const lane=id%5;
+    return {id,frameIndex,target,color:colors[lane],delay:((id*37)%83)/100,duration:3.4+((id*13)%21)/10,lane};
+  }
+  // Each worker first moves its layer, then sets its geometry and finally reveals it.
+  function progress(job,elapsed){return Math.max(0,Math.min(1,(elapsed-job.delay)/job.duration))}
+  function position(job,t,start,end){
+    const e=t*t*(3-2*t),arc=Math.sin(Math.PI*t)*(job.id%2?1:-1);
+    return {x:start.x+(end.x-start.x)*e+arc*30,y:start.y+(end.y-start.y)*e+arc*17};
+  }
+  // Model instructions are relative, bounded edits keyed to a real source child.
+  function adjustment(brief,index,width){
+    const band=width<600?'compact':width<950?'medium':'wide';
+    return (brief||[]).find(p=>p.index===index&&p.band===band);
+  }
+  function adjust(goal,patch,width,height){
+    if(!patch)return goal;
+    const out=Object.assign({},goal);
+    out.x+=patch.dx*width;out.y+=patch.dy*height;
+    out.w=Math.max(1,out.w*patch.scale);out.h=Math.max(1,out.h*patch.scale);
+    if(out.size)out.size*=patch.scale;
+    return out;
+  }
+  return {adjustment,adjust,configs,layout,worker,progress,position,colors,roles};
+})();
+
+figma.showUI(__html__, {width:332,height:670,themeColors:true});
+let desk,phone,arrow,last='',direction=Object.assign({},SC.initial),active=false;
+const fonts={Title:{family:'Inter',style:'Black'},normal:{family:'Inter',style:'Regular'}};
+function paint(hex){return [{type:'SOLID',color:{r:parseInt(hex.slice(1,3),16)/255,g:parseInt(hex.slice(3,5),16)/255,b:parseInt(hex.slice(5,7),16)/255}}]}
+function hex(n,fallback){const p=Array.isArray(n.fills)&&n.fills[0];if(!p||p.type!=='SOLID')return fallback;return '#'+['r','g','b'].map(k=>Math.round(p.color[k]*255).toString(16).padStart(2,'0')).join('')}
+function drawFrame(scene,name,x,y) {
+  const frame=figma.createFrame();frame.name=name;frame.resize(scene.width,scene.height);frame.x=x;frame.y=y;frame.fills=paint(scene.bg);frame.clipsContent=true;
+  for(const role of SC.roles){
+    const v=scene.layers[role];
+    let n;
+    if(role==='Hero'){n=figma.createNodeFromSvg(SC.art(v.fill));n.rescale(v.w/n.width)}
+    else {n=figma.createText();n.fontName=role==='Title'?fonts.Title:fonts.normal;n.characters=v.text;
+      n.fontSize=v.size;n.lineHeight={unit:'PERCENT',value:role==='Title'?92:110};n.textAutoResize='HEIGHT';n.resize(v.w,n.height);n.textAlignHorizontal=v.align==='right'?'RIGHT':'LEFT';n.fills=paint(v.fill)}
+    frame.appendChild(n);n.name=role;n.x=v.x;n.y=v.y;
+  }
+  return frame;
+}
+function read(){
+  const s=SC.base();s.bg=hex(desk,s.bg);s.width=desk.width;s.height=desk.height;
+  for(const role of SC.roles){const n=desk.children.find(c=>c.name===role);if(!n)throw Error('Restore the '+role+' layer to resume.');
+    const v=s.layers[role];Object.assign(v,{x:n.x,y:n.y,w:n.width,h:n.height});
+    if(n.type==='TEXT'){v.text=n.characters;v.size=typeof n.fontSize==='number'?n.fontSize:v.size;v.fill=hex(n,v.fill)}
+  }return s;
+}
+function cursor(x,y){
+  if(!arrow||arrow.removed){arrow=figma.createNodeFromSvg('<svg xmlns="http://www.w3.org/2000/svg" width="28" height="32"><path d="M2 2L25 16L15 18L10 29Z" fill="#7A47E7" stroke="white" stroke-width="2"/></svg>');arrow.name='Second Cursor · pointer';arrow.locked=true}
+  figma.currentPage.appendChild(arrow);arrow.x=x;arrow.y=y;
+}
+function render(force,focus) {
+  if(!active||!desk||desk.removed)return;
+  const s=read(),sig=JSON.stringify(s)+JSON.stringify(direction);if(!force&&sig===last)return;
+  const m=SC.mobile(s,direction);
+  // Clone the real hero so the proposal preserves vector edits and fills.
+  const fresh=drawFrame(m,'Mobile · proposal',desk.x+desk.width+84,desk.y);
+  const placeholder=fresh.children.find(n=>n.name==='Hero'), art=desk.children.find(n=>n.name==='Hero').clone();
+  fresh.insertChild(1,art);art.rescale(m.layers.Hero.w/art.width);art.x=placeholder.x;art.y=placeholder.y;placeholder.remove();
+  if(phone&&!phone.removed)phone.remove();phone=fresh;last=sig;
+  const target=m.layers[focus]||m.layers.Title;cursor(phone.x+target.x+8,phone.y+target.y+8);
+  figma.ui.postMessage({kind:'scene',source:s});
+}
+let failure='';
+function tick(){try{render(false);failure=''}catch(e){if(String(e)!==failure){failure=String(e);figma.ui.postMessage({kind:'error',text:failure})}}}
+async function start(){
+  await Promise.all([figma.loadFontAsync(fonts.Title),figma.loadFontAsync(fonts.normal)]);
+  if(inputFrame&&!inputFrame.removed){figma.ui.postMessage({kind:'custom-source',name:inputFrame.name});return}
+  const center=figma.viewport.center;desk=drawFrame(SC.base(),'Desktop · edit me',Math.round(center.x-650),Math.round(center.y-300));active=true;render(true);figma.viewport.scrollAndZoomIntoView([desk,phone]);figma.currentPage.selection=inputFrame&&!inputFrame.removed?[inputFrame]:[desk];
+  setInterval(tick,650);
+}
+figma.ui.onmessage=async msg=>{
+  try{
+    if(msg.kind==='fleet-context'){
+      try{const f=targetFrame();if(!f)throw Error('Select a source frame.');
+        const img=await f.exportAsync({format:'PNG',constraint:{type:'WIDTH',value:720}});
+        figma.ui.postMessage({kind:'fleet-context',id:msg.id,sourceKey:f.id,source:{name:f.name,width:f.width,height:f.height,layers:f.children.slice(0,64).map((n,index)=>({index,name:n.name,type:n.type,x:n.x,y:n.y,w:n.width,h:n.height}))},png:figma.base64Encode(img)});
+      }catch(e){figma.ui.postMessage({kind:'fleet-context',id:msg.id,error:e.message})}return}
+    if(msg.kind==='launch-fleet'){await launchFleet([5,25,100].includes(msg.count)?msg.count:100,msg.brief,msg.sourceKey);return}
+    if(msg.kind==='pause-fleet'){pauseFleet();return}
+    if(msg.kind==='stop-fleet'){stopFleet();return}
+    if(msg.kind==='snapshot'){try{const img=await desk.exportAsync({format:'PNG',constraint:{type:'WIDTH',value:720}});figma.ui.postMessage({kind:'snapshot',id:msg.id,png:figma.base64Encode(img)})}catch(e){figma.ui.postMessage({kind:'snapshot',id:msg.id})}return}
+    if(msg.kind==='apply'){direction=SC.normalize(msg.plan);render(true,msg.focus)}
+    if(msg.kind==='keep'&&phone&&!phone.removed){const saved=phone.clone();saved.name='Mobile · saved';saved.x=phone.x;saved.y=phone.y+phone.height+64;while(figma.currentPage.children.some(n=>n!==saved&&n.name==='Mobile · saved'&&n.x===saved.x&&n.y===saved.y))saved.y+=saved.height+64;figma.notify('Editable mobile frame saved below the proposal.')}
+  }catch(e){figma.ui.postMessage({kind:'error',text:String(e)})}
+};
+figma.on('close',()=>{if(nativeRun)dropBoard(nativeRun);if(arrow&&!arrow.removed)arrow.remove()});
+start().catch(e=>figma.ui.postMessage({kind:'error',text:String(e)}));
+
+let nativeRun=null,starting=false;
+const inputFrame=figma.currentPage.selection.find(n=>n.type==='FRAME');
+function postFleet(state,extra){figma.ui.postMessage(Object.assign({kind:'fleet',state},extra||{}))}
+function targetFrame(){
+  const picked=figma.currentPage.selection.find(n=>n.type==='FRAME'&&n!==phone&&n.getPluginData('sc-output')!=='yes');
+  return picked||(inputFrame&&!inputFrame.removed?inputFrame:desk);
+}
+function dropBoard(run){
+  if(run.timer)clearInterval(run.timer);
+  if(run.board&&!run.board.removed)run.board.remove();
+}
+function stopFleet(){
+  if(!nativeRun)return;
+  dropBoard(nativeRun);nativeRun=null;postFleet('idle');
+}
+function pointer(color,index,board,pool){
+  let n=pool.get(color);
+  if(n)n=n.clone();
+  else {n=figma.createNodeFromSvg('<svg xmlns="http://www.w3.org/2000/svg" width="40" height="48"><path d="M3 2L36 23L22 26L15 44Z" fill="'+color+'" stroke="white" stroke-width="3"/></svg>');pool.set(color,n)}
+  board.appendChild(n);n.name='Cursor '+(index+1);n.locked=true;return n;
+}
+function resizeNode(n,w,h){
+  if(typeof n.resize==='function')n.resize(Math.max(.1,w),Math.max(.1,h));
+}
+function snapshotNode(n){return {x:n.x,y:n.y,w:n.width,h:n.height,opacity:n.opacity,align:n.type==='TEXT'?n.textAlignHorizontal:null}}
+function stageTarget(n,goal,free,fontSize,patch){
+  const ox=goal.opacity;
+  return {n,goal,phase:-1,apply(phase){
+    if(this.phase===phase)return;
+    this.phase=phase;
+    if(phase===0){n.opacity=ox*.40;return}
+    if(phase===1){if(free){n.x=goal.x;n.y=goal.y}n.opacity=ox*.60;return}
+    if(phase===2){if(!free&&patch&&n.type==='TEXT'&&n.fontName!==figma.mixed&&typeof n.fontSize==='number')n.fontSize=n.fontSize*patch.scale;
+      if(patch&&n.layoutMode&&n.layoutMode!=='NONE'&&typeof n.itemSpacing==='number')n.itemSpacing=Math.max(0,n.itemSpacing*patch.scale);
+      if(free){resizeNode(n,goal.w,goal.h);if(fontSize&&n.type==='TEXT'&&n.fontName!==figma.mixed){n.fontSize=fontSize;if(goal.align==='right'||goal.align==='left')n.textAlignHorizontal=goal.align.toUpperCase();if(goal.sampleText)n.textAutoResize='HEIGHT'}n.x=goal.x;n.y=goal.y}n.opacity=ox*.8;return}
+    n.opacity=ox;
+  }};
+}
+function applyGroup(job,t){
+  const nodes=job.nodes,count=nodes.length;
+  // Stagger work within a lane when a product frame has many children.
+  for(let i=0;i<count;i++){
+    const local=Math.min(1,Math.max(0,t*count-i));
+    const phase=local>=1?3:local>.54?2:local>.18?1:0;
+    if(nodes[i].phase<phase){for(let step=nodes[i].phase+1;step<=phase;step++)nodes[i].apply(step)}
+  }
+  const active=nodes[Math.min(count-1,Math.floor(t*count))],n=active.n;
+  const end={x:job.frame.x+(n.x+Math.min(28,n.width*.25)),y:job.frame.y+n.y+Math.min(22,n.height*.3)};
+  const pos=Swarm.position(job,t,job.start,end);job.ptr.x=pos.x;job.ptr.y=pos.y;
+  const cursorWidth=15/Math.max(.01,figma.viewport.zoom||1);
+  if(Math.abs(job.ptr.width-cursorWidth)>1)job.ptr.rescale(cursorWidth/job.ptr.width);
+  job.ptr.visible=t<1;
+}
+function stepFleet(){
+  const run=nativeRun;if(!run||run.paused)return;
+  try{
+    if(run.board.removed){stopFleet();return}
+    const now=Date.now();run.elapsed+=(now-run.last)/1000;run.last=now;
+    let done=0;
+    for(const j of run.jobs){if(j.finished){done++;continue}const t=Swarm.progress(j,run.elapsed);applyGroup(j,t);if(t>=1){j.finished=true;done++}}
+    if(done!==run.done){run.done=done;postFleet('running',{done,total:run.jobs.length,frames:run.frames})}
+    if(done===run.jobs.length){clearInterval(run.timer);run.timer=null;for(const j of run.jobs)if(!j.ptr.removed)j.ptr.remove();
+      run.board.name='Second Cursor · '+run.frames+' finished layouts';nativeRun=null;postFleet('finished',{done,total:done,frames:run.frames});figma.commitUndo()}
+  }catch(e){stopFleet();figma.ui.postMessage({kind:'error',text:'Swarm stopped: '+e.message})}
+}
+async function launchFleet(count,brief,sourceKey){
+  if(nativeRun||starting)return;
+  const source=targetFrame();
+  if(!source||source.removed||!source.children.some(n=>n.visible)){throw Error('Select a Figma frame with a visible child layer.')}
+  if(sourceKey&&sourceKey!==source.id)throw Error('Source selection changed. Launch again for this frame.');
+  starting=true;
+  let board;
+  try{
+    const sample=source===desk,scene=sample?read():null,grid=Swarm.configs(count);
+    const used=source.findAll(()=>true).length*grid.items.length;
+    if(used>16000)throw Error('Choose a smaller product section or fewer cursors for this frame.');
+    const fontList=new Map();
+    for(const n of source.children)if(n.type==='TEXT'&&n.fontName!==figma.mixed)fontList.set(JSON.stringify(n.fontName),n.fontName);
+    await Promise.all(Array.from(fontList.values()).map(f=>figma.loadFontAsync(f)));
+    board=figma.createFrame();board.name='Second Cursor · working layouts';board.setPluginData('sc-output','yes');board.resize(grid.width+144,grid.height+144);
+    const bounds=source.absoluteBoundingBox;board.x=bounds.x+bounds.width+650;board.y=bounds.y;
+    for(const old of figma.currentPage.children){if(old!==board&&old.getPluginData('sc-output')==='yes'&&old.x===board.x)board.y=Math.max(board.y,old.y+old.height+160)}board.clipsContent=false;board.fills=paint('#E4E1E9');
+    const jobs=[],pool=new Map();let frames=0;
+    for(const c of grid.items){
+      const f=source.clone();board.appendChild(f);f.name=source.name+' · '+c.width+' px';f.setPluginData('sc-output','yes');
+      const original=source.children.map(snapshotNode);
+      f.resize(c.width,sample?c.height:Math.max(1,Math.round(source.height*c.width/source.width)));
+      // Auto-layout roots keep their native flow as the frame changes width.
+      const desired=sample?Swarm.layout(scene,direction,c):null;
+      const buckets=Array.from({length:5},()=>[]);
+      f.children.forEach((n,i)=>{
+        if(!n.visible)return;
+        const free=f.layoutMode==='NONE'||n.layoutPositioning==='ABSOLUTE';
+        let goal=snapshotNode(n),fontSize=null;
+        if(sample&&desired.layers[n.name]){const v=desired.layers[n.name];goal=Object.assign({},v,{opacity:n.opacity,sampleText:true});fontSize=v.size||null}
+        else if(free){const k=c.width/source.width;goal=Object.assign({},goal,{x:original[i].x*k,y:original[i].y*k,w:original[i].w*k,h:original[i].h*k})}
+        const p=Swarm.adjustment(brief,i,c.width);
+        if(!sample&&free&&n.type==='TEXT'&&typeof n.fontSize==='number')fontSize=n.fontSize*c.width/source.width;
+        goal=Swarm.adjust(goal,p,f.width,f.height);
+        if(fontSize&&p)fontSize*=p.scale;
+        const item=stageTarget(n,goal,free,fontSize,p);item.apply(0);buckets[i%5].push(item);
+      });
+      f.x=72+c.x;f.y=72+c.y;frames++;
+      buckets.filter(l=>l.length).forEach(items=>{
+        const j=Swarm.worker(jobs.length,c.index,items[0].n.name);j.nodes=items;j.frame=f;
+        j.start={x:f.x+f.width*(.1+j.lane*.17),y:f.y-32};j.ptr=pointer(j.color,j.id,board,pool);
+        j.ptr.x=j.start.x;j.ptr.y=j.start.y;jobs.push(j);
+      });
+    }
+    // Keep every pointer above every finished frame, including later frames in the grid.
+    for(const j of jobs)board.appendChild(j.ptr);
+    if(!sample){
+      let y=72;const cols=Math.ceil(Math.sqrt(frames)),all=board.children.filter(n=>n.getPluginData('sc-output')==='yes');
+      for(let i=0;i<all.length;i+=cols){const row=all.slice(i,i+cols);for(const f of row)f.y=y;y+=Math.max(...row.map(f=>f.height))+108}
+      board.resize(board.width,Math.max(144,y-36));for(const j of jobs){j.start.y=j.frame.y-32;j.ptr.y=j.start.y}
+    }
+    nativeRun={board,jobs,frames,elapsed:0,last:Date.now(),done:-1,paused:false};
+    figma.viewport.scrollAndZoomIntoView([board]);nativeRun.timer=setInterval(stepFleet,70);
+    postFleet('running',{done:0,total:jobs.length,frames});
+  }catch(e){if(board&&!board.removed)board.remove();throw e}finally{starting=false}
+}
+function pauseFleet(){
+  if(!nativeRun)return;nativeRun.paused=!nativeRun.paused;nativeRun.last=Date.now();
+  postFleet(nativeRun.paused?'paused':'running',{done:Math.max(0,nativeRun.done),total:nativeRun.jobs.length,frames:nativeRun.frames});
+}
