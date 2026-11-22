@@ -52,7 +52,7 @@
   const sugg = $('suggest'), brief = $('brief');
   const dots = ['#6E56F8', '#FF5A4E', '#2D6BFF', '#C5F23A', '#EA7212', '#0E9F6E', '#E13F7A'];
   const edits = ['Set accent to #146C94', 'Change headline to Field Notes'];
-  const samples = ['Last Showing Billboard', 'Night Platform Atlas', 'Second Sweep Catalogue', 'A poker website called “River Room”', ...Kit.samples];
+  const samples = ['A coffee shop called “Daybreak”','A Tokyo travel planner','Last Showing Billboard', 'Night Platform Atlas', 'Second Sweep Catalogue', 'A poker website called “River Room”', ...Kit.samples];
   function fillSuggestions() {
     const list = mode === 'edit' ? edits : samples;
     sugg.innerHTML = '<div class="hint">' + (mode === 'edit' ? 'Try a change' : 'Try a brief') + '</div>' + list.map((s, i) => '<button type="button" data-i="' + i + '"><i style="background:' + dots[i % dots.length] + '"></i>' + esc(s) + '</button>').join('');

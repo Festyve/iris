@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1440" height="900">
+<rect width="1440" height="900" fill="#ECEADA"/>
+<text x="54" y="51" font-family="Inter,Arial,sans-serif" font-size="30" font-weight="700" fill="#2B3D32">Trail Register</text>
+<text x="800" y="48.3" font-family="Inter,Arial,sans-serif" font-size="17" font-weight="500" fill="#2B3D32">Collection</text>
+<text x="932" y="48.3" font-family="Inter,Arial,sans-serif" font-size="17" font-weight="500" fill="#2B3D32">Journal</text>
+<text x="1064" y="48.3" font-family="Inter,Arial,sans-serif" font-size="17" font-weight="500" fill="#2B3D32">About</text>
+<text x="1210" y="48.3" font-family="Inter,Arial,sans-serif" font-size="17" font-weight="700" fill="#2B3D32">Find a trail</text>
+<rect x="54" y="79" width="1332" height="1" fill="#2B3D32"/>
+<rect x="54" y="106" width="1332" height="453" fill="#2B3D32"/>
+<image x="780" y="106" width="606" height="453" preserveAspectRatio="xMidYMid slice" xlink:href="../../art/trail-register-0.png"/>
+<text x="92" y="236.6496769562096" font-family="Inter,Arial,sans-serif" font-size="61.83297439578845" font-weight="600" fill="#ECEADA">Choose your trailhead</text>
+<text x="92" y="367.5" font-family="Inter,Arial,sans-serif" font-size="35" font-weight="400" fill="#ECEADA">North Ridge</text>
+<rect x="93" y="437" width="218" height="53" fill="#ECEADA"/>
+<text x="110" y="469.3" font-family="Inter,Arial,sans-serif" font-size="17" font-weight="600" fill="#2B3D32">Find a trail</text>
+<rect x="54" y="611" width="423" height="1" fill="#2B3D32"/>
+<text x="54" y="648.2" font-family="Inter,Arial,sans-serif" font-size="18" font-weight="400" fill="#2B3D32">01</text>
+<text x="54" y="724.8" font-family="Inter,Arial,sans-serif" font-size="42" font-weight="600" fill="#2B3D32">North Ridge</text>
+<rect x="506" y="611" width="423" height="1" fill="#2B3D32"/>
+<text x="506" y="648.2" font-family="Inter,Arial,sans-serif" font-size="18" font-weight="400" fill="#2B3D32">02</text>
+<text x="506" y="724.8" font-family="Inter,Arial,sans-serif" font-size="42" font-weight="600" fill="#2B3D32">Timber Loop</text>
+<rect x="958" y="611" width="423" height="1" fill="#2B3D32"/>
+<text x="958" y="648.2" font-family="Inter,Arial,sans-serif" font-size="18" font-weight="400" fill="#2B3D32">03</text>
+<text x="958" y="724.8" font-family="Inter,Arial,sans-serif" font-size="42" font-weight="600" fill="#2B3D32">Lake Basin</text>
+<rect x="54" y="824" width="1332" height="1" fill="#2B3D32"/>
+<text x="54" y="865.2" font-family="Inter,Arial,sans-serif" font-size="18" font-weight="600" fill="#2B3D32">Trail Register</text>
+<text x="1200" y="865.2" font-family="Inter,Arial,sans-serif" font-size="18" font-weight="400" fill="#2B3D32">Billboard</text>
+</svg>

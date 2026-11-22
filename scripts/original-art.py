@@ -5,6 +5,7 @@ from PIL import Image, ImageDraw
 root=Path(__file__).resolve().parents[1]/'vault/Originals'
 for k,row in enumerate(json.loads((root/'collections.json').read_text())):
     name,_,_,_,_,paper,ink,accent,motif=row
+    if motif=="cafe": continue  # Vector originals are rendered by scripts/cafe-art.mjs.
     for v in range(3):
         rng=random.Random(100*k+v)
         bg,fg,pop=['#'+c for c in [(accent,ink,paper),(ink,paper,accent),(paper,accent,ink)][v]]

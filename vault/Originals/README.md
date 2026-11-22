@@ -48,3 +48,64 @@ Choose **Vault website** in Iris and enter a subject, or a collection name and p
 | Little Kite | [Home](pages/little-kite/home.svg) · [Collection](pages/little-kite/collection.svg) · [Detail](pages/little-kite/detail.svg) · [Journal](pages/little-kite/journal.svg) · [Index](pages/little-kite/index.svg) · [About](pages/little-kite/about.svg) · [Programme](pages/little-kite/programme.svg) · [Lookbook](pages/little-kite/lookbook.svg) · [Contact](pages/little-kite/contact.svg) · [Billboard](pages/little-kite/billboard.svg) · [Atlas](pages/little-kite/atlas.svg) · [Catalogue](pages/little-kite/catalogue.svg) |
 | Daily Circuit | [Home](pages/daily-circuit/home.svg) · [Collection](pages/daily-circuit/collection.svg) · [Detail](pages/daily-circuit/detail.svg) · [Journal](pages/daily-circuit/journal.svg) · [Index](pages/daily-circuit/index.svg) · [About](pages/daily-circuit/about.svg) · [Programme](pages/daily-circuit/programme.svg) · [Lookbook](pages/daily-circuit/lookbook.svg) · [Contact](pages/daily-circuit/contact.svg) · [Billboard](pages/daily-circuit/billboard.svg) · [Atlas](pages/daily-circuit/atlas.svg) · [Catalogue](pages/daily-circuit/catalogue.svg) |
 | Focal Plane | [Home](pages/focal-plane/home.svg) · [Collection](pages/focal-plane/collection.svg) · [Detail](pages/focal-plane/detail.svg) · [Journal](pages/focal-plane/journal.svg) · [Index](pages/focal-plane/index.svg) · [About](pages/focal-plane/about.svg) · [Programme](pages/focal-plane/programme.svg) · [Lookbook](pages/focal-plane/lookbook.svg) · [Contact](pages/focal-plane/contact.svg) · [Billboard](pages/focal-plane/billboard.svg) · [Atlas](pages/focal-plane/atlas.svg) · [Catalogue](pages/focal-plane/catalogue.svg) |
+| Daybreak | [Home](pages/daybreak/home.svg) · [Menu](pages/daybreak/menu.svg) · [Order](pages/daybreak/order.svg) · [Visit](pages/daybreak/visit.svg) |
+| Paper Miles | [Itinerary](pages/paper-miles/itinerary.svg) · [Routes](pages/paper-miles/routes.svg) · [Places](pages/paper-miles/places.svg) |
+| Mile Marker | [Home](pages/mile-marker/home.svg) · [Collection](pages/mile-marker/collection.svg) · [Detail](pages/mile-marker/detail.svg) · [Journal](pages/mile-marker/journal.svg) · [Index](pages/mile-marker/index.svg) · [About](pages/mile-marker/about.svg) · [Programme](pages/mile-marker/programme.svg) · [Lookbook](pages/mile-marker/lookbook.svg) · [Contact](pages/mile-marker/contact.svg) · [Billboard](pages/mile-marker/billboard.svg) · [Atlas](pages/mile-marker/atlas.svg) · [Catalogue](pages/mile-marker/catalogue.svg) |
+| Camp Almanac | [Home](pages/camp-almanac/home.svg) · [Collection](pages/camp-almanac/collection.svg) · [Detail](pages/camp-almanac/detail.svg) · [Journal](pages/camp-almanac/journal.svg) · [Index](pages/camp-almanac/index.svg) · [About](pages/camp-almanac/about.svg) · [Programme](pages/camp-almanac/programme.svg) · [Lookbook](pages/camp-almanac/lookbook.svg) · [Contact](pages/camp-almanac/contact.svg) · [Billboard](pages/camp-almanac/billboard.svg) · [Atlas](pages/camp-almanac/atlas.svg) · [Catalogue](pages/camp-almanac/catalogue.svg) |
+| Sleeper Car | [Home](pages/sleeper-car/home.svg) · [Collection](pages/sleeper-car/collection.svg) · [Detail](pages/sleeper-car/detail.svg) · [Journal](pages/sleeper-car/journal.svg) · [Index](pages/sleeper-car/index.svg) · [About](pages/sleeper-car/about.svg) · [Programme](pages/sleeper-car/programme.svg) · [Lookbook](pages/sleeper-car/lookbook.svg) · [Contact](pages/sleeper-car/contact.svg) · [Billboard](pages/sleeper-car/billboard.svg) · [Atlas](pages/sleeper-car/atlas.svg) · [Catalogue](pages/sleeper-car/catalogue.svg) |
+| Small Hours Inn | [Home](pages/small-hours-inn/home.svg) · [Collection](pages/small-hours-inn/collection.svg) · [Detail](pages/small-hours-inn/detail.svg) · [Journal](pages/small-hours-inn/journal.svg) · [Index](pages/small-hours-inn/index.svg) · [About](pages/small-hours-inn/about.svg) · [Programme](pages/small-hours-inn/programme.svg) · [Lookbook](pages/small-hours-inn/lookbook.svg) · [Contact](pages/small-hours-inn/contact.svg) · [Billboard](pages/small-hours-inn/billboard.svg) · [Atlas](pages/small-hours-inn/atlas.svg) · [Catalogue](pages/small-hours-inn/catalogue.svg) |
+| Offbeat Cabinet | [Home](pages/offbeat-cabinet/home.svg) · [Collection](pages/offbeat-cabinet/collection.svg) · [Detail](pages/offbeat-cabinet/detail.svg) · [Journal](pages/offbeat-cabinet/journal.svg) · [Index](pages/offbeat-cabinet/index.svg) · [About](pages/offbeat-cabinet/about.svg) · [Programme](pages/offbeat-cabinet/programme.svg) · [Lookbook](pages/offbeat-cabinet/lookbook.svg) · [Contact](pages/offbeat-cabinet/contact.svg) · [Billboard](pages/offbeat-cabinet/billboard.svg) · [Atlas](pages/offbeat-cabinet/atlas.svg) · [Catalogue](pages/offbeat-cabinet/catalogue.svg) |
+| Side Table | [Home](pages/side-table/home.svg) · [Collection](pages/side-table/collection.svg) · [Detail](pages/side-table/detail.svg) · [Journal](pages/side-table/journal.svg) · [Index](pages/side-table/index.svg) · [About](pages/side-table/about.svg) · [Programme](pages/side-table/programme.svg) · [Lookbook](pages/side-table/lookbook.svg) · [Contact](pages/side-table/contact.svg) · [Billboard](pages/side-table/billboard.svg) · [Atlas](pages/side-table/atlas.svg) · [Catalogue](pages/side-table/catalogue.svg) |
+| Gallery Sunday | [Home](pages/gallery-sunday/home.svg) · [Collection](pages/gallery-sunday/collection.svg) · [Detail](pages/gallery-sunday/detail.svg) · [Journal](pages/gallery-sunday/journal.svg) · [Index](pages/gallery-sunday/index.svg) · [About](pages/gallery-sunday/about.svg) · [Programme](pages/gallery-sunday/programme.svg) · [Lookbook](pages/gallery-sunday/lookbook.svg) · [Contact](pages/gallery-sunday/contact.svg) · [Billboard](pages/gallery-sunday/billboard.svg) · [Atlas](pages/gallery-sunday/atlas.svg) · [Catalogue](pages/gallery-sunday/catalogue.svg) |
+| Walk Ledger | [Home](pages/walk-ledger/home.svg) · [Collection](pages/walk-ledger/collection.svg) · [Detail](pages/walk-ledger/detail.svg) · [Journal](pages/walk-ledger/journal.svg) · [Index](pages/walk-ledger/index.svg) · [About](pages/walk-ledger/about.svg) · [Programme](pages/walk-ledger/programme.svg) · [Lookbook](pages/walk-ledger/lookbook.svg) · [Contact](pages/walk-ledger/contact.svg) · [Billboard](pages/walk-ledger/billboard.svg) · [Atlas](pages/walk-ledger/atlas.svg) · [Catalogue](pages/walk-ledger/catalogue.svg) |
+| Trail Register | [Home](pages/trail-register/home.svg) · [Collection](pages/trail-register/collection.svg) · [Detail](pages/trail-register/detail.svg) · [Journal](pages/trail-register/journal.svg) · [Index](pages/trail-register/index.svg) · [About](pages/trail-register/about.svg) · [Programme](pages/trail-register/programme.svg) · [Lookbook](pages/trail-register/lookbook.svg) · [Contact](pages/trail-register/contact.svg) · [Billboard](pages/trail-register/billboard.svg) · [Atlas](pages/trail-register/atlas.svg) · [Catalogue](pages/trail-register/catalogue.svg) |
+| Host House | [Home](pages/host-house/home.svg) · [Collection](pages/host-house/collection.svg) · [Detail](pages/host-house/detail.svg) · [Journal](pages/host-house/journal.svg) · [Index](pages/host-house/index.svg) · [About](pages/host-house/about.svg) · [Programme](pages/host-house/programme.svg) · [Lookbook](pages/host-house/lookbook.svg) · [Contact](pages/host-house/contact.svg) · [Billboard](pages/host-house/billboard.svg) · [Atlas](pages/host-house/atlas.svg) · [Catalogue](pages/host-house/catalogue.svg) |
+
+## Source websites
+
+These are pattern studies used to match website briefs to original editable layouts.
+
+| Collection | Website | Pattern to study |
+| --- | --- | --- |
+| Fold House | [ArchDaily](https://www.archdaily.com/) | Present a project index with an individual building study. |
+| Fern Index | [Royal Horticultural Society](https://www.rhs.org.uk/plants) | Make plant selection a searchable collection. |
+| Fern Index | [Kew Gardens](https://www.kew.org/) | Connect plant discovery with visiting information. |
+| Switchback | [AllTrails](https://www.alltrails.com/) | Give each trail a name and a route-oriented detail view. |
+| Counterform | [Google Fonts](https://fonts.google.com/) | Treat a type specimen as a catalogue item. |
+| Counterform | [Typotheque](https://www.typotheque.com/) | Give a type family a specimen and detail view. |
+| Late Signal | [NTS](https://www.nts.live/) | Give shows and broadcasts dedicated entry points. |
+| Late Signal | [KEXP](https://www.kexp.org/) | Lead with listening and keep programming easy to find. |
+| Dead Wax | [Bandcamp](https://bandcamp.com/) | Give each release a visual identity and its own detail view. |
+| Lap Line | [Komoot](https://www.komoot.com/) | Organize outdoor adventures around routes. |
+| Lap Line | [Bikemap](https://www.bikemap.net/) | Make a cycling route the main unit of discovery. |
+| Orbit Room | [NASA Skywatching](https://science.nasa.gov/skywatching/) | Organize a sky guide around what to observe. |
+| Cut Paper | [It's Nice That](https://www.itsnicethat.com/) | Use a visually led feature to introduce the editorial index. |
+| Paper Wings | [Audubon](https://www.audubon.org/bird-guide) | Structure a field guide around individual species. |
+| Cinder Oven | [King Arthur Baking](https://www.kingarthurbaking.com/recipes) | Give individual bakes a browsable catalogue and detail page. |
+| Cinder Oven | [Serious Eats](https://www.seriouseats.com/) | Pair food discovery with an editorial detail view. |
+| Needle Drop | [Resident Advisor](https://ra.co/events) | Group club events into a browsable programme. |
+| Daily Circuit | [iFixit](https://www.ifixit.com/Guide) | Organize practical projects into individually accessible guides. |
+| Daily Circuit | [Adafruit Learning System](https://learn.adafruit.com/) | Expose the project library before opening an individual build. |
+| Daybreak | [Sightglass Coffee](https://sightglasscoffee.com/collections/all) | Pair each coffee with tasting notes and a clear price. |
+| Daybreak | [Blue Bottle Coffee](https://bluebottlecoffee.com/us/eng?category=Coffee) | Give café discovery and beans for home distinct paths. |
+| Paper Miles | [Wanderlog](https://wanderlog.com/) | Keep a day's stops and their map in the same view. |
+| Paper Miles | [TripIt](https://www.tripit.com/web) | Group time-stamped plans into one trip itinerary. |
+| Paper Miles | [Tripomatic](https://tripomatic.com/en) | Place sightseeing choices beside a day plan. |
+| Paper Miles | [Rome2Rio](https://help.rome2rio.com/en/support/solutions/articles/22000280935-how-to-search-for-a-journey-on-rome2rio) | Compare transport modes for one origin and destination. |
+| Paper Miles | [Visit Copenhagen](https://www.visitcopenhagen.com/copenhagen/planning/travel-info/24-hours-in-copenhagen-through-the-lens-of-a-local) | Organize a short city visit around a few local stops. |
+| Paper Miles | [Japan Guide](https://www.japan-guide.com/) | Use a destination as the starting point for saved places. |
+| Mile Marker | [Roadtrippers](https://roadtrippers.com/) | Make the route and its detours the primary browsing surface. |
+| Camp Almanac | [Hipcamp](https://www.hipcamp.com/en-US) | Lead with the place to stay and its setting. |
+| Camp Almanac | [Recreation.gov](https://www.recreation.gov/) | Distinguish campsites, cabins and visitor activities. |
+| Camp Almanac | [Harvest Hosts](https://www.harvesthosts.com/) | Use the character of a host location to differentiate stops. |
+| Sleeper Car | [Interrail](https://www.interrail.eu/en/plan-your-trip) | Group rail journeys into a trip-planning sequence. |
+| Sleeper Car | [Seat 61](https://www.seat61.com/) | Give each rail journey a dedicated detail page. |
+| Small Hours Inn | [HotelTonight](https://www.hoteltonight.com/) | Show stays as individually browsable options. |
+| Offbeat Cabinet | [Atlas Obscura](https://www.atlasobscura.com/) | Give unusual places individual stories and positions in an atlas. |
+| Side Table | [Resy](https://resy.com/) | Give dining and reservation information clear entry points. |
+| Side Table | [OpenTable](https://www.opentable.com/) | Place table availability close to restaurant discovery. |
+| Gallery Sunday | [MoMA](https://www.moma.org/calendar/) | Make a programme of exhibitions and events browsable. |
+| Gallery Sunday | [The Met Collection](https://www.metmuseum.org/art/collection) | Give each work an individual record within the collection. |
+| Walk Ledger | [GetYourGuide](https://www.getyourguide.com/) | Separate experiences and their detail views. |
+| Trail Register | [National Park Service](https://www.nps.gov/planyourvisit/index.htm) | Separate planning information from destination discovery. |
+| Host House | [Workaway](https://www.workaway.info/) | Pair a host setting with the activity available there. |

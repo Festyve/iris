@@ -40,5 +40,17 @@
 ["Needle Drop","dj turntablism clubbing nightclub","Music after midnight","Opening Set|Peak Hour|Last Record","See the lineup","211B2D","F3E9E7","B77FAB","meter"],
 ["Little Kite","kites kitesurf wind windsurf","Made for the wind","Delta Wing|Coastal Flight|Crosswind","Find a launch","E3EEF0","203A4B","E09B55","bird"],
 ["Daily Circuit","electronics circuits robotics soldering maker","From bench to board","Logic Board|Signal Path|Open Hardware","Browse builds","E2EBE2","20372A","709C63","transit"],
-["Focal Plane","optics microscopy microscope prism","Light under study","Prism Array|Optical Bench|Lens Study","View experiments","EAE9EF","262C42","747FAE","lens"]
+["Focal Plane","optics microscopy microscope prism","Light under study","Prism Array|Optical Bench|Lens Study","View experiments","EAE9EF","262C42","747FAE","lens"],
+["Daybreak","coffee coffeeshop coffeeshops café cafe bakery espresso latte barista roastery coffe","Meet me for coffee.","Honey oat latte|Butter croissant|Morning blend","Order pickup","FFF7E8","34291F","A8322D","cafe"],
+["Paper Miles","travel planner itinerary trip vacation kyoto tokyo japan lisbon london paris copenhagen","A few days away","Market walk|Riverside lunch|Old town loop","Plan a trip","F5F3E8","163A41","E9A659","transit"],
+["Mile Marker","roadtrip roadtrippers detours driving roadside","Find the scenic route","Lake Road|Desert Loop|Coast Highway","Find a detour","EFE8D6","33392B","D3894D","ridge"],
+["Camp Almanac","campsite campground camping glamping tents tent","Sleep under the stars","Forest Pitch|Lake Meadow|Cabin Row","Explore campsites","EAEBD6","293F31","9F9547","ridge"],
+["Sleeper Car","interrail eurail nighttrain sleeper railpass","Wake up somewhere new","Alpine Express|Coastal Sleeper|Capital Link","Explore journeys","1E2A3D","F2E8D4","C58B5D","transit"],
+["Small Hours Inn","hotel motel inns stays lodging hostels","Stay a little longer","Garden Suite|Loft Room|Courtyard Room","Explore rooms","F1E5DE","442B31","B96F73","structure"],
+["Offbeat Cabinet","curiosities oddities atlasobscura curios","Places worth a detour","Hidden Stair|Cabinet Gallery|Tower Garden","Find a place","EEE7DA","393330","A17C51","lens"],
+["Side Table","reservations restaurant dining tables bookings","A table for tonight","Courtyard|Chef’s Counter|Window Table","See tables","F3E6D8","402822","B76C51","vessel"],
+["Gallery Sunday","exhibitions museum exhibitions curators galleries","On view this week","Works on Paper|Light Study|Open Collection","See exhibitions","EAE9DF","26272B","767A9C","fold"],
+["Walk Ledger","excursions tours sightseeing activities","Explore with a local","Market Walk|Harbour Tour|Studio Visits","See experiences","E7EEE7","243D39","8CA85D","bird"],
+["Trail Register","nationalpark permits backcountry backpacking","Choose your trailhead","North Ridge|Timber Loop|Lake Basin","Find a trail","ECEADA","2B3D32","C7814F","ridge"],
+["Host House","homestay exchange workaway volunteering","Stay and lend a hand","Farm Stay|Garden Project|Coastal House","Explore hosts","F0E9DC","334735","AA865C","leaf"]
 ]

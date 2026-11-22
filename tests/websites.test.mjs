@@ -64,9 +64,12 @@ test('a requested edit calls the model once, contains no image payload, and reje
   assert.equal(calls,1);assert.equal(ops.length,1);assert.equal(ops[0].id,changed);assert.equal(ops[0].node.text,'Laurel');assert.equal(ops[0].node.x,undefined);
 });
 
-test('coffee shop uses a menu and hours directory drawn from vault layouts',async()=>{
-  const {doc}=await websiteDesign('coffee shop',root);
-  assert.deepEqual(Array.from(doc.screens,s=>s.vaultSource),['gumroad','paco','emilkowal']);
-  assert.ok(doc.nodes.some(n=>n.parent==='collection' && n.text==='Granola bowl'));
-  assert.ok(doc.nodes.some(n=>n.parent==='detail' && n.text==='Saturday–Sunday   8 am – 4 pm'));
+test('coffee and travel briefs compose their domain pages and retain the requested city',async()=>{
+  const {doc}=await websiteDesign('coffee shop called “Juniper”',root);
+  assert.equal(doc.name,'Juniper');
+  assert.deepEqual(Array.from(doc.screens,s=>s.name.split(' · ')[1]),['Home','Menu','Order','Visit']);
+  assert.ok(doc.nodes.some(n=>n.text==='Whole bean'));
+  const trip=(await websiteDesign('a Tokyo travel planner',root)).doc;
+  assert.equal(trip.reference.city,'Tokyo');
+  assert.ok(trip.nodes.some(n=>n.text==='Ueno Park'));
 });

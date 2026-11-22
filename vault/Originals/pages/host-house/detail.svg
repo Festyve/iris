@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1440" height="900">
+<rect width="1440" height="900" fill="#F0E9DC"/>
+<text x="54" y="51" font-family="Inter,Arial,sans-serif" font-size="30" font-weight="700" fill="#334735">Host House</text>
+<text x="800" y="48.3" font-family="Inter,Arial,sans-serif" font-size="17" font-weight="500" fill="#334735">Collection</text>
+<text x="932" y="48.3" font-family="Inter,Arial,sans-serif" font-size="17" font-weight="500" fill="#334735">Journal</text>
+<text x="1064" y="48.3" font-family="Inter,Arial,sans-serif" font-size="17" font-weight="500" fill="#334735">About</text>
+<text x="1210" y="48.3" font-family="Inter,Arial,sans-serif" font-size="17" font-weight="700" fill="#334735">Explore hosts</text>
+<rect x="54" y="79" width="1332" height="1" fill="#334735"/>
+<image x="54" y="116" width="745" height="639" preserveAspectRatio="xMidYMid slice" xlink:href="../../art/host-house-1.png"/>
+<text x="854" y="243" font-family="Inter,Arial,sans-serif" font-size="70" font-weight="600" fill="#334735">Garden Project</text>
+<text x="854" y="360.4" font-family="Inter,Arial,sans-serif" font-size="26" font-weight="400" fill="#334735">Stay and lend a hand</text>
+<rect x="854" y="431" width="232" height="56" fill="#334735"/>
+<text x="872" y="464.2" font-family="Inter,Arial,sans-serif" font-size="18" font-weight="600" fill="#F0E9DC">Explore hosts</text>
+<rect x="854" y="626" width="532" height="1" fill="#334735"/>
+<text x="854" y="660.4" font-family="Inter,Arial,sans-serif" font-size="16" font-weight="400" fill="#334735">01</text>
+<text x="926" y="668.8" font-family="Inter,Arial,sans-serif" font-size="32" font-weight="500" fill="#334735">Farm Stay</text>
+<text x="1350" y="664.5" font-family="Inter,Arial,sans-serif" font-size="25" font-weight="400" fill="#334735">↗</text>
+<rect x="54" y="824" width="1332" height="1" fill="#334735"/>
+<text x="54" y="865.2" font-family="Inter,Arial,sans-serif" font-size="18" font-weight="600" fill="#334735">Host House</text>
+<text x="1200" y="865.2" font-family="Inter,Arial,sans-serif" font-size="18" font-weight="400" fill="#334735">Detail</text>
+</svg>

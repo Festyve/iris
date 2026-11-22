@@ -7,17 +7,31 @@ const OriginalPages=(()=>{
     const [name,tags,headline,list,cta,paper,ink,accent,motif]=row;
     return {id:slug(name),name,tags,headline,items:list.split('|'),cta,paper:'#'+paper,ink:'#'+ink,accent:'#'+accent,motif};
   });
+  for(const f of families)f.sources=OriginalWebSources.filter(row=>row[0]===f.name);
+  const phrases={'mile-marker':['road trip','road trips'],'trail-register':['national park'],'side-table':['restaurant booking'],'daybreak':['coffee shop','coffee shops'],'paper-miles':['trip planner','travel planner']};
   function match(note){
-    const phrase=' '+note.toLowerCase().replace(/[^a-z0-9]+/g,' ').trim()+' ';
+    const phrase=' '+note.toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').trim()+' ';
     let best=null,score=0;
     for(const f of families){
       const named=phrase.includes(' '+f.name.toLowerCase()+' ');
-      const rank=(named?100:0)+f.tags.split(' ').filter(tag=>phrase.includes(' '+tag+' ') || phrase.includes(' '+tag+'s ')).length;
+      const sourceNamed=f.sources.some(([,site])=>phrase.includes(' '+site.toLowerCase().replace(/[^a-z0-9]+/g,' ').trim()+' '));
+      const phraseLength=Math.max(0,...(phrases[f.id]||[]).filter(term=>phrase.includes(' '+term+' ')).map(term=>term.length));
+      const rank=(named?100:0)+(sourceNamed?50:0)+(f.id==='mile-marker' && phraseLength?30:phraseLength)+f.tags.split(' ').filter(tag=>phrase.includes(' '+tag+' ') || phrase.includes(' '+tag+'s ')).length;
       if(rank>score){score=rank;best={id:f.id,f,original:true,exact:named,site:{title:f.name},fallback:false};}
     }
     return best;
   }
-  function page(f,role,name,parent){
+  const rolesFor=f=>f.id==='daybreak'?FieldGuides.cafeRoles:f.id==='paper-miles'?FieldGuides.travelRoles:roles;
+  const sequences={
+    'night-platform':['Atlas','Programme','Index'],'last-showing':['Billboard','Programme','Detail'],
+    'second-sweep':['Catalogue','Lookbook','Detail'],'mile-marker':['Atlas','Lookbook','Index'],
+    'camp-almanac':['Lookbook','Atlas','Detail'],'sleeper-car':['Atlas','Programme','Detail'],
+    'small-hours-inn':['Lookbook','Catalogue','Contact'],'offbeat-cabinet':['Atlas','Journal','Detail'],
+    'side-table':['Home','Catalogue','Contact'],'gallery-sunday':['Billboard','Programme','Lookbook'],
+    'walk-ledger':['Atlas','Programme','Detail'],'trail-register':['Atlas','Index','Detail'],
+    'host-house':['Lookbook','About','Contact']
+  };
+  function page(f,role,name,parent,city){
     const nodes=[], rect=(label,x,y,w,h,fill,extra={})=>nodes.push({type:'shape',name:label,x,y,w,h,fill,...extra});
     function text(value,x,y,w,size,weight=400,color=f.ink){
       const fit=Math.min(size,w/Math.max(1,Doc.measure(value,1,weight)));
@@ -27,6 +41,10 @@ const OriginalPages=(()=>{
     const rule=(x,y,w)=>rect('Divider',x,y,w,1,f.ink);
     const row=(label,i,x,y,w)=>{rule(x,y,w);text(String(i+1).padStart(2,'0'),x,y+20,58,16);text(label,x+72,y+14,w-120,32,500);text('↗',x+w-36,y+16,36,25);};
     const button=(value,x,y)=>{rect('Button',x,y,232,56,f.ink);text(value,x+18,y+17,195,18,600,f.paper);};
+    const ui={text,rect,art,rule};
+    if(f.id==='daybreak')FieldGuides.cafe(role,name,ui);
+    else if(f.id==='paper-miles')FieldGuides.travel(role,name,ui,city);
+    else{
     text(name,54,24,540,30,700);['Collection','Journal','About'].forEach((n,i)=>text(n,800+i*132,33,120,17,500));
     text(f.cta,1210,33,176,17,700);rule(54,79,1332);
     const heading=(value=f.headline)=>text(value,54,118,1320,92,600);
@@ -98,16 +116,20 @@ const OriginalPages=(()=>{
       art(2,864,118,522,446);f.items.forEach((v,i)=>row(v,i,54,539+i*75,729));
     }
     rule(54,824,1332);text(name,54,849,650,18,600);text(role,1200,849,182,18);
+    }
     nodes.forEach((n,i)=>{n.parent=parent;n.id=parent+'-'+i;});
     return {screen:{id:parent,name:name+' · '+role,w:1440,h:900,fill:f.paper,layout:'stack',vaultSource:f.id},nodes};
   }
   function build(note,m,title,captureOnly){
     const f=m.f,name=/called|named|["“]/i.test(note)?title:f.name;
     const requested=note.toLowerCase().replace(f.name.toLowerCase(),'').replace(f.id,'');
-    const first=roles.find(r=>new RegExp('\\b'+r+'\\b','i').test(requested))||'Home';
-    const selected=captureOnly?[first]:[...new Set([first,'Collection','Detail','Home'])].slice(0,3);
-    const pages=selected.map((r,i)=>page(f,r,name,['web','collection','detail'][i]));
-    return {name,reference:{id:f.id,title:f.name,url:'',vaultOnly:true,original:true,setups:pages.map(p=>({screen:p.screen.id,source:f.id}))},screens:pages.map(p=>p.screen),nodes:pages.flatMap(p=>p.nodes)};
+    const available=rolesFor(f);
+    const defaults=available===roles?(sequences[f.id]||['Home','Collection','Detail']):available;
+    const explicit=available.find(r=>new RegExp('\\b'+r+'\\b','i').test(requested));
+    const selected=captureOnly?[explicit||defaults[0]]:[...new Set([explicit||defaults[0],...defaults,...available])].slice(0,available===FieldGuides.cafeRoles?4:3);
+    const city=Object.keys(FieldGuides.destinations).find(c=>requested.includes(c.toLowerCase()));
+    const pages=selected.map((r,i)=>page(f,r,name,['web','collection','detail','visit'][i],city));
+    return {name,reference:{id:f.id,title:f.name,url:'',vaultOnly:true,original:true,city,sources:f.sources.map(([,title,url,pattern])=>({title,url,pattern})),setups:pages.map(p=>({screen:p.screen.id,source:f.id}))},screens:pages.map(p=>p.screen),nodes:pages.flatMap(p=>p.nodes)};
   }
-  return {families,roles,match,page,build};
+  return {families,roles,rolesFor,match,page,build};
 })();

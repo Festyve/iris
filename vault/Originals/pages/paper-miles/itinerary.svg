@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1440" height="900">
+<rect width="1440" height="900" fill="#F5F3E8"/>
+<rect x="0" y="0" width="239" height="900" fill="#163A41"/>
+<text x="28" y="69.68253968253968" font-family="Inter,Arial,sans-serif" font-size="32.98059964726632" font-weight="700" fill="#F5F3E8">Paper Miles</text>
+<rect rx="9" x="17" y="154" width="203" height="47" fill="#275C59"/>
+<text x="36" y="183.1" font-family="Inter,Arial,sans-serif" font-size="19" font-weight="600" fill="#F5F3E8">Itinerary</text>
+<text x="36" y="244.1" font-family="Inter,Arial,sans-serif" font-size="19" font-weight="600" fill="#F5F3E8">Routes</text>
+<text x="36" y="305.1" font-family="Inter,Arial,sans-serif" font-size="19" font-weight="600" fill="#F5F3E8">Places</text>
+<text x="29" y="401.7" font-family="Inter,Arial,sans-serif" font-size="13" font-weight="700" fill="#E9A659">MY TRIPS</text>
+<text x="29" y="447.8" font-family="Inter,Arial,sans-serif" font-size="22" font-weight="600" fill="#F5F3E8">Kyoto</text>
+<text x="279" y="57.3" font-family="Inter,Arial,sans-serif" font-size="17" font-weight="500" fill="#275C59">Trip workspace  /  Kyoto</text>
+<text x="276" y="163.8" font-family="Inter,Arial,sans-serif" font-size="72" font-weight="700" fill="#163A41">Kyoto in three days</text>
+<rect rx="20" x="280" y="219" width="101" height="40" fill="#163A41"/>
+<text x="300" y="244.3" font-family="Inter,Arial,sans-serif" font-size="17" font-weight="600" fill="#F5F3E8">Day 1</text>
+<rect rx="20" x="396" y="219" width="101" height="40" fill="#D6E7DE"/>
+<text x="416" y="244.3" font-family="Inter,Arial,sans-serif" font-size="17" font-weight="600" fill="#163A41">Day 2</text>
+<rect rx="20" x="512" y="219" width="101" height="40" fill="#D6E7DE"/>
+<text x="532" y="244.3" font-family="Inter,Arial,sans-serif" font-size="17" font-weight="600" fill="#163A41">Day 3</text>
+<text x="280" y="337" font-family="Inter,Arial,sans-serif" font-size="40" font-weight="600" fill="#163A41">Day one</text>
+<rect x="300" y="387" width="3" height="136" fill="#275C59"/>
+<ellipse cx="301.5" cy="402.5" rx="15.5" ry="15.5" fill="#E9A659"/>
+<text x="296" y="406.4" font-family="Inter,Arial,sans-serif" font-size="16" font-weight="700" fill="#163A41">1</text>
+<text x="338" y="403.2" font-family="Inter,Arial,sans-serif" font-size="18" font-weight="600" fill="#275C59">09:00</text>
+<text x="337" y="446" font-family="Inter,Arial,sans-serif" font-size="30" font-weight="600" fill="#163A41">Nishiki Market</text>
+<text x="338" y="481.3" font-family="Inter,Arial,sans-serif" font-size="17" font-weight="400" fill="#275C59">Morning walk</text>
+<rect x="300" y="523" width="3" height="136" fill="#275C59"/>
+<ellipse cx="301.5" cy="538.5" rx="15.5" ry="15.5" fill="#E9A659"/>
+<text x="296" y="542.4" font-family="Inter,Arial,sans-serif" font-size="16" font-weight="700" fill="#163A41">2</text>
+<text x="338" y="539.2" font-family="Inter,Arial,sans-serif" font-size="18" font-weight="600" fill="#275C59">12:30</text>
+<text x="337" y="582" font-family="Inter,Arial,sans-serif" font-size="30" font-weight="600" fill="#163A41">Kamo River</text>
+<text x="338" y="617.3" font-family="Inter,Arial,sans-serif" font-size="17" font-weight="400" fill="#275C59">Lunch stop</text>
+<rect x="300" y="659" width="3" height="24" fill="#275C59"/>
+<ellipse cx="301.5" cy="674.5" rx="15.5" ry="15.5" fill="#E9A659"/>
+<text x="296" y="678.4" font-family="Inter,Arial,sans-serif" font-size="16" font-weight="700" fill="#163A41">3</text>
+<text x="338" y="675.2" font-family="Inter,Arial,sans-serif" font-size="18" font-weight="600" fill="#275C59">16:00</text>
+<text x="337" y="718" font-family="Inter,Arial,sans-serif" font-size="30" font-weight="600" fill="#163A41">Gion lanes</text>
+<text x="338" y="753.3" font-family="Inter,Arial,sans-serif" font-size="17" font-weight="400" fill="#275C59">Afternoon visit</text>
+<rect rx="14" x="811" y="293" width="577" height="473" fill="#D6E7DE"/>
+<rect x="837" y="316" width="10" height="426" fill="#F5F3E8"/>
+<rect x="938" y="316" width="10" height="426" fill="#F5F3E8"/>
+<rect x="1039" y="316" width="10" height="426" fill="#F5F3E8"/>
+<rect x="1140" y="316" width="10" height="426" fill="#F5F3E8"/>
+<rect x="1241" y="316" width="10" height="426" fill="#F5F3E8"/>
+<rect x="1342" y="316" width="10" height="426" fill="#F5F3E8"/>
+<rect x="822" y="335" width="551" height="9" fill="#F5F3E8"/>
+<rect x="822" y="425" width="551" height="9" fill="#F5F3E8"/>
+<rect x="822" y="515" width="551" height="9" fill="#F5F3E8"/>
+<rect x="822" y="605" width="551" height="9" fill="#F5F3E8"/>
+<rect x="822" y="695" width="551" height="9" fill="#F5F3E8"/>
+<rect x="884" y="663" width="182" height="5" fill="#275C59"/>
+<rect x="1066" y="551" width="5" height="117" fill="#275C59"/>
+<rect x="1066" y="551" width="171" height="5" fill="#275C59"/>
+<rect x="1237" y="431" width="5" height="125" fill="#275C59"/>
+<ellipse cx="886.5" cy="665.5" rx="17.5" ry="17.5" fill="#163A41"/>
+<text x="880" y="671.1" font-family="Inter,Arial,sans-serif" font-size="19" font-weight="600" fill="#F5F3E8">1</text>
+<ellipse cx="1068.5" cy="553.5" rx="17.5" ry="17.5" fill="#163A41"/>
+<text x="1062" y="559.1" font-family="Inter,Arial,sans-serif" font-size="19" font-weight="600" fill="#F5F3E8">2</text>
+<ellipse cx="1239.5" cy="433.5" rx="17.5" ry="17.5" fill="#163A41"/>
+<text x="1233" y="439.1" font-family="Inter,Arial,sans-serif" font-size="19" font-weight="600" fill="#F5F3E8">3</text>
+<text x="837" y="336.7" font-family="Inter,Arial,sans-serif" font-size="23" font-weight="600" fill="#163A41">Day 1 route</text>
+<text x="818" y="796.4" font-family="Inter,Arial,sans-serif" font-size="16" font-weight="400" fill="#275C59">Schematic walking route</text>
+</svg>
