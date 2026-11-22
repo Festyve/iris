@@ -1,6 +1,6 @@
 import { api, apiNamespace, app, page, route } from "@wasp.sh/spec";
 import { MainPage } from "./src/MainPage" with { type: "ref" };
-import { studioHealth, listStudioProjects, getStudioProject, saveStudioProject, studioMiddleware } from "./src/apis" with { type: "ref" };
+import { studioHealth, listStudioProjects, getStudioProject, saveStudioProject, studioMiddleware, repoHealth, repoQuestion } from "./src/apis" with { type: "ref" };
 
 export default app({
   name: "waspStudio",
@@ -10,6 +10,8 @@ export default app({
   spec: [
     route("RootRoute", "/", page(MainPage)),
     apiNamespace("/studio-api", { middlewareConfigFn: studioMiddleware }),
+    api("GET", "/studio-api/repo/health", repoHealth),
+    api("POST", "/studio-api/repo/question", repoQuestion),
     api("GET", "/studio-api/health", studioHealth, { entities: ["DesignProject"] }),
     api("GET", "/studio-api/projects", listStudioProjects, { entities: ["DesignProject"] }),
     api("GET", "/studio-api/projects/:id", getStudioProject, { entities: ["DesignProject"] }),

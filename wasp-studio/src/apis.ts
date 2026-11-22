@@ -1,9 +1,23 @@
-import type { StudioHealth, ListStudioProjects, GetStudioProject, SaveStudioProject } from 'wasp/server/api';
+import type { RepoHealth, RepoQuestion, StudioHealth, ListStudioProjects, GetStudioProject, SaveStudioProject } from 'wasp/server/api';
 import type { MiddlewareConfigFn } from 'wasp/server';
 import { timingSafeEqual } from 'node:crypto';
 import { projectId, validateSnapshot, expectedRevision, isLocalRequest } from './validation.mjs';
+import { answerQuestion, authorized } from './repo-question.mjs';
+import { snapshot } from './repo-evidence.mjs';
+export const repoHealth: RepoHealth = async (_req, res) => {
+  res.json({provider:'wasp', status:'ready', repo:snapshot.repo, commit:snapshot.commit});
+};
+export const repoQuestion: RepoQuestion = async (req, res) => {
+  res.set('Cache-Control','no-store');
+  if (!authorized(req.headers.authorization, process.env.REPO_QUESTION_TOKEN)) {
+    res.status(401).json({error:'Repository read authorization required.'}); return;
+  }
+  try { res.json(answerQuestion(req.body)); }
+  catch { res.status(400).json({error:'Provide a question between 1 and 1000 characters.'}); }
+};
 export const studioMiddleware: MiddlewareConfigFn = config => config;
 function authorize(req: { socket: { remoteAddress?: string }; headers: Record<string, unknown> }) {
+  if (process.env.WASP_REPO_ONLY === 'true') throw Object.assign(Error('Project archive is private.'), {status:403});
   if (!isLocalRequest(req.socket.remoteAddress, req.headers.host, req.headers.origin)) throw Object.assign(Error('This archive accepts local workspace requests only.'), { status: 403 });
   const token = process.env.WASP_STUDIO_TOKEN;
   if (token) {
