@@ -7,7 +7,7 @@ export function inspectPreview(html, width) {
     frame.title = 'Checking generated preview';
     frame.setAttribute('aria-hidden', 'true');
     frame.tabIndex = -1;
-    frame.style.cssText = 'position:fixed;top:0;left:0;opacity:0;pointer-events:none;z-index:-1;border:0;height:800px;width:' + width + 'px';
+    frame.style.cssText = 'position:fixed;top:0;left:0;opacity:0.001;pointer-events:none;z-index:70;border:0;height:800px;width:' + width + 'px';
     const id = crypto.randomUUID();
     function finish(error) {
       window.removeEventListener('message', receive);
@@ -23,6 +23,7 @@ export function inspectPreview(html, width) {
     const timer = setTimeout(() => finish('Preview verification timed out.'), 8000);
     window.addEventListener('message', receive);
     function inspect(id, width) {
+      const started = performance.now();
       const checkLayout = () => {
         if (innerWidth !== width) { requestAnimationFrame(checkLayout); return; }
         const control = document.querySelector('[data-primary]');
@@ -30,9 +31,10 @@ export function inspectPreview(html, width) {
         if (!document.querySelector('h1')) problem = 'Missing page heading';
         else if (!control || !control.getBoundingClientRect().height || control.disabled) problem = 'Primary control unavailable at ' + width + 'px';
         else if (document.documentElement.scrollWidth > innerWidth + 1) problem = 'Horizontal overflow at ' + width + 'px';
+        if (problem && performance.now() - started < 1200) { requestAnimationFrame(checkLayout); return; }
         parent.postMessage({ probe: id, problem }, '*');
       };
-      addEventListener('load', () => requestAnimationFrame(checkLayout));
+      addEventListener('load', () => document.fonts.ready.then(() => requestAnimationFrame(checkLayout)));
     }
     const probe = '<script nonce="' + id + '">(' + inspect.toString() + ')(' +
       JSON.stringify(id) + ',' + width + ');<\/script>';
