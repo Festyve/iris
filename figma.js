@@ -93,11 +93,6 @@ async function start(m) {
   for(const s of [...board.screens,...(prev?prev.screens:[])]) for(const layer of s.layers) {
     if(!layer.art || !layer.art.includes('/v3/') || imageHashes.has(layer.art))continue;
     const png=m.images && m.images[layer.art];
-    if(!png && m.doc?.reference?.original && prev){
-      const existing=found.nodes.get(s.id+'/'+layer.id);
-      const stored=existing?.fills?.find?.(fill=>fill.type==='IMAGE' && fill.imageHash);
-      if(stored){imageHashes.set(layer.art,stored.imageHash);continue;}
-    }
     if(!png)throw Error('The vault artwork is missing. Reopen the updated Iris plugin.');
     imageHashes.set(layer.art,figma.createImage(figma.base64Decode(png)).hash);
   }
@@ -215,10 +210,6 @@ function layer(r, f, S, ref, ls, li) {
     n.fontSize = T.size; n.lineHeight = {unit: 'PERCENT', value: T.lh * 100};
     n.letterSpacing = {unit: 'PERCENT', value: T.size >= 28 ? -2 : 0};
     n.textAlignHorizontal = T.align === 'center' ? 'CENTER' : T.align === 'right' ? 'RIGHT' : 'LEFT';
-    if(r.doc?.reference?.kind==='html-css'){
-      n.textAutoResize='HEIGHT';
-      n.resize(Math.max(1,b.w),Math.max(1,b.h));
-    }
     n.characters = ls.text.slice(0, chars);
     n.fills = [solid(ls.color)];
     n.x = T.align === 'center' ? b.x + (b.w - n.width) / 2 : T.align === 'right' ? b.x + b.w - n.width : b.x;

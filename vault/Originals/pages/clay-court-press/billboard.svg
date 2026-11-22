@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1440" height="900">
+<rect width="1440" height="900" fill="#F1EBDD"/>
+<text x="54" y="51" font-family="Inter,Arial,sans-serif" font-size="30" font-weight="700" fill="#35271D">Clay Court Press</text>
+<text x="800" y="48.3" font-family="Inter,Arial,sans-serif" font-size="17" font-weight="500" fill="#35271D">Collection</text>
+<text x="932" y="48.3" font-family="Inter,Arial,sans-serif" font-size="17" font-weight="500" fill="#35271D">Journal</text>
+<text x="1064" y="48.3" font-family="Inter,Arial,sans-serif" font-size="17" font-weight="500" fill="#35271D">About</text>
+<text x="1210" y="48.3" font-family="Inter,Arial,sans-serif" font-size="17" font-weight="700" fill="#35271D">Find a game</text>
+<rect x="54" y="79" width="1332" height="1" fill="#35271D"/>
+<rect x="54" y="106" width="1332" height="453" fill="#35271D"/>
+<image x="780" y="106" width="606" height="453" preserveAspectRatio="xMidYMid slice" xlink:href="../../art/clay-court-press-0.png"/>
+<text x="92" y="252.8176764869372" font-family="Inter,Arial,sans-serif" font-size="79.7974183188191" font-weight="600" fill="#F1EBDD">On the hardwood</text>
+<text x="92" y="367.5" font-family="Inter,Arial,sans-serif" font-size="35" font-weight="400" fill="#F1EBDD">Pickup Night</text>
+<rect x="93" y="437" width="218" height="53" fill="#F1EBDD"/>
+<text x="110" y="469.3" font-family="Inter,Arial,sans-serif" font-size="17" font-weight="600" fill="#35271D">Find a game</text>
+<rect x="54" y="611" width="423" height="1" fill="#35271D"/>
+<text x="54" y="648.2" font-family="Inter,Arial,sans-serif" font-size="18" font-weight="400" fill="#35271D">01</text>
+<text x="54" y="724.8" font-family="Inter,Arial,sans-serif" font-size="42" font-weight="600" fill="#35271D">Pickup Night</text>
+<rect x="506" y="611" width="423" height="1" fill="#35271D"/>
+<text x="506" y="648.2" font-family="Inter,Arial,sans-serif" font-size="18" font-weight="400" fill="#35271D">02</text>
+<text x="506" y="724.8" font-family="Inter,Arial,sans-serif" font-size="42" font-weight="600" fill="#35271D">Half Court</text>
+<rect x="958" y="611" width="423" height="1" fill="#35271D"/>
+<text x="958" y="648.2" font-family="Inter,Arial,sans-serif" font-size="18" font-weight="400" fill="#35271D">03</text>
+<text x="958" y="724.8" font-family="Inter,Arial,sans-serif" font-size="42" font-weight="600" fill="#35271D">Summer League</text>
+<rect x="54" y="824" width="1332" height="1" fill="#35271D"/>
+<text x="54" y="865.2" font-family="Inter,Arial,sans-serif" font-size="18" font-weight="600" fill="#35271D">Clay Court Press</text>
+<text x="1200" y="865.2" font-family="Inter,Arial,sans-serif" font-size="18" font-weight="400" fill="#35271D">Billboard</text>
+</svg>

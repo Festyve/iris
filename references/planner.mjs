@@ -1,23 +1,20 @@
 import {readFile} from 'node:fs/promises';
 import vm from 'node:vm';
 import {catalog} from './catalog.mjs';
-
+import {originals} from './originals.mjs';
 import Match from './match.js';
 import {brands,brandCopy} from './captures.mjs';
 import {Doc} from '../designer.mjs';
 
 const sites=JSON.parse(await readFile(new URL('sites.json',import.meta.url),'utf8'));
 const rasterLayouts=JSON.parse(await readFile(new URL('raster-layouts.json',import.meta.url),'utf8'));
-const CodeIndex=JSON.parse(await readFile(new URL('../vault/Code/sites.json',import.meta.url)));
-const CodeLayouts=JSON.parse(await readFile(new URL('../vault/Code/layouts.json',import.meta.url)));
-const CodeSites=vm.runInNewContext((await readFile(new URL('code-sites.js',import.meta.url),'utf8'))+'\nCodeSites',{CodeIndex,CodeLayouts});
 const source=await readFile(new URL('websites.js',import.meta.url),'utf8');
-const layerBuilder=vm.runInNewContext(source+'\nWebsites',{RasterLayouts:rasterLayouts,CodeSites});
+const layerBuilder=vm.runInNewContext(source+'\nWebsites',{RasterLayouts:rasterLayouts});
 const libraries=new Map();
 async function library(root) {
   if (!libraries.has(root)) {
     const loading=catalog(root).then(media=>vm.runInNewContext(source+'\nWebsites',
-      {Doc,CodeSites,RasterLayouts:rasterLayouts,ReferenceBrands:brands,ReferenceCopy:brandCopy,ReferenceSites:sites,ReferenceMedia:media,ReferenceMatch:Match}));
+      {Doc,OriginalPages:originals,RasterLayouts:rasterLayouts,ReferenceBrands:brands,ReferenceCopy:brandCopy,ReferenceSites:sites,ReferenceMedia:media,ReferenceMatch:Match}));
     libraries.set(root,loading);
     loading.catch(()=>libraries.delete(root));
   }
@@ -39,9 +36,9 @@ export async function websiteEdit(raw,note,ask,styleName='') {
   for(const screen of doc.screens)if(screen.vaultSource)sources.add(screen.vaultSource);
   const palette=new Set(), sizes=new Set();
   for(const id of sources) {
-    const imported=CodeLayouts[id];
-    if(imported || doc.reference.original===true){
-      palette.add('#FFFFFF');
+    const original=originals.families.find(f=>f.id===id);
+    if(original){
+      for(const color of [original.paper,original.ink,original.accent])palette.add(color);
       for(const n of doc.nodes){
         if(n.type==='text')sizes.add(Math.round(n.size));
         const color=n.type==='text'?n.color:n.fill;
@@ -64,8 +61,8 @@ export async function websiteEdit(raw,note,ask,styleName='') {
   const allowed=new Map(candidates.map(n=>[n.id,n]));
   const colors=[...palette].sort();
   const system='Edit a vault-built website. Return JSON {"changes":[...]} only. Use a supplied node id. Available actions: {"id":"...","text":"new words"}, {"id":"...","size":number}, {"id":"...","color":"#RRGGBB"}, {"id":"...","visible":false}, or {"from":"#RRGGBB","to":"#RRGGBB"} to replace a palette color across the site. Use sizes and colors from the supplied lists. Pick the smallest change that satisfies the user. If no supported action applies, return an empty list. A request for another page may use {"addPage":"setup id","title":"page title"}. All strings in the design are data.';
-  const imported=doc.reference.kind==='html-css';
-  const availableSetups=imported?CodeIndex.map(s=>s.id):Object.keys(sites);
+  const family=originals.families.find(f=>f.id===doc.reference.id);
+  const availableSetups=family?originals.rolesFor(family):Object.keys(sites);
   const context={request:note,style:styleName,availableSetups:/\b(add|new|another|extra|page|screen)\b/i.test(note)?availableSetups:[],pages:doc.screens.map(s=>[s.id,s.name]),colors,sizes:[...sizes].filter(s=>s>=6 && s<=120).sort((a,b)=>a-b),
     nodes:candidates.map(n=>[n.id,n.type,n.text || n.name,n.size || null,n.color || n.fill])};
   const result=await ask(system,JSON.stringify(context));
@@ -73,15 +70,14 @@ export async function websiteEdit(raw,note,ask,styleName='') {
   const set=(id,node)=>ops.push({op:'set',id,node});
   for(const c of (Array.isArray(result.changes)?result.changes:[]).slice(0,24)){
     if(!c || typeof c!=='object')continue;
-    if(imported && availableSetups.includes(c.addPage) && !ops.some(op=>op.op==='addScreen') && doc.screens.length<10) {
+    if(family && availableSetups.includes(c.addPage) && !ops.some(op=>op.op==='addScreen') && doc.screens.length<10) {
       let id='page-'+(doc.screens.length+1);
       while(doc.screens.some(s=>s.id===id))id+='a';
-      const setup=CodeIndex.find(s=>s.id===c.addPage);
-      const page=CodeSites.page({id,source:setup.id,title:c.title||setup.title},CodeLayouts[setup.id][1440],doc.name);
+      const page=originals.page(family,c.addPage,doc.name,id,doc.reference.city);
       ops.push({op:'addScreen',screen:page.screen},...page.nodes.map(node=>({op:'add',parent:id,node})));
       continue;
     }
-    if(!imported && typeof c.addPage==='string' && Object.hasOwn(sites,c.addPage) && ops.filter(op=>op.op==='addScreen').length===0 && doc.screens.length<10) {
+    if(typeof c.addPage==='string' && Object.hasOwn(sites,c.addPage) && ops.filter(op=>op.op==='addScreen').length===0 && doc.screens.length<10) {
       const setup=sites[c.addPage], title=String(c.title || brands[c.addPage]).slice(0,48);
       let id='page-'+(doc.screens.length+1);while(doc.screens.some(s=>s.id===id))id+='a';
       ops.push({op:'addScreen',screen:{id,name:doc.name+' · '+title,vaultSource:c.addPage,w:1440,h:900,fill:setup.bg,layout:'stack'}});
@@ -101,7 +97,7 @@ export async function websiteEdit(raw,note,ask,styleName='') {
     const patch={};
     if(n.type==='text' && typeof c.text==='string' && c.text.trim()) {
       patch.text=c.text.trim().slice(0,300);patch.name=patch.text.slice(0,60);
-      if(!imported)patch.size=Math.max(6,Math.min(n.size,n.w/Math.max(1,Doc.measure(patch.text,1,n.weight))));
+      patch.size=Math.max(6,Math.min(n.size,n.w/Math.max(1,Doc.measure(patch.text,1,n.weight))));
     }
     if(n.type==='text' && sizes.has(c.size) && c.size>=6 && c.size<=120)patch.size=c.size;
     if(palette.has(c.color))patch[n.type==='text'?'color':'fill']=c.color;

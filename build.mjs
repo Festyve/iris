@@ -16,16 +16,18 @@ for(const [id,site] of Object.entries(JSON.parse(sites))) {
   Object.assign(rasterImages,images);
 }
 await writeFile(new URL('references/raster-layouts.json',root),JSON.stringify(rasterLayouts)+'\n');
-const {sources:codeIndex,markup,images}=await import('./references/code-source.mjs');
-Object.assign(rasterImages,images);
-const library = ['const CodeIndex = '+literal(codeIndex)+';', 'const CodeLayouts = '+await read('vault/Code/layouts.json')+';', await read('references/code-sites.js'),'const RasterLayouts = '+literal(rasterLayouts)+';','const LegacyOutlines = '+await read('references/legacy-outlines.json')+';', 'const ReferenceBrands = '+literal(brands)+';','const ReferenceCopy = '+literal(brandCopy)+';','const ReferenceSites = '+literal(JSON.parse(sites))+';', 'const ReferenceMedia = '+literal(media)+';', matcher, websites].join('\n');
-const codeDom=await read('references/code-dom.js');
+const {source:originalSource,collections,originals,webSources}=await import('./references/originals.mjs');
+for(const f of originals.families)for(let i=0;i<3;i++){
+  const bytes=await readFile(new URL('vault/Originals/art/'+f.id+'-'+i+'.png',root));
+  rasterImages[f.id+'/v3/'+i]=bytes.toString('base64');
+}
+const library = ['const OriginalWebSources = '+literal(webSources)+';','const OriginalCollections = '+literal(collections)+';',originalSource,'const RasterLayouts = '+literal(rasterLayouts)+';','const LegacyOutlines = '+await read('references/legacy-outlines.json')+';', 'const ReferenceBrands = '+literal(brands)+';','const ReferenceCopy = '+literal(brandCopy)+';','const ReferenceSites = '+literal(JSON.parse(sites))+';', 'const ReferenceMedia = '+literal(media)+';', matcher, websites].join('\n');
 const engine = [spec, icons, layout, kit, crew, library].join('\n');
 const esbuild = await import('esbuild');
 const native = await esbuild.transform([engine,await read('references/sections.js'), main].join('\n'), {target:'es2017',charset:'utf8',minifyWhitespace:true});
 await Promise.all([
   writeFile(new URL('plugin.js', root), native.code),
-  writeFile(new URL('ui.html', root), page.replace('/* ENGINE */', () => engine).replace('/* APP */', () => 'const CodeMarkup = '+literal(markup)+';\n'+codeDom+'\nconst RasterImages = '+literal(rasterImages)+';\n'+studio + '\n' + voice))
+  writeFile(new URL('ui.html', root), page.replace('/* ENGINE */', () => engine).replace('/* APP */', () => 'const RasterImages = '+literal(rasterImages)+';\n'+studio + '\n' + voice))
 ]);
 // The ElevenLabs browser client is bundled separately; server.mjs serves it at /voice.js and the studio loads it on demand.
 await esbuild.build({entryPoints: [fileURLToPath(new URL('voice-entry.js', root))], bundle: true, format: 'iife', minify: true, target: 'es2020', outfile: fileURLToPath(new URL('voice.bundle.js', root)), logLevel: 'warning'});

@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1440" height="900">
+<rect width="1440" height="900" fill="#F5F3E8"/>
+<rect x="0" y="0" width="239" height="900" fill="#163A41"/>
+<text x="28" y="69.68253968253968" font-family="Inter,Arial,sans-serif" font-size="32.98059964726632" font-weight="700" fill="#F5F3E8">Paper Miles</text>
+<text x="36" y="183.1" font-family="Inter,Arial,sans-serif" font-size="19" font-weight="600" fill="#F5F3E8">Itinerary</text>
+<rect rx="9" x="17" y="215" width="203" height="47" fill="#275C59"/>
+<text x="36" y="244.1" font-family="Inter,Arial,sans-serif" font-size="19" font-weight="600" fill="#F5F3E8">Routes</text>
+<text x="36" y="305.1" font-family="Inter,Arial,sans-serif" font-size="19" font-weight="600" fill="#F5F3E8">Places</text>
+<text x="29" y="401.7" font-family="Inter,Arial,sans-serif" font-size="13" font-weight="700" fill="#E9A659">MY TRIPS</text>
+<text x="29" y="447.8" font-family="Inter,Arial,sans-serif" font-size="22" font-weight="600" fill="#F5F3E8">Kyoto</text>
+<text x="279" y="57.3" font-family="Inter,Arial,sans-serif" font-size="17" font-weight="500" fill="#275C59">Trip workspace  /  Kyoto</text>
+<text x="276" y="163.8" font-family="Inter,Arial,sans-serif" font-size="72" font-weight="700" fill="#163A41">Kyoto in three days</text>
+<rect rx="20" x="280" y="219" width="101" height="40" fill="#163A41"/>
+<text x="300" y="244.3" font-family="Inter,Arial,sans-serif" font-size="17" font-weight="600" fill="#F5F3E8">Day 1</text>
+<rect rx="20" x="396" y="219" width="101" height="40" fill="#D6E7DE"/>
+<text x="416" y="244.3" font-family="Inter,Arial,sans-serif" font-size="17" font-weight="600" fill="#163A41">Day 2</text>
+<rect rx="20" x="512" y="219" width="101" height="40" fill="#D6E7DE"/>
+<text x="532" y="244.3" font-family="Inter,Arial,sans-serif" font-size="17" font-weight="600" fill="#163A41">Day 3</text>
+<text x="280" y="343" font-family="Inter,Arial,sans-serif" font-size="40" font-weight="600" fill="#163A41">Nishiki Market  →  Kamo River</text>
+<text x="280" y="394" font-family="Inter,Arial,sans-serif" font-size="20" font-weight="400" fill="#275C59">Compare sample routes</text>
+<rect x="280" y="450" width="1095" height="1" fill="#163A41"/>
+<ellipse cx="293.5" cy="490.5" rx="11.5" ry="11.5" fill="#E9A659"/>
+<text x="328" y="500" font-family="Inter,Arial,sans-serif" font-size="30" font-weight="600" fill="#163A41">Walk</text>
+<text x="671" y="497.8" font-family="Inter,Arial,sans-serif" font-size="22" font-weight="400" fill="#275C59">Scenic route</text>
+<text x="1170" y="496.5" font-family="Inter,Arial,sans-serif" font-size="25" font-weight="600" fill="#163A41">35 min</text>
+<rect x="280" y="562" width="1095" height="1" fill="#163A41"/>
+<ellipse cx="293.5" cy="602.5" rx="11.5" ry="11.5" fill="#D6E7DE"/>
+<text x="328" y="612" font-family="Inter,Arial,sans-serif" font-size="30" font-weight="600" fill="#163A41">Transit</text>
+<text x="671" y="609.8" font-family="Inter,Arial,sans-serif" font-size="22" font-weight="400" fill="#275C59">One connection</text>
+<text x="1170" y="608.5" font-family="Inter,Arial,sans-serif" font-size="25" font-weight="600" fill="#163A41">18 min</text>
+<rect x="280" y="674" width="1095" height="1" fill="#163A41"/>
+<ellipse cx="293.5" cy="714.5" rx="11.5" ry="11.5" fill="#D6E7DE"/>
+<text x="328" y="724" font-family="Inter,Arial,sans-serif" font-size="30" font-weight="600" fill="#163A41">Cycle</text>
+<text x="671" y="721.8" font-family="Inter,Arial,sans-serif" font-size="22" font-weight="400" fill="#275C59">Direct route</text>
+<text x="1170" y="720.5" font-family="Inter,Arial,sans-serif" font-size="25" font-weight="600" fill="#163A41">12 min</text>
+</svg>

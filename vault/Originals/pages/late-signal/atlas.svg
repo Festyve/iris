@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1440" height="900">
+<rect width="1440" height="900" fill="#171522"/>
+<text x="54" y="51" font-family="Inter,Arial,sans-serif" font-size="30" font-weight="700" fill="#F1EBFF">Late Signal</text>
+<text x="800" y="48.3" font-family="Inter,Arial,sans-serif" font-size="17" font-weight="500" fill="#F1EBFF">Collection</text>
+<text x="932" y="48.3" font-family="Inter,Arial,sans-serif" font-size="17" font-weight="500" fill="#F1EBFF">Journal</text>
+<text x="1064" y="48.3" font-family="Inter,Arial,sans-serif" font-size="17" font-weight="500" fill="#F1EBFF">About</text>
+<text x="1210" y="48.3" font-family="Inter,Arial,sans-serif" font-size="17" font-weight="700" fill="#F1EBFF">Listen live</text>
+<rect x="54" y="79" width="1332" height="1" fill="#F1EBFF"/>
+<text x="54" y="196.8" font-family="Inter,Arial,sans-serif" font-size="82" font-weight="600" fill="#F1EBFF">Atlas</text>
+<text x="793" y="185.4" font-family="Inter,Arial,sans-serif" font-size="36" font-weight="500" fill="#F1EBFF">On the air</text>
+<rect x="54" y="255" width="811" height="508" fill="#F1EBFF"/>
+<rect x="84" y="275" width="1" height="468" fill="#9979E6"/>
+<rect x="166" y="275" width="1" height="468" fill="#9979E6"/>
+<rect x="248" y="275" width="1" height="468" fill="#9979E6"/>
+<rect x="330" y="275" width="1" height="468" fill="#9979E6"/>
+<rect x="412" y="275" width="1" height="468" fill="#9979E6"/>
+<rect x="494" y="275" width="1" height="468" fill="#9979E6"/>
+<rect x="576" y="275" width="1" height="468" fill="#9979E6"/>
+<rect x="658" y="275" width="1" height="468" fill="#9979E6"/>
+<rect x="740" y="275" width="1" height="468" fill="#9979E6"/>
+<rect x="822" y="275" width="1" height="468" fill="#9979E6"/>
+<rect x="72" y="302" width="775" height="1" fill="#9979E6"/>
+<rect x="72" y="385" width="775" height="1" fill="#9979E6"/>
+<rect x="72" y="468" width="775" height="1" fill="#9979E6"/>
+<rect x="72" y="551" width="775" height="1" fill="#9979E6"/>
+<rect x="72" y="634" width="775" height="1" fill="#9979E6"/>
+<rect x="72" y="717" width="775" height="1" fill="#9979E6"/>
+<rect x="170" y="641" width="262" height="4" fill="#171522"/>
+<rect x="432" y="472" width="4" height="173" fill="#171522"/>
+<rect x="432" y="472" width="286" height="4" fill="#171522"/>
+<rect x="718" y="365" width="4" height="111" fill="#171522"/>
+<ellipse cx="172" cy="643" rx="12" ry="12" fill="#171522"/>
+<text x="128" y="609" font-family="Inter,Arial,sans-serif" font-size="20" font-weight="600" fill="#171522">Night Transit</text>
+<ellipse cx="434" cy="474" rx="12" ry="12" fill="#171522"/>
+<text x="390" y="440" font-family="Inter,Arial,sans-serif" font-size="20" font-weight="600" fill="#171522">Soft Focus</text>
+<ellipse cx="720" cy="367" rx="12" ry="12" fill="#171522"/>
+<text x="676" y="333" font-family="Inter,Arial,sans-serif" font-size="20" font-weight="600" fill="#171522">Open Circuit</text>
+<image x="925" y="259" width="208" height="177" preserveAspectRatio="xMidYMid slice" xlink:href="../../art/late-signal-1.png"/>
+<rect x="925" y="472" width="461" height="1" fill="#F1EBFF"/>
+<text x="925" y="506.4" font-family="Inter,Arial,sans-serif" font-size="16" font-weight="400" fill="#F1EBFF">01</text>
+<text x="997" y="514.8" font-family="Inter,Arial,sans-serif" font-size="32" font-weight="500" fill="#F1EBFF">Night Transit</text>
+<text x="1350" y="510.5" font-family="Inter,Arial,sans-serif" font-size="25" font-weight="400" fill="#F1EBFF">↗</text>
+<rect x="925" y="566" width="461" height="1" fill="#F1EBFF"/>
+<text x="925" y="600.4" font-family="Inter,Arial,sans-serif" font-size="16" font-weight="400" fill="#F1EBFF">02</text>
+<text x="997" y="608.8" font-family="Inter,Arial,sans-serif" font-size="32" font-weight="500" fill="#F1EBFF">Soft Focus</text>
+<text x="1350" y="604.5" font-family="Inter,Arial,sans-serif" font-size="25" font-weight="400" fill="#F1EBFF">↗</text>
+<rect x="925" y="660" width="461" height="1" fill="#F1EBFF"/>
+<text x="925" y="694.4" font-family="Inter,Arial,sans-serif" font-size="16" font-weight="400" fill="#F1EBFF">03</text>
+<text x="997" y="702.8" font-family="Inter,Arial,sans-serif" font-size="32" font-weight="500" fill="#F1EBFF">Open Circuit</text>
+<text x="1350" y="698.5" font-family="Inter,Arial,sans-serif" font-size="25" font-weight="400" fill="#F1EBFF">↗</text>
+<rect x="54" y="824" width="1332" height="1" fill="#F1EBFF"/>
+<text x="54" y="865.2" font-family="Inter,Arial,sans-serif" font-size="18" font-weight="600" fill="#F1EBFF">Late Signal</text>
+<text x="1200" y="865.2" font-family="Inter,Arial,sans-serif" font-size="18" font-weight="400" fill="#F1EBFF">Atlas</text>
+</svg>

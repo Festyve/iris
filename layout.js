@@ -82,7 +82,7 @@ const Doc = (() => {
     if (t === 'text') {
       const size = num(n.size, 16), weight = num(n.weight, 400), lh = num(n.lh, 1.3);
       const limit = fixedW ?? availW;
-      const lines = n.displayText && n.measuredText===n.text ? n.displayText.split('\n') : n.wrap === false ? String(n.text).split('\n') : wrap(n.text, size, weight, Math.max(size, limit));
+      const lines = n.wrap === false ? String(n.text).split('\n') : wrap(n.text, size, weight, Math.max(size, limit));
       const natural = Math.max(...lines.map(l => measure(l, size, weight)));
       const w = fixedW ?? (n.w === 'fill' || (n.w === undefined && parentLayout === 'column' && n.align && n.align !== 'left') ? availW : Math.min(availW, Math.ceil(natural + 1)));
       return {n, w, h: fixedH ?? Math.ceil(lines.length * size * lh), lines, kids: []};
@@ -197,7 +197,7 @@ const Doc = (() => {
   function pin(doc, board) { for (const s of doc.screens) { const b = board.screens.find(x => x.id === s.id); if (b) { s.bx = b.x; s.by = b.y; } } return doc; }
 
   /* ---------- patches ---------- */
-  const NODE_KEYS = ['name', 'layout', 'gap', 'pad', 'align', 'alignSelf', 'justify', 'cols', 'w', 'h', 'x', 'y', 'grow', 'fill', 'fill2', 'fillDir', 'stroke', 'sw', 'r', 'shadow', 'opacity', 'text', 'size', 'weight', 'color', 'lh', 'wrap', 'icon', 'shape', 'points', 'art', 'copyRole', 'slot', 'displayText', 'measuredText'];
+  const NODE_KEYS = ['name', 'layout', 'gap', 'pad', 'align', 'alignSelf', 'justify', 'cols', 'w', 'h', 'x', 'y', 'grow', 'fill', 'fill2', 'fillDir', 'stroke', 'sw', 'r', 'shadow', 'opacity', 'text', 'size', 'weight', 'color', 'lh', 'wrap', 'icon', 'shape', 'points', 'art'];
   const SCREEN_KEYS = ['vaultSource', 'name', 'w', 'h', 'fill', 'layout', 'gap', 'pad', 'align', 'justify'];
   function pick(src, keys) { const o = {}; for (const k of keys) if (src && src[k] !== undefined && src[k] !== null) o[k] = src[k]; return o; }
   function subtree(doc, id) { const out = new Set([id]); let grew = true; while (grew) { grew = false; for (const n of doc.nodes) if (out.has(n.parent) && !out.has(n.id)) { out.add(n.id); grew = true; } } return out; }

@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1440" height="900">
+<rect width="1440" height="900" fill="#EEE7DA"/>
+<text x="54" y="51" font-family="Inter,Arial,sans-serif" font-size="30" font-weight="700" fill="#393330">Offbeat Cabinet</text>
+<text x="800" y="48.3" font-family="Inter,Arial,sans-serif" font-size="17" font-weight="500" fill="#393330">Collection</text>
+<text x="932" y="48.3" font-family="Inter,Arial,sans-serif" font-size="17" font-weight="500" fill="#393330">Journal</text>
+<text x="1064" y="48.3" font-family="Inter,Arial,sans-serif" font-size="17" font-weight="500" fill="#393330">About</text>
+<text x="1210" y="48.3" font-family="Inter,Arial,sans-serif" font-size="17" font-weight="700" fill="#393330">Find a place</text>
+<rect x="54" y="79" width="1332" height="1" fill="#393330"/>
+<rect x="54" y="106" width="1332" height="453" fill="#393330"/>
+<image x="780" y="106" width="606" height="453" preserveAspectRatio="xMidYMid slice" xlink:href="../../art/offbeat-cabinet-0.png"/>
+<text x="92" y="236.04118148253337" font-family="Inter,Arial,sans-serif" font-size="61.15686831392596" font-weight="600" fill="#EEE7DA">Places worth a detour</text>
+<text x="92" y="367.5" font-family="Inter,Arial,sans-serif" font-size="35" font-weight="400" fill="#EEE7DA">Hidden Stair</text>
+<rect x="93" y="437" width="218" height="53" fill="#EEE7DA"/>
+<text x="110" y="469.3" font-family="Inter,Arial,sans-serif" font-size="17" font-weight="600" fill="#393330">Find a place</text>
+<rect x="54" y="611" width="423" height="1" fill="#393330"/>
+<text x="54" y="648.2" font-family="Inter,Arial,sans-serif" font-size="18" font-weight="400" fill="#393330">01</text>
+<text x="54" y="724.8" font-family="Inter,Arial,sans-serif" font-size="42" font-weight="600" fill="#393330">Hidden Stair</text>
+<rect x="506" y="611" width="423" height="1" fill="#393330"/>
+<text x="506" y="648.2" font-family="Inter,Arial,sans-serif" font-size="18" font-weight="400" fill="#393330">02</text>
+<text x="506" y="724.8" font-family="Inter,Arial,sans-serif" font-size="42" font-weight="600" fill="#393330">Cabinet Gallery</text>
+<rect x="958" y="611" width="423" height="1" fill="#393330"/>
+<text x="958" y="648.2" font-family="Inter,Arial,sans-serif" font-size="18" font-weight="400" fill="#393330">03</text>
+<text x="958" y="724.8" font-family="Inter,Arial,sans-serif" font-size="42" font-weight="600" fill="#393330">Tower Garden</text>
+<rect x="54" y="824" width="1332" height="1" fill="#393330"/>
+<text x="54" y="865.2" font-family="Inter,Arial,sans-serif" font-size="18" font-weight="600" fill="#393330">Offbeat Cabinet</text>
+<text x="1200" y="865.2" font-family="Inter,Arial,sans-serif" font-size="18" font-weight="400" fill="#393330">Billboard</text>
+</svg>

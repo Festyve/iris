@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1440" height="900">
+<rect width="1440" height="900" fill="#E8EDDC"/>
+<text x="54" y="51" font-family="Inter,Arial,sans-serif" font-size="30" font-weight="700" fill="#2F3E2A">Sun Vessel</text>
+<text x="800" y="48.3" font-family="Inter,Arial,sans-serif" font-size="17" font-weight="500" fill="#2F3E2A">Collection</text>
+<text x="932" y="48.3" font-family="Inter,Arial,sans-serif" font-size="17" font-weight="500" fill="#2F3E2A">Journal</text>
+<text x="1064" y="48.3" font-family="Inter,Arial,sans-serif" font-size="17" font-weight="500" fill="#2F3E2A">About</text>
+<text x="1210" y="48.3" font-family="Inter,Arial,sans-serif" font-size="17" font-weight="700" fill="#2F3E2A">Explore teas</text>
+<rect x="54" y="79" width="1332" height="1" fill="#2F3E2A"/>
+<text x="54" y="186.5" font-family="Inter,Arial,sans-serif" font-size="85" font-weight="600" fill="#2F3E2A">Catalogue</text>
+<text x="925" y="164.3" font-family="Inter,Arial,sans-serif" font-size="27" font-weight="400" fill="#2F3E2A">Steeped slowly</text>
+<rect x="54" y="240" width="1332" height="1" fill="#2F3E2A"/>
+<text x="54" y="280.8" font-family="Inter,Arial,sans-serif" font-size="22" font-weight="400" fill="#2F3E2A">01</text>
+<image x="174" y="254" width="180" height="153" preserveAspectRatio="xMidYMid slice" xlink:href="../../art/sun-vessel-0.png"/>
+<text x="400" y="342.4" font-family="Inter,Arial,sans-serif" font-size="56" font-weight="600" fill="#2F3E2A">High Mountain</text>
+<text x="1184" y="325" font-family="Inter,Arial,sans-serif" font-size="20" font-weight="500" fill="#2F3E2A">View edition ↗</text>
+<rect x="54" y="426" width="1332" height="1" fill="#2F3E2A"/>
+<text x="54" y="466.8" font-family="Inter,Arial,sans-serif" font-size="22" font-weight="400" fill="#2F3E2A">02</text>
+<image x="174" y="440" width="180" height="153" preserveAspectRatio="xMidYMid slice" xlink:href="../../art/sun-vessel-1.png"/>
+<text x="400" y="528.4" font-family="Inter,Arial,sans-serif" font-size="56" font-weight="600" fill="#2F3E2A">Spring Flush</text>
+<text x="1184" y="511" font-family="Inter,Arial,sans-serif" font-size="20" font-weight="500" fill="#2F3E2A">View edition ↗</text>
+<rect x="54" y="612" width="1332" height="1" fill="#2F3E2A"/>
+<text x="54" y="652.8" font-family="Inter,Arial,sans-serif" font-size="22" font-weight="400" fill="#2F3E2A">03</text>
+<image x="174" y="626" width="180" height="153" preserveAspectRatio="xMidYMid slice" xlink:href="../../art/sun-vessel-2.png"/>
+<text x="400" y="714.4" font-family="Inter,Arial,sans-serif" font-size="56" font-weight="600" fill="#2F3E2A">Evening Roast</text>
+<text x="1184" y="697" font-family="Inter,Arial,sans-serif" font-size="20" font-weight="500" fill="#2F3E2A">View edition ↗</text>
+<rect x="54" y="824" width="1332" height="1" fill="#2F3E2A"/>
+<text x="54" y="865.2" font-family="Inter,Arial,sans-serif" font-size="18" font-weight="600" fill="#2F3E2A">Sun Vessel</text>
+<text x="1200" y="865.2" font-family="Inter,Arial,sans-serif" font-size="18" font-weight="400" fill="#2F3E2A">Catalogue</text>
+</svg>

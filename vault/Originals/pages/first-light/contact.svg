@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1440" height="900">
+<rect width="1440" height="900" fill="#F2F0D8"/>
+<text x="54" y="51" font-family="Inter,Arial,sans-serif" font-size="30" font-weight="700" fill="#263432">First Light</text>
+<text x="800" y="48.3" font-family="Inter,Arial,sans-serif" font-size="17" font-weight="500" fill="#263432">Collection</text>
+<text x="932" y="48.3" font-family="Inter,Arial,sans-serif" font-size="17" font-weight="500" fill="#263432">Journal</text>
+<text x="1064" y="48.3" font-family="Inter,Arial,sans-serif" font-size="17" font-weight="500" fill="#263432">About</text>
+<text x="1210" y="48.3" font-family="Inter,Arial,sans-serif" font-size="17" font-weight="700" fill="#263432">See projects</text>
+<rect x="54" y="79" width="1332" height="1" fill="#263432"/>
+<text x="54" y="200.8" font-family="Inter,Arial,sans-serif" font-size="92" font-weight="600" fill="#263432">Contact</text>
+<text x="54" y="326.8" font-family="Inter,Arial,sans-serif" font-size="52" font-weight="500" fill="#263432">Get in touch</text>
+<rect x="54" y="393" width="232" height="56" fill="#263432"/>
+<text x="72" y="426.2" font-family="Inter,Arial,sans-serif" font-size="18" font-weight="600" fill="#F2F0D8">Contact the studio</text>
+<image x="864" y="118" width="522" height="446" preserveAspectRatio="xMidYMid slice" xlink:href="../../art/first-light-2.png"/>
+<rect x="54" y="539" width="729" height="1" fill="#263432"/>
+<text x="54" y="573.4" font-family="Inter,Arial,sans-serif" font-size="16" font-weight="400" fill="#263432">01</text>
+<text x="126" y="581.8" font-family="Inter,Arial,sans-serif" font-size="32" font-weight="500" fill="#263432">South Array</text>
+<text x="747" y="577.5" font-family="Inter,Arial,sans-serif" font-size="25" font-weight="400" fill="#263432">↗</text>
+<rect x="54" y="614" width="729" height="1" fill="#263432"/>
+<text x="54" y="648.4" font-family="Inter,Arial,sans-serif" font-size="16" font-weight="400" fill="#263432">02</text>
+<text x="126" y="656.8" font-family="Inter,Arial,sans-serif" font-size="32" font-weight="500" fill="#263432">Roof Survey</text>
+<text x="747" y="652.5" font-family="Inter,Arial,sans-serif" font-size="25" font-weight="400" fill="#263432">↗</text>
+<rect x="54" y="689" width="729" height="1" fill="#263432"/>
+<text x="54" y="723.4" font-family="Inter,Arial,sans-serif" font-size="16" font-weight="400" fill="#263432">03</text>
+<text x="126" y="731.8" font-family="Inter,Arial,sans-serif" font-size="32" font-weight="500" fill="#263432">Storage Unit</text>
+<text x="747" y="727.5" font-family="Inter,Arial,sans-serif" font-size="25" font-weight="400" fill="#263432">↗</text>
+<rect x="54" y="824" width="1332" height="1" fill="#263432"/>
+<text x="54" y="865.2" font-family="Inter,Arial,sans-serif" font-size="18" font-weight="600" fill="#263432">First Light</text>
+<text x="1200" y="865.2" font-family="Inter,Arial,sans-serif" font-size="18" font-weight="400" fill="#263432">Contact</text>
+</svg>

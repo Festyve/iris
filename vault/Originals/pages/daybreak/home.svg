@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1440" height="900">
+<rect width="1440" height="900" fill="#FFF7E8"/>
+<rect x="0" y="0" width="1440" height="32" fill="#2D493B"/>
+<text x="52" y="19.700000000000003" font-family="Inter,Arial,sans-serif" font-size="13" font-weight="600" fill="#FFF7E8">BAKED EACH MORNING</text>
+<text x="1186" y="19.700000000000003" font-family="Inter,Arial,sans-serif" font-size="13" font-weight="600" fill="#FFF7E8">WALK-INS WELCOME</text>
+<text x="52" y="85.80000000000001" font-family="Inter,Arial,sans-serif" font-size="42" font-weight="700" fill="#A8322D">Daybreak</text>
+<text x="778" y="80.3" font-family="Inter,Arial,sans-serif" font-size="17" font-weight="600" fill="#34291F">Menu</text>
+<text x="896" y="80.3" font-family="Inter,Arial,sans-serif" font-size="17" font-weight="600" fill="#34291F">Our beans</text>
+<text x="1014" y="80.3" font-family="Inter,Arial,sans-serif" font-size="17" font-weight="600" fill="#34291F">Visit</text>
+<rect rx="21" x="1210" y="49" width="180" height="42" fill="#2D493B"/>
+<text x="1227" y="74.4" font-family="Inter,Arial,sans-serif" font-size="16" font-weight="600" fill="#FFF7E8">Order pickup ↗</text>
+<rect x="52" y="110" width="1336" height="1" fill="#34291F"/>
+<text x="52" y="163.5" font-family="Inter,Arial,sans-serif" font-size="15" font-weight="600" fill="#2D493B">NEIGHBOURHOOD COFFEE &amp; BAKESHOP</text>
+<text x="48" y="285.8" font-family="Inter,Arial,sans-serif" font-size="102" font-weight="700" fill="#34291F">Meet me</text>
+<text x="48" y="387.8" font-family="Inter,Arial,sans-serif" font-size="102" font-weight="700" fill="#A8322D">for coffee.</text>
+<text x="53" y="467.6" font-family="Inter,Arial,sans-serif" font-size="24" font-weight="400" fill="#34291F">Espresso at the bar. Butter on the counter.</text>
+<rect rx="21" x="53" y="506" width="201" height="42" fill="#2D493B"/>
+<text x="70" y="531.4" font-family="Inter,Arial,sans-serif" font-size="16" font-weight="600" fill="#FFF7E8">Browse the menu →</text>
+<text x="285" y="533.3" font-family="Inter,Arial,sans-serif" font-size="17" font-weight="600" fill="#34291F">Find the café ↗</text>
+<image x="715" y="131" width="673" height="452" preserveAspectRatio="xMidYMid slice" xlink:href="../../art/daybreak-0.png"/>
+<text x="52" y="670.8" font-family="Inter,Arial,sans-serif" font-size="52" font-weight="600" fill="#34291F">On the counter</text>
+<rect rx="10" x="52" y="707" width="432" height="145" fill="#F3E5CD"/>
+<image x="62" y="718" width="132" height="112" preserveAspectRatio="xMidYMid slice" xlink:href="../../art/daybreak-0.png"/>
+<text x="210" y="749.6" font-family="Inter,Arial,sans-serif" font-size="24" font-weight="600" fill="#34291F">Honey oat latte</text>
+<text x="210" y="782.5" font-family="Inter,Arial,sans-serif" font-size="15" font-weight="400" fill="#2D493B">Espresso · orange blossom</text>
+<text x="210" y="822.2" font-family="Inter,Arial,sans-serif" font-size="18" font-weight="600" fill="#A8322D">$5.50</text>
+<rect rx="10" x="503" y="707" width="432" height="145" fill="#F1DFD0"/>
+<image x="513" y="718" width="132" height="112" preserveAspectRatio="xMidYMid slice" xlink:href="../../art/daybreak-1.png"/>
+<text x="661" y="749.6" font-family="Inter,Arial,sans-serif" font-size="24" font-weight="600" fill="#34291F">Butter croissant</text>
+<text x="661" y="782.5" font-family="Inter,Arial,sans-serif" font-size="15" font-weight="400" fill="#2D493B">Cultured butter · flaky layers</text>
+<text x="661" y="822.2" font-family="Inter,Arial,sans-serif" font-size="18" font-weight="600" fill="#A8322D">$4.25</text>
+<rect rx="10" x="954" y="707" width="432" height="145" fill="#E1E6D7"/>
+<image x="964" y="718" width="132" height="112" preserveAspectRatio="xMidYMid slice" xlink:href="../../art/daybreak-2.png"/>
+<text x="1112" y="749.6" font-family="Inter,Arial,sans-serif" font-size="24" font-weight="600" fill="#34291F">Morning blend</text>
+<text x="1112" y="782.5" font-family="Inter,Arial,sans-serif" font-size="15" font-weight="400" fill="#2D493B">Whole bean · 250 g</text>
+<text x="1112" y="822.2" font-family="Inter,Arial,sans-serif" font-size="18" font-weight="600" fill="#A8322D">$18</text>
+</svg>

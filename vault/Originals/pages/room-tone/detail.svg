@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1440" height="900">
+<rect width="1440" height="900" fill="#211F30"/>
+<text x="54" y="51" font-family="Inter,Arial,sans-serif" font-size="30" font-weight="700" fill="#F5EED9">Room Tone</text>
+<text x="800" y="48.3" font-family="Inter,Arial,sans-serif" font-size="17" font-weight="500" fill="#F5EED9">Collection</text>
+<text x="932" y="48.3" font-family="Inter,Arial,sans-serif" font-size="17" font-weight="500" fill="#F5EED9">Journal</text>
+<text x="1064" y="48.3" font-family="Inter,Arial,sans-serif" font-size="17" font-weight="500" fill="#F5EED9">About</text>
+<text x="1210" y="48.3" font-family="Inter,Arial,sans-serif" font-size="17" font-weight="700" fill="#F5EED9">Tour the studio</text>
+<rect x="54" y="79" width="1332" height="1" fill="#F5EED9"/>
+<image x="54" y="116" width="745" height="639" preserveAspectRatio="xMidYMid slice" xlink:href="../../art/room-tone-1.png"/>
+<text x="854" y="243" font-family="Inter,Arial,sans-serif" font-size="70" font-weight="600" fill="#F5EED9">Tape Desk</text>
+<text x="854" y="360.4" font-family="Inter,Arial,sans-serif" font-size="26" font-weight="400" fill="#F5EED9">Listen closer</text>
+<rect x="854" y="431" width="232" height="56" fill="#F5EED9"/>
+<text x="872" y="464.2" font-family="Inter,Arial,sans-serif" font-size="18" font-weight="600" fill="#211F30">Tour the studio</text>
+<rect x="854" y="626" width="532" height="1" fill="#F5EED9"/>
+<text x="854" y="660.4" font-family="Inter,Arial,sans-serif" font-size="16" font-weight="400" fill="#F5EED9">01</text>
+<text x="926" y="668.8" font-family="Inter,Arial,sans-serif" font-size="32" font-weight="500" fill="#F5EED9">Live Room</text>
+<text x="1350" y="664.5" font-family="Inter,Arial,sans-serif" font-size="25" font-weight="400" fill="#F5EED9">↗</text>
+<rect x="54" y="824" width="1332" height="1" fill="#F5EED9"/>
+<text x="54" y="865.2" font-family="Inter,Arial,sans-serif" font-size="18" font-weight="600" fill="#F5EED9">Room Tone</text>
+<text x="1200" y="865.2" font-family="Inter,Arial,sans-serif" font-size="18" font-weight="400" fill="#F5EED9">Detail</text>
+</svg>

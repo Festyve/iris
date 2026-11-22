@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1440" height="900">
+<rect width="1440" height="900" fill="#17151F"/>
+<text x="54" y="51" font-family="Inter,Arial,sans-serif" font-size="30" font-weight="700" fill="#F8F0D9">Last Showing</text>
+<text x="800" y="48.3" font-family="Inter,Arial,sans-serif" font-size="17" font-weight="500" fill="#F8F0D9">Collection</text>
+<text x="932" y="48.3" font-family="Inter,Arial,sans-serif" font-size="17" font-weight="500" fill="#F8F0D9">Journal</text>
+<text x="1064" y="48.3" font-family="Inter,Arial,sans-serif" font-size="17" font-weight="500" fill="#F8F0D9">About</text>
+<text x="1210" y="48.3" font-family="Inter,Arial,sans-serif" font-size="17" font-weight="700" fill="#F8F0D9">See showtimes</text>
+<rect x="54" y="79" width="1332" height="1" fill="#F8F0D9"/>
+<text x="54" y="200.8" font-family="Inter,Arial,sans-serif" font-size="92" font-weight="600" fill="#F8F0D9">Contact</text>
+<text x="54" y="326.8" font-family="Inter,Arial,sans-serif" font-size="52" font-weight="500" fill="#F8F0D9">Get in touch</text>
+<rect x="54" y="393" width="232" height="56" fill="#F8F0D9"/>
+<text x="72" y="426.2" font-family="Inter,Arial,sans-serif" font-size="18" font-weight="600" fill="#17151F">Contact the studio</text>
+<image x="864" y="118" width="522" height="446" preserveAspectRatio="xMidYMid slice" xlink:href="../../art/last-showing-2.png"/>
+<rect x="54" y="539" width="729" height="1" fill="#F8F0D9"/>
+<text x="54" y="573.4" font-family="Inter,Arial,sans-serif" font-size="16" font-weight="400" fill="#F8F0D9">01</text>
+<text x="126" y="581.8" font-family="Inter,Arial,sans-serif" font-size="32" font-weight="500" fill="#F8F0D9">Midnight Matinee</text>
+<text x="747" y="577.5" font-family="Inter,Arial,sans-serif" font-size="25" font-weight="400" fill="#F8F0D9">↗</text>
+<rect x="54" y="614" width="729" height="1" fill="#F8F0D9"/>
+<text x="54" y="648.4" font-family="Inter,Arial,sans-serif" font-size="16" font-weight="400" fill="#F8F0D9">02</text>
+<text x="126" y="656.8" font-family="Inter,Arial,sans-serif" font-size="32" font-weight="500" fill="#F8F0D9">Double Exposure</text>
+<text x="747" y="652.5" font-family="Inter,Arial,sans-serif" font-size="25" font-weight="400" fill="#F8F0D9">↗</text>
+<rect x="54" y="689" width="729" height="1" fill="#F8F0D9"/>
+<text x="54" y="723.4" font-family="Inter,Arial,sans-serif" font-size="16" font-weight="400" fill="#F8F0D9">03</text>
+<text x="126" y="731.8" font-family="Inter,Arial,sans-serif" font-size="32" font-weight="500" fill="#F8F0D9">The Long Way Home</text>
+<text x="747" y="727.5" font-family="Inter,Arial,sans-serif" font-size="25" font-weight="400" fill="#F8F0D9">↗</text>
+<rect x="54" y="824" width="1332" height="1" fill="#F8F0D9"/>
+<text x="54" y="865.2" font-family="Inter,Arial,sans-serif" font-size="18" font-weight="600" fill="#F8F0D9">Last Showing</text>
+<text x="1200" y="865.2" font-family="Inter,Arial,sans-serif" font-size="18" font-weight="400" fill="#F8F0D9">Contact</text>
+</svg>

@@ -3,8 +3,8 @@ const VaultSections = (() => {
   const PAGE = 'iris-vault-page', SITE = 'iris-vault-entry', OWNER = 'iris-section-design';
   const margin = 64, gap = 72, heading = 38;
   let importPage = null;
-  const keys = CodeIndex.map(s=>s.id);
-  const cellWidth = 3920, cellHeight = 4000;
+  const keys = Object.keys(ReferenceBrands).sort().concat(OriginalPages.families.map(f=>f.id));
+  const cellWidth = 3280, cellHeight = 1880;
   const panels = page => page.children.filter(n => n.type === 'SECTION' && n.getPluginData(SITE));
   function taggedFrames(page) {
     const out=[];
@@ -19,11 +19,12 @@ const VaultSections = (() => {
   }
   async function openLibrary() {
     if (run) throw Error('Finish or cancel the current run first.');
-    importPage=figma.root.children.find(p=>p.getPluginData(PAGE)==='3');
+    importPage=figma.root.children.find(p=>p.getPluginData(PAGE)==='2');
     if(!importPage) {
+      const previous=figma.root.children.some(p=>p.getPluginData(PAGE)==='1');
       importPage=figma.createPage();
-      importPage.name='Iris · Source websites';
-      importPage.setPluginData(PAGE,'3');
+      importPage.name=previous?'Iris · Website library (full resolution)':'Iris · Website library';
+      importPage.setPluginData(PAGE,'2');
     }
     await figma.setCurrentPageAsync(importPage);
     next();
