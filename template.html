@@ -283,6 +283,14 @@ body:not(.plugin) .plugin-only{display:none!important}
 .style-pick:disabled{opacity:.5;cursor:default}
 #style-block h2{margin-bottom:10px}
 #profile-note{margin:8px 0 0;font-size:11px;line-height:1.45;color:var(--text-3)}
+#workflow,#direction-dialog{background:var(--surface);color:var(--text);border:1px solid var(--line-2);border-radius:var(--r)}
+#workflow{height:32px;padding:0 6px}
+#direction-dialog{width:min(420px,90vw);padding:20px;max-height:85vh}
+#direction-dialog::backdrop{background:rgba(0,0,0,.62)}
+#directions button{display:block;width:100%;padding:12px 6px;border-bottom:1px solid var(--line-2);text-align:left;color:var(--text-2)}
+#directions strong{display:block;color:var(--text);margin-bottom:3px}
+#directions button:hover{background:var(--surface-2)}
+#request-status:empty,#plan-refs:empty{display:none}
 </style>
 </head>
 <body>
@@ -291,9 +299,10 @@ body:not(.plugin) .plugin-only{display:none!important}
     <span class="mark" aria-hidden="true"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M5 2.5v17.2l4.7-4.3 3.3 7.2 3.3-1.4-3.3-7.1H19.4z"/></svg></span>
     <div><b>Iris</b><small>A crew of cursors that designs</small></div>
   </div>
+  <select id="workflow" aria-label="Build workflow"><option value="guided">Guide me</option><option value="auto">Build end-to-end</option></select>
   <form class="prompt" id="prompt" autocomplete="off">
     <button type="button" class="mode" id="mode" aria-pressed="false" title="Starting a new design">New</button>
-    <input id="brief" maxlength="400" aria-label="Describe a product" placeholder="Describe a product — “a budgeting app called Penny”">
+    <input id="brief" maxlength="1500" aria-label="Describe a product" placeholder="Describe a product — “a budgeting app called Penny”">
     <button type="button" class="icon-btn" id="mic" title="Speak the brief" aria-label="Speak the brief" hidden><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>
     <button type="button" class="icon-btn" id="dice" title="Surprise me" aria-label="Surprise me"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg></button>
     <div class="suggest" id="suggest" hidden></div>
@@ -301,15 +310,21 @@ body:not(.plugin) .plugin-only{display:none!important}
   <span class="seg-label">Crew</span>
   <div class="seg" id="crew-size" role="radiogroup" aria-label="Crew size"></div>
   <button class="build" id="build" form="prompt" type="submit"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M5 2.5v17.2l4.7-4.3 3.3 7.2 3.3-1.4-3.3-7.1H19.4z"/></svg><span id="build-label">Build</span></button>
-  <button class="icon-btn" id="gear" title="Claude service" aria-label="Claude service settings"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg></button>
+  <button class="icon-btn" id="gear" title="Iris service" aria-label="Iris service settings"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg></button>
   <div class="pop" id="settings" hidden>
-    <h3>Claude service</h3>
-    <p>Iris designs locally out of the box. For original designs from any brief, and to change them with words, run <code>npm install</code> then <code>node server.mjs</code> with <code>ANTHROPIC_API_KEY</code> set, and paste the session key below. Add <code>ELEVENLABS_API_KEY</code> to talk to Iris.</p>
+    <h3>Iris service</h3>
+    <p>Open the private browser link printed by <code>node server.mjs</code>. In Figma, enter the session key below.</p>
     <input id="token" type="password" placeholder="Session key" autocomplete="off" aria-label="Session key">
     <button class="btn primary" id="connect">Connect</button>
-    <div class="state" id="ai-state">Using the built-in design kit. Connect Claude to edit designs.</div>
+    <div class="state" id="ai-state">Waiting for a session key.</div>
   </div>
 </header>
+<dialog id="direction-dialog" aria-labelledby="direction-title">
+  <h2 id="direction-title">Choose a direction to build</h2>
+  <div id="directions"></div>
+  <p id="plan-refs"></p>
+  <form method="dialog"><button class="btn" value="">Back to brief</button></form>
+</dialog>
 <main class="work">
   <aside class="side left" aria-label="Layers">
     <div class="pane-head"><h2>Layers <span id="layer-count" class="num"></span></h2></div>
@@ -320,7 +335,6 @@ body:not(.plugin) .plugin-only{display:none!important}
     <div class="chip float" id="board-chip" hidden><i></i><span id="board-name"></span><small id="board-meta"></small></div>
     <div class="zoom float"><button id="zoom-out" aria-label="Zoom out">−</button><output id="zoom-val" class="num">100%</output><button id="zoom-in" aria-label="Zoom in">+</button><button id="fit" title="Fit board (F)">Fit</button></div>
     <div class="empty" id="empty" hidden>
-      <div class="swarm" aria-hidden="true"><i style="--c:#0D99FF;--x:-120px;--y:-30px"></i><i style="--c:#F24822;--x:-60px;--y:40px"></i><i style="--c:#14AE5C;--x:10px;--y:-50px"></i><i style="--c:#FFC470;--x:80px;--y:30px"></i><i style="--c:#9747FF;--x:130px;--y:-20px"></i></div>
       <h1>Describe a product.<br><span>A crew of cursors builds it.</span></h1>
       <p>Hundreds of cursors frame the screens, draw and fill every shape, round the corners, snap cards to the grid and type the copy, live.</p>
       <div class="samples" id="samples"></div>
@@ -345,10 +359,11 @@ body:not(.plugin) .plugin-only{display:none!important}
     <div class="block" id="style-block">
       <h2>Style <span>from the vault</span></h2>
       <select id="profile" class="style-pick" aria-label="Design profile" disabled><option value="">No house style</option></select>
-      <p id="profile-note">Connect Claude to design in a house style from the reference vault.</p>
+      <p id="profile-note">Connect Iris to design in a house style from the reference vault.</p>
     </div>
     <div class="block">
-      <h2>Build <span id="mode-label">Local kit</span></h2>
+      <h2>Build <span id="mode-label">Session</span></h2>
+      <p id="request-status" role="status"></p>
       <div class="hero-stat">
         <div class="ring" aria-hidden="true"><svg width="1" height="1" viewBox="0 0 76 76"><circle id="ring-arc" cx="38" cy="38" r="32" fill="none" stroke-dasharray="201.06" stroke-dashoffset="201.06"/></svg></div>
         <output id="pct" class="big num">0%</output>
@@ -356,8 +371,8 @@ body:not(.plugin) .plugin-only{display:none!important}
       </div>
       <div class="progress" aria-hidden="true"><i id="s-done-bar"></i></div>
       <div class="notice" id="template-notice">
-        <b id="notice-title">Reference vault ready</b>
-        <p id="notice-text">Website briefs match the reference vault. Try “poker” or “recreate Stripe”. Connect Claude for custom art direction and edits.</p>
+        <b id="notice-title">Connect to Iris</b>
+        <p id="notice-text">Open the private browser link or enter your session key.</p>
         <button class="btn" id="connect-cta">Connect</button>
       </div>
       <div class="stats">
@@ -373,7 +388,7 @@ body:not(.plugin) .plugin-only{display:none!important}
     </div>
     <div class="block talk" id="talk-block">
       <h2>Talk to Iris <span>ElevenLabs</span></h2>
-      <div class="talk-row"><button id="talk" type="button" data-mode="idle" aria-pressed="false" aria-label="Talk to Iris"></button><div><strong id="talk-label">Tap to talk</strong><p id="talk-state" role="status">Connect the Claude service to talk.</p></div></div>
+      <div class="talk-row"><button id="talk" type="button" data-mode="idle" aria-pressed="false" aria-label="Talk to Iris"></button><div><strong id="talk-label">Tap to talk</strong><p id="talk-state" role="status">Connect the Iris service to talk.</p></div></div>
       <button class="btn" id="talk-open" type="button" hidden>Open voice in browser</button>
       <ol id="transcript" hidden aria-live="polite"></ol>
     </div>
