@@ -1,17 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 
-function localSession() {
-  const key = new URLSearchParams(location.hash.slice(1)).get('key');
-  if (key) {
-    sessionStorage.setItem('studio.voice.session', key);
-    history.replaceState(null, '', location.pathname + location.search);
-  }
-  return key || sessionStorage.getItem('studio.voice.session') || '';
-}
-
-export default function Voice({ reply, onTranscript }) {
-  const [key] = useState(localSession);
-  const [config, setConfig] = useState({});
+export default function Voice({ reply, onTranscript, sessionKey: key, config }) {
   const [phase, setPhase] = useState('idle');
   const [status, setStatus] = useState('');
   const [muted, setMuted] = useState(() => localStorage.getItem('studio.voice.muted') === 'yes');
@@ -27,14 +16,7 @@ export default function Voice({ reply, onTranscript }) {
     if (current.url) URL.revokeObjectURL(current.url);
     setPhase('idle');
   }
-  useEffect(() => {
-    if (!key) return;
-    const controller = new AbortController();
-    fetch('/status', { headers: { Authorization: 'Bearer ' + key }, signal: controller.signal })
-      .then(async r => { if (!r.ok) throw Error('Session expired. Open the studio link printed by the server.'); setConfig(await r.json()); })
-      .catch(e => { if (!controller.signal.aborted) setStatus(e.message); });
-    return () => { controller.abort(); stop(); };
-  }, [key]);
+  useEffect(() => () => stop(), []);
   function start(next) {
     stop();
     const current = { controller: new AbortController() };

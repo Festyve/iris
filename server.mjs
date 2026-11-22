@@ -2,6 +2,7 @@ import http from 'node:http';
 import { randomBytes } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { createVoiceService, VoiceServiceError } from './voice-service.mjs';
+import { createAiPlanner, AiPlanningError } from './studio/ai-planner.mjs';
 import { serveStudio, handleVoice } from './studio/server.mjs';
 const secret=randomBytes(24).toString('hex');
 const origin='http://localhost:4739';
@@ -9,6 +10,7 @@ const designKey=process.env.GEMINI_API_KEY,voiceKey=process.env.ELEVENLABS_API_K
 const speech = createVoiceService({apiKey:voiceKey,voiceId:process.env.ELEVENLABS_VOICE_ID,
   sttModel:process.env.ELEVENLABS_STT_MODEL,ttsModel:process.env.ELEVENLABS_TTS_MODEL});
 const model=process.env.GEMINI_MODEL||'gemini-2.5-flash';
+const planner = createAiPlanner({apiKey: designKey, model});
 const schema={type:'OBJECT',properties:{
   composition:{type:'STRING',enum:['auto','stack','overlap']},align:{type:'STRING',enum:['left','right']},
   heroScale:{type:'NUMBER'},datePosition:{type:'STRING',enum:['top','bottom']},
@@ -50,13 +52,19 @@ const server=http.createServer(async(req,res)=>{
     if(req.method==='GET'&&req.url==='/'){res.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store'});return res.end(await readFile(new URL('./ui.html',import.meta.url)))}
     if(req.headers.authorization!=='Bearer '+secret)return json(res,401,{error:'Invalid session key.'});
     if(req.method==='GET'&&req.url==='/status')return json(res,200,{design:!!designKey,voice:speech.status().transcriptionConfigured,...speech.status()});
+    if(req.method==='POST'&&req.url==='/studio-plan'){
+      const stop = new AbortController();
+      res.on('close', () => { if (!res.writableFinished) stop.abort(); });
+      const {brief,references,previous,direction} = JSON.parse((await collect(req,250_000)).toString());
+      return json(res,200,await planner.plan({brief,references,previous,direction,signal:stop.signal}));
+    }
     if(req.method==='POST'&&req.url==='/swarm')return await design(req,res,true);
     if(req.method==='POST'&&req.url==='/design')return await design(req,res);
     if(req.method==='POST'&&['/voice','/speech'].includes(req.url))return await handleVoice(req,res,speech);
     json(res,404,{error:'Unknown endpoint.'});
   }catch(e){
     if(res.headersSent||res.destroyed){res.destroy();return}
-    if(e instanceof VoiceServiceError)return json(res,e.status,{code:e.code,error:e.message});
+    if(e instanceof VoiceServiceError || e instanceof AiPlanningError)return json(res,e.status,{code:e.code,error:e.message});
     json(res,400,{error:e.name==='TimeoutError'?'Service timed out. Try again.':'Request could not be completed. Check the input and service connection.'})}
 });
 server.on('error',e=>{console.error('Could not start local service: '+e.message);process.exitCode=1});

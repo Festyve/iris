@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import Library from './Library.jsx';
 import Companion from './Companion.jsx';
+import { localSession } from './session.mjs';
 import Voice from './Voice.jsx';
 import { rankReferences } from './vault.mjs';
 import { compileArtifact, planBuild, verifyArtifact } from './compiler.mjs';
@@ -11,6 +12,19 @@ import { inspectPreview } from './check-preview.mjs';
 import desktopShot from '../design-vault/assets/after-hours-desktop.png';
 import mobileShot from '../design-vault/assets/after-hours-mobile.png';
 import './studio.css';
+
+async function makePlan(options, key, useModel) {
+  if (!useModel) return { ...planBuild(options), planningMode: 'local' };
+  const {brief, refs, previous, direction, signal} = options;
+  const references = refs.map(({id,title,tags,observation,adaptation}) => ({id,title,tags,observation,adaptation}));
+  const response = await fetch('/studio-plan', { method:'POST', signal, headers: {
+    'Content-Type':'application/json', Authorization:'Bearer ' + key
+  }, body: JSON.stringify({brief, references, previous, direction}) });
+  const result = await response.json();
+  if (!response.ok) throw Error(result.error || 'Planning failed. Retry the request.');
+  return result;
+}
+
 
 function retrieve(refs, brief, pinned) {
   const attached = refs.filter(r => pinned.includes(r.id));
@@ -52,11 +66,29 @@ function Tasks({ run, onCancel, onRetry }) {
 function Studio({ initial }) {
   const [project, setProject] = useState(initial);
   const [refs, setRefs] = useState([]);
+  const [selectedIds, setSelectedIds] = useState(initial.selectedIds);
+  const selectionChange = useRef(0);
   const [problem, setProblem] = useState('');
   const [narrow, setNarrow] = useState(false);
+  const [key] = useState(localSession);
+  const [services, setServices] = useState({});
+  const [useModel,setUseModel] = useState(false);
+  const modelMode = useRef(false);
+  useEffect(() => {
+    if (!key) return;
+    const controller = new AbortController();
+    fetch('/status', {signal:controller.signal, headers:{Authorization:'Bearer '+key}})
+      .then(async response => {
+        if (!response.ok) throw Error('Session expired. Open the studio link printed by the server.');
+        const status = await response.json();
+        setServices(status); setUseModel(status.design);
+      }).catch(e => { if (!controller.signal.aborted) setProblem(e.message); });
+    return () => controller.abort();
+  }, [key]);
+  modelMode.current = useModel;
   const controller = useRef(null);
   if (!controller.current) controller.current = projectController(initial, { save: saveProject, notify: setProject,
-    retrieve, planBuild, compile: compileArtifact, async verify(html, plan) {
+    retrieve, planBuild: options => makePlan(options, key, modelMode.current), compile: compileArtifact, async verify(html, plan) {
       const checks = verifyArtifact(html, plan);
       for (const width of [390, 1024]) checks.push(await inspectPreview(html, width));
       return checks;
@@ -64,6 +96,14 @@ function Studio({ initial }) {
   const studio = controller.current;
   const error = e => setProblem(e?.message || String(e));
   useEffect(() => { studio.resume().catch(error); }, [studio]);
+  function select(ids) {
+    const change = ++selectionChange.current;
+    setSelectedIds(ids);
+    studio.select(ids).catch(e => {
+      if (change === selectionChange.current) setSelectedIds(studio.read().selectedIds);
+      error(e);
+    });
+  }
   const current = currentArtifact(project);
   const plan = project.pending || current?.plan;
   const onBrief = (text, ids = []) => studio.brief(text, ids, refs);
@@ -99,21 +139,21 @@ function Studio({ initial }) {
         <aside className="sheet">
           <h2>{current ? 'Design record' : 'Start a design'}</h2>
           <p>{current ? current.plan.mechanism : 'Give the companion a brief and a few references. Build a landing page or an interactive app, then revise it on the canvas.'}</p>
-          <button className="ink" onClick={() => ask()}>{current ? 'Request a revision' : 'Write a brief'} ↗</button>
+          <button className="ink" onClick={() => ask()}>{current ? 'Request a revision' : 'Write a brief'} <span aria-hidden="true">↗</span></button>
           {current && <button onClick={begin}>New design</button>}
-          <dl><div><dt>Builder</dt><dd>Local compiler</dd></div><div><dt>References</dt><dd>{project.selectedIds.length} selected</dd></div>
+          <dl><div><dt>Planner</dt><dd>{services.design ? <select aria-label="Design planner" value={useModel ? 'gemini' : 'local'} onChange={e=>setUseModel(e.target.value==='gemini')}><option value="gemini">Gemini</option><option value="local">Local rules</option></select> : 'Local rules'}</dd></div><div><dt>References</dt><dd>{project.selectedIds.length} selected</dd></div>
             <div><dt>Artifact</dt><dd>{current?.path || 'Awaiting brief'}</dd></div></dl>
-          {current && <details className="checks"><summary>Review &amp; versions</summary><p>{current.plan.review || 'Checked the title, primary action, and narrow-screen layout against the design plan.'}</p>
-            <ul>{current.checks.map(check => <li key={check}>{check}</li>)}</ul>
-            <label>Restore saved version <select value={project.currentVersion} onChange={e => studio.restore(Number(e.target.value)).catch(error)}>
-              {project.versions.map(v => <option value={v.version} key={v.version}>v{v.version} · {v.plan.title}</option>)}</select></label></details>}
-          <Voice reply={plan?.mechanism || ''} onTranscript={ask}/>
+          {current && <details className="checks"><summary>Build checks</summary><p>{current.plan.review || 'Checked the title, primary action, and narrow-screen layout against the design plan.'}</p>
+            <small>{current.plan.planningMode === 'gemini' ? 'Gemini plan' : 'Rule-based plan'} · Local HTML compiler</small><ul>{current.checks.map(check => <li key={check}>{check}</li>)}</ul></details>}
+          {current && <label className="version-picker">Restore saved version <select value={project.currentVersion} onChange={e => studio.restore(Number(e.target.value)).catch(error)}>
+              {project.versions.map(v => <option value={v.version} key={v.version}>v{v.version} · {v.plan.title}</option>)}</select></label>}
+          <Voice config={services} sessionKey={key} reply={plan?.mechanism || ''} onTranscript={ask}/>
         </aside></div>
         <Tasks run={project.run} onCancel={onCancel} onRetry={onRetry}/>
       </section>
-      <div id="library"><Library onChange={setRefs} selectedIds={project.selectedIds} onSelect={ids => studio.select(ids).catch(error)} onError={error}/></div>
+      <div id="library"><Library onChange={setRefs} selectedIds={selectedIds} onSelect={select} onError={error}/></div>
     </main>
-    <Companion refs={refs} selectedIds={project.selectedIds} project={{ ...project, current }} run={project.run}
+    <Companion refs={refs} selectedIds={selectedIds} project={{ ...project, current }} run={project.run}
       onBrief={onBrief} onBuild={onBuild} onCancel={onCancel} onRetry={onRetry} onError={error}/>
   </>;
 }

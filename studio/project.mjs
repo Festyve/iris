@@ -36,6 +36,7 @@ export function projectController(initial, { save, notify, retrieve, planBuild, 
   let state = initial;
   let queue = Promise.resolve();
   let active = null;
+  let planning = null;
   function write(transform) {
     const operation = queue.then(async () => {
       const next = transform(state);
@@ -73,9 +74,11 @@ export function projectController(initial, { save, notify, retrieve, planBuild, 
   }
 
   async function brief(text, attachedIds, refs) {
+    await queue; // Include any selection or restore submitted immediately before this message.
     text = String(text).trim().slice(0, 3000);
     if (!text) return { message: 'What would you like to build?', plan: null };
     const previous = state.startFresh ? null : currentArtifact(state)?.plan;
+    planning?.abort();
     const request = state.clarification ? state.clarification + ' — ' + text : text;
     if (!previous && !state.clarification && !/landing|website|page|app|tracker|dashboard|catalog|directory|portfolio|board|list|gallery|calendar|planner/i.test(text)) {
       active = null;
@@ -84,15 +87,17 @@ export function projectController(initial, { save, notify, retrieve, planBuild, 
     }
     const run = createRun(request);
     active = run.id;
+    planning = new AbortController();
     try {
       const pinned = [...new Set([...state.selectedIds, ...attachedIds])];
       await write(p => ({ ...p, clarification: '', pending: null, run }));
       await task(run.id, 'references', 'running');
-      const matches = retrieve(refs, request, pinned);
+      const matches = retrieve(refs, request, [...new Set([...pinned, ...(previous?.referenceIds || [])])]);
       await task(run.id, 'references', 'succeeded', { detail: matches.map(m => m.title).join(', ') || 'No matching references' });
       await task(run.id, 'design', 'running');
       const sources = matches.map(m => refs.find(ref => ref.id === m.id));
-      const plan = planBuild({ brief: request, refs: sources, previous });
+      const plan = await planBuild({ brief: request, refs: sources, previous, signal: planning.signal });
+      check(run.id);
       Object.assign(plan, { id: run.id, matches, request, pinned, baseVersion: previous ? state.currentVersion : null });
       await task(run.id, 'design', 'succeeded', { detail: plan.mechanism });
       await write(p => {
@@ -122,7 +127,7 @@ export function projectController(initial, { save, notify, retrieve, planBuild, 
       if (direction && direction !== proposal.direction) {
         const previous = state.versions.find(v => v.version === proposal.baseVersion)?.plan;
         const sources = proposal.matches.map(m => refs.find(r => r.id === m.id)).filter(Boolean);
-        plan = { ...proposal, ...planBuild({ brief: proposal.request, refs: sources, previous, direction }) };
+        plan = { ...proposal, ...await planBuild({ brief: proposal.request, refs: sources, previous, direction, signal: planning?.signal }), id: runId, request: proposal.request, matches: proposal.matches, pinned: proposal.pinned, baseVersion: proposal.baseVersion };
       }
       const html = await compile(plan);
       await task(token, 'implementation', 'succeeded', { detail: html.length + ' characters generated' });
@@ -134,9 +139,11 @@ export function projectController(initial, { save, notify, retrieve, planBuild, 
         runId, html, plan, checks, saved: Date.now() };
       await write(p => {
         check(token);
+        const completedRun = { ...p.run, status: 'succeeded',
+          tasks: p.run.tasks.map(t => t.id === 'verification' ? { ...t, status: 'succeeded', detail: checks.join(' · ') } : t) };
+        artifact.run = completedRun;
         return { ...p, versions: [...p.versions, artifact], currentVersion: version,
-          startFresh: false, pending: null, run: { ...p.run, status: 'succeeded',
-            tasks: p.run.tasks.map(t => t.id === 'verification' ? { ...t, status: 'succeeded', detail: checks.join(' · ') } : t) } };
+          startFresh: false, pending: null, run: completedRun };
       });
       return artifact;
     } catch (error) {
@@ -149,6 +156,7 @@ export function projectController(initial, { save, notify, retrieve, planBuild, 
   }
   function cancel(reason = 'Cancelled by designer') {
     active = null;
+    planning?.abort();
     return write(p => ({ ...p, run: stopped(p.run, reason), pending: null }));
   }
   return {
@@ -161,7 +169,7 @@ export function projectController(initial, { save, notify, retrieve, planBuild, 
     async restore(version) {
       if (!state.versions.some(v => v.version === version)) throw Error('Unknown version.');
       await cancel('Version restored');
-      return write(p => ({ ...p, currentVersion: version, startFresh: false, clarification: '' }));
+      return write(p => ({ ...p, currentVersion: version, run: p.versions.find(v => v.version === version).run || null, startFresh: false, clarification: '' }));
     },
     async fresh() {
       await cancel('Starting another design');
