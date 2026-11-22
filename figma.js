@@ -1,4 +1,4 @@
-figma.showUI(__html__, {width:320,height:500,themeColors:true});
+figma.showUI(__html__, {width:350,height:590,themeColors:true});
 let desk,phone,arrow,last='',direction=Object.assign({},SC.initial),active=false;
 const fonts={Title:{family:'Inter',style:'Black'},normal:{family:'Inter',style:'Regular'}};
 function paint(hex){return [{type:'SOLID',color:{r:parseInt(hex.slice(1,3),16)/255,g:parseInt(hex.slice(3,5),16)/255,b:parseInt(hex.slice(5,7),16)/255}}]}
