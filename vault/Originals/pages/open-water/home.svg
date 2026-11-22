@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1440" height="900">
+<rect width="1440" height="900" fill="#E0EBF1"/>
+<text x="54" y="51" font-family="Inter,Arial,sans-serif" font-size="30" font-weight="700" fill="#163848">Open Water</text>
+<text x="800" y="48.3" font-family="Inter,Arial,sans-serif" font-size="17" font-weight="500" fill="#163848">Collection</text>
+<text x="932" y="48.3" font-family="Inter,Arial,sans-serif" font-size="17" font-weight="500" fill="#163848">Journal</text>
+<text x="1064" y="48.3" font-family="Inter,Arial,sans-serif" font-size="17" font-weight="500" fill="#163848">About</text>
+<text x="1210" y="48.3" font-family="Inter,Arial,sans-serif" font-size="17" font-weight="700" fill="#163848">Find a session</text>
+<rect x="54" y="79" width="1332" height="1" fill="#163848"/>
+<text x="54" y="242.23306423306423" font-family="Inter,Arial,sans-serif" font-size="71.37007137007137" font-weight="600" fill="#163848">Meet at the water</text>
+<rect x="54" y="345" width="232" height="56" fill="#163848"/>
+<text x="72" y="378.2" font-family="Inter,Arial,sans-serif" font-size="18" font-weight="600" fill="#E0EBF1">Find a session</text>
+<image x="755" y="112" width="631" height="538" preserveAspectRatio="xMidYMid slice" xlink:href="../../art/open-water-0.png"/>
+<rect x="54" y="494" width="630" height="1" fill="#163848"/>
+<text x="54" y="528.4" font-family="Inter,Arial,sans-serif" font-size="16" font-weight="400" fill="#163848">01</text>
+<text x="126" y="536.8" font-family="Inter,Arial,sans-serif" font-size="32" font-weight="500" fill="#163848">Morning Laps</text>
+<text x="648" y="532.5" font-family="Inter,Arial,sans-serif" font-size="25" font-weight="400" fill="#163848">↗</text>
+<rect x="54" y="570" width="630" height="1" fill="#163848"/>
+<text x="54" y="604.4" font-family="Inter,Arial,sans-serif" font-size="16" font-weight="400" fill="#163848">02</text>
+<text x="126" y="612.8" font-family="Inter,Arial,sans-serif" font-size="32" font-weight="500" fill="#163848">Open Swim</text>
+<text x="648" y="608.5" font-family="Inter,Arial,sans-serif" font-size="25" font-weight="400" fill="#163848">↗</text>
+<rect x="54" y="646" width="630" height="1" fill="#163848"/>
+<text x="54" y="680.4" font-family="Inter,Arial,sans-serif" font-size="16" font-weight="400" fill="#163848">03</text>
+<text x="126" y="688.8" font-family="Inter,Arial,sans-serif" font-size="32" font-weight="500" fill="#163848">Lane Sessions</text>
+<text x="648" y="684.5" font-family="Inter,Arial,sans-serif" font-size="25" font-weight="400" fill="#163848">↗</text>
+<rect x="54" y="824" width="1332" height="1" fill="#163848"/>
+<text x="54" y="865.2" font-family="Inter,Arial,sans-serif" font-size="18" font-weight="600" fill="#163848">Open Water</text>
+<text x="1200" y="865.2" font-family="Inter,Arial,sans-serif" font-size="18" font-weight="400" fill="#163848">Home</text>
+</svg>

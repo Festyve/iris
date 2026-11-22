@@ -4,6 +4,8 @@ New designs build locally. Claude runs when you request an edit. Every time, hun
 
 ## Build a website from the vault
 
+The [original reference index](vault/Originals/README.md) includes 24 collections, each with nine page layouts and three illustrations. Try **architecture studio called “West Fold”**, **Wild Stem Lookbook**, or **Orbit Room Programme** in the Vault website workflow.
+
 Choose **New → Vault website**, type a subject like **poker**, choose **100**, and press **Build**. In Figma Desktop the named cursors assemble the frame on your canvas. Poker uses MetalForge’s layout for the lobby and two companion vault setups for browsing and details. Iris shows the source in Versions.
 
 Name a site directly, for example **recreate Stripe**, **recreate Poolsuite**, or **recreate MetalForge**, to rebuild its captured 1440 × 900 viewport. All 22 site captures have local templates. Iris preserves artwork at the original resolution as PNG image fills. It lifts lettering on uniform backgrounds into editable Inter text layers. Text inside gallery thumbnails and complex artwork stays in the image. Below-the-fold pages and interactions are outside the captures.

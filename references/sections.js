@@ -3,7 +3,7 @@ const VaultSections = (() => {
   const PAGE = 'iris-vault-page', SITE = 'iris-vault-entry', OWNER = 'iris-section-design';
   const margin = 64, gap = 72, heading = 38;
   let importPage = null;
-  const keys = Object.keys(ReferenceBrands).sort();
+  const keys = Object.keys(ReferenceBrands).sort().concat(OriginalPages.families.map(f=>f.id));
   const cellWidth = 3280, cellHeight = 1880;
   const panels = page => page.children.filter(n => n.type === 'SECTION' && n.getPluginData(SITE));
   function taggedFrames(page) {

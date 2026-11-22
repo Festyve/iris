@@ -11,6 +11,8 @@ How it plugs into Iris:
 3. Website builds now match the captures and image captions here automatically. Named site reconstructions run locally. For custom website briefs the connected designer also sees the source screenshot and a related visual.
 4. House styles from the profile selector also steer connected Claude designs and edits.
 
+Explore the [original website collections](Originals/README.md) for 216 editable page setups and 72 original illustrations.
+
 ## Profiles
 | Profile | Style |
 |---|---|

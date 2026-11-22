@@ -181,8 +181,9 @@
   };
   async function libraryEntry(m) {
     try {
-      libraryStatus((m.done+1)+' of '+m.total+' · '+ReferenceBrands[m.id],true);
-      const png=await fetchCapture(m.id);
+      const family=OriginalPages.families.find(f=>f.id===m.id);
+      libraryStatus((m.done+1)+' of '+m.total+' · '+(family?family.name:ReferenceBrands[m.id]),true);
+      const png=family?null:await fetchCapture(m.id);
       const next=Doc.clean(Websites.build('recreate '+m.id,Websites.match('recreate '+m.id),true));
       revisions=[]; rev=-1; librarySite=m.id; nextCapture=png;
       setMode('new'); brief.value='';
@@ -239,7 +240,7 @@
       try {
         const reference=Websites.match(note);
         nextCapture=null;
-        if(isPlugin && connected && reference.exact) {
+        if(isPlugin && connected && reference.exact && !reference.original) {
           try {nextCapture=await fetchCapture(reference.id);} catch { /* Artwork is bundled locally. */ }
         }
         const next=Doc.clean(Websites.build(note,reference));

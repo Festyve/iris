@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1440" height="900">
+<rect width="1440" height="900" fill="#EFE8DB"/>
+<text x="54" y="51" font-family="Inter,Arial,sans-serif" font-size="30" font-weight="700" fill="#342A24">Dead Wax</text>
+<text x="800" y="48.3" font-family="Inter,Arial,sans-serif" font-size="17" font-weight="500" fill="#342A24">Collection</text>
+<text x="932" y="48.3" font-family="Inter,Arial,sans-serif" font-size="17" font-weight="500" fill="#342A24">Journal</text>
+<text x="1064" y="48.3" font-family="Inter,Arial,sans-serif" font-size="17" font-weight="500" fill="#342A24">About</text>
+<text x="1210" y="48.3" font-family="Inter,Arial,sans-serif" font-size="17" font-weight="700" fill="#342A24">Browse records</text>
+<rect x="54" y="79" width="1332" height="1" fill="#342A24"/>
+<text x="54" y="200.8" font-family="Inter,Arial,sans-serif" font-size="92" font-weight="600" fill="#342A24">Journal</text>
+<image x="54" y="270" width="688" height="467" preserveAspectRatio="xMidYMid slice" xlink:href="../../art/dead-wax-2.png"/>
+<rect x="798" y="280" width="588" height="1" fill="#342A24"/>
+<text x="798" y="314.4" font-family="Inter,Arial,sans-serif" font-size="16" font-weight="400" fill="#342A24">01</text>
+<text x="870" y="322.8" font-family="Inter,Arial,sans-serif" font-size="32" font-weight="500" fill="#342A24">First Press</text>
+<text x="1350" y="318.5" font-family="Inter,Arial,sans-serif" font-size="25" font-weight="400" fill="#342A24">↗</text>
+<rect x="798" y="420" width="588" height="1" fill="#342A24"/>
+<text x="798" y="454.4" font-family="Inter,Arial,sans-serif" font-size="16" font-weight="400" fill="#342A24">02</text>
+<text x="870" y="462.8" font-family="Inter,Arial,sans-serif" font-size="32" font-weight="500" fill="#342A24">Dub Versions</text>
+<text x="1350" y="458.5" font-family="Inter,Arial,sans-serif" font-size="25" font-weight="400" fill="#342A24">↗</text>
+<rect x="798" y="560" width="588" height="1" fill="#342A24"/>
+<text x="798" y="594.4" font-family="Inter,Arial,sans-serif" font-size="16" font-weight="400" fill="#342A24">03</text>
+<text x="870" y="602.8" font-family="Inter,Arial,sans-serif" font-size="32" font-weight="500" fill="#342A24">Sleeve Notes</text>
+<text x="1350" y="598.5" font-family="Inter,Arial,sans-serif" font-size="25" font-weight="400" fill="#342A24">↗</text>
+<rect x="54" y="824" width="1332" height="1" fill="#342A24"/>
+<text x="54" y="865.2" font-family="Inter,Arial,sans-serif" font-size="18" font-weight="600" fill="#342A24">Dead Wax</text>
+<text x="1200" y="865.2" font-family="Inter,Arial,sans-serif" font-size="18" font-weight="400" fill="#342A24">Journal</text>
+</svg>
