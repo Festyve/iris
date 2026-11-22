@@ -1,9 +1,13 @@
 import http from 'node:http';
 import { randomBytes } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
+import { createVoiceService, VoiceServiceError } from './voice-service.mjs';
+import { serveStudio, handleVoice } from './studio/server.mjs';
 const secret=randomBytes(24).toString('hex');
 const origin='http://localhost:4739';
 const designKey=process.env.GEMINI_API_KEY,voiceKey=process.env.ELEVENLABS_API_KEY;
+const speech = createVoiceService({apiKey:voiceKey,voiceId:process.env.ELEVENLABS_VOICE_ID,
+  sttModel:process.env.ELEVENLABS_STT_MODEL,ttsModel:process.env.ELEVENLABS_TTS_MODEL});
 const model=process.env.GEMINI_MODEL||'gemini-2.5-flash';
 const schema={type:'OBJECT',properties:{
   composition:{type:'STRING',enum:['auto','stack','overlap']},align:{type:'STRING',enum:['left','right']},
@@ -37,27 +41,23 @@ async function design(req,res,swarm=false){
   if(!schema.properties.composition.enum.includes(p.composition)||!schema.properties.align.enum.includes(p.align)||!schema.properties.datePosition.enum.includes(p.datePosition)||!schema.properties.focus.enum.includes(p.focus)||!Number.isFinite(p.heroScale)||typeof p.reason!=='string')return json(res,502,{error:'The design service returned an incomplete layout. Try again.'});
   json(res,200,{plan:{composition:p.composition,align:p.align,datePosition:p.datePosition,heroScale:Math.max(.65,Math.min(1.35,p.heroScale))},focus:p.focus,reason:p.reason.slice(0,350)});
 }
-async function voice(req,res){
-  if(!voiceKey)return json(res,503,{error:'Set ELEVENLABS_API_KEY and restart the server.'});
-  const bytes=await collect(req,6_000_000),mime=(req.headers['content-type']||'audio/webm').split(';')[0];
-  const form=new FormData();form.append('model_id','scribe_v2');form.append('file',new Blob([bytes],{type:mime}),'note.'+(mime.split('/')[1]||'webm'));
-  const r=await fetch('https://api.elevenlabs.io/v1/speech-to-text',{method:'POST',headers:{'xi-api-key':voiceKey},body:form,signal:AbortSignal.timeout(28000)});
-  if(!r.ok)return json(res,502,{error:'ElevenLabs returned '+r.status+'. Check audio, key and quota.'});
-  const result=await r.json();json(res,200,{text:String(result.text||'').slice(0,700)});
-}
 const server=http.createServer(async(req,res)=>{
   res.setHeader('Access-Control-Allow-Origin','*');res.setHeader('Access-Control-Allow-Headers','Authorization, Content-Type');res.setHeader('Access-Control-Allow-Methods','GET, POST, OPTIONS');
   try{
     if(!['localhost:4739','127.0.0.1:4739'].includes(req.headers.host))return json(res,403,{error:'Local host required.'});
     if(req.method==='OPTIONS'){res.writeHead(204);return res.end()}
+    if(await serveStudio(req,res))return;
     if(req.method==='GET'&&req.url==='/'){res.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store'});return res.end(await readFile(new URL('./ui.html',import.meta.url)))}
     if(req.headers.authorization!=='Bearer '+secret)return json(res,401,{error:'Invalid session key.'});
-    if(req.method==='GET'&&req.url==='/status')return json(res,200,{design:!!designKey,voice:!!voiceKey});
+    if(req.method==='GET'&&req.url==='/status')return json(res,200,{design:!!designKey,voice:speech.status().transcriptionConfigured,...speech.status()});
     if(req.method==='POST'&&req.url==='/swarm')return await design(req,res,true);
     if(req.method==='POST'&&req.url==='/design')return await design(req,res);
-    if(req.method==='POST'&&req.url==='/voice')return await voice(req,res);
+    if(req.method==='POST'&&['/voice','/speech'].includes(req.url))return await handleVoice(req,res,speech);
     json(res,404,{error:'Unknown endpoint.'});
-  }catch(e){json(res,400,{error:e.name==='TimeoutError'?'Service timed out. Try again.':'Request could not be completed. Check the input and service connection.'})}
+  }catch(e){
+    if(res.headersSent||res.destroyed){res.destroy();return}
+    if(e instanceof VoiceServiceError)return json(res,e.status,{code:e.code,error:e.message});
+    json(res,400,{error:e.name==='TimeoutError'?'Service timed out. Try again.':'Request could not be completed. Check the input and service connection.'})}
 });
 server.on('error',e=>{console.error('Could not start local service: '+e.message);process.exitCode=1});
-server.listen(4739,'127.0.0.1',()=>console.log('Second Cursor\nBrowser: '+origin+'/#key='+secret+'\nFigma session key: '+secret));
+server.listen(4739,'127.0.0.1',()=>console.log('Second Cursor\nStudio: '+origin+'/studio/#key='+secret+'\nPoster: '+origin+'/#key='+secret+'\nFigma session key: '+secret));
