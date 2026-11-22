@@ -766,6 +766,63 @@
     }
   });
 
+  /* ---------- hooks for the voice agent (voice.js) ---------- */
+  const runFinished = () => !!P && (isPlugin ? pluginState === 'done' : !playing && t >= P.total);
+  // Resolves when the crew finishes (or is stopped) the run that a build or change just started.
+  function settle(limit) {
+    const began = Date.now();
+    return new Promise(resolve => {
+      const timer = setInterval(() => {
+        const stopped = isPlugin && pluginState === 'idle';
+        if (runFinished() || stopped || Date.now() - began > limit) { clearInterval(timer); resolve(runFinished() ? 'done' : stopped ? 'stopped' : 'running'); }
+      }, 200);
+    });
+  }
+  const headText = () => ($('headline').textContent + '. ' + $('subline').textContent).replace(/\.\.\s*$/, '.');
+  function outline() {
+    if (!board) return null;
+    return {product: board.name, screens: board.screens.map(s => ({name: s.name, size: s.width + ' by ' + s.height,
+      copy: s.layers.filter(L => L.kind === 'text').map(L => L.text.replace(/\n/g, ' ')).filter(x => x.trim()).slice(0, 12)}))};
+  }
+  window.Iris = {
+    isPlugin, call,
+    get connected() { return connected; }, get service() { return service; }, get busy() { return busy; },
+    state: () => ({design: outline(), version: rev + 1, versions: revisions.length, running: !!P && !runFinished(), status: headText(), canEdit: canDesign()}),
+    async build(text) {
+      if (busy) return {error: 'Iris is still working on the last request.'};
+      setMode('new'); brief.value = String(text || '').slice(0, 400);
+      const before = revisions.length ? revisions[rev] : null;
+      await go();
+      if (!revisions.length || revisions[rev] === before) return {error: headText()};
+      const run = await settle(240000);
+      return {built: true, crew: run, designer: canDesign() ? 'Claude Opus 5.5' : 'built-in kit (Claude not connected)', summary: revisions[rev].label, design: outline()};
+    },
+    async change(text) {
+      if (!doc) return {error: 'There is no design yet. Build one first.'};
+      if (!canDesign()) return {error: 'Changes need Claude, and the server has no Anthropic credentials.'};
+      if (busy) return {error: 'Iris is still working on the last request.'};
+      setMode('edit'); const before = revisions[rev];
+      await change(String(text || '').slice(0, 1500));
+      if (revisions[rev] === before) return {changed: false, reason: headText()};
+      const run = await settle(180000);
+      return {changed: true, crew: run, summary: revisions[rev].label, note: revisions[rev].note || undefined};
+    },
+    history(action) {
+      if (busy) return {error: 'Iris is still working on the last request.'};
+      const target = action === 'undo' ? rev - 1 : rev + 1;
+      if (!revisions[target]) return {error: action === 'undo' ? 'Nothing to undo.' : 'Nothing to redo.'};
+      restore(target);
+      return {version: rev + 1, of: revisions.length, label: revisions[rev].label};
+    },
+    control(action) {
+      if (!P || runFinished()) return {note: 'Nothing is running.'};
+      if (action === 'cancel') { if (isPlugin) parent.postMessage({pluginMessage: {kind: 'cancel'}}, '*'); else { t = P.total; playing = false; setPlayIcon(); } return {done: true}; }
+      const running = isPlugin ? pluginState === 'running' : playing;
+      if ((action === 'pause' && running) || (action === 'resume' && !running)) togglePlay();
+      return {done: true};
+    }
+  };
+
   /* ---------- loop ---------- */
   function loop(now) {
     const dt = Math.min(.1, (now - lastFrame) / 1000); lastFrame = now;

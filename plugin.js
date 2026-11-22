@@ -1778,6 +1778,21 @@ figma.ui.onmessage = async m => {
     else if (m.kind === 'resume' && run) { run.paused = false; run.last = Date.now(); post({kind: 'tick', t: run.t, state: 'running'}); }
     else if (m.kind === 'speed' && run) run.speed = m.speed;
     else if (m.kind === 'cancel') cancel();
+    else if (m.kind === 'open-url') figma.openExternal(String(m.url));
+    else if (m.kind === 'look') {
+      // Export the frame the designer is looking at (selection, climbed to its top-level frame) for the voice agent.
+      try {
+        const sel = figma.currentPage.selection[0];
+        let f = sel;
+        while (f && f.parent && f.parent.type !== 'PAGE') f = f.parent;
+        if (!f || !('exportAsync' in f)) f = figma.currentPage.children.filter(n => n.type === 'FRAME').pop();
+        if (!f) throw Error('Nothing is on this page yet. Select a frame or ask Iris to build one.');
+        const img = await f.exportAsync({format: 'PNG', constraint: {type: 'WIDTH', value: Math.min(900, Math.max(320, Math.round(f.width)))}});
+        const texts = [];
+        if ('findAll' in f) for (const n of f.findAll(n => n.type === 'TEXT').slice(0, 40)) texts.push(n.characters.slice(0, 80));
+        post({kind: 'look', id: m.id, png: figma.base64Encode(img), frame: {name: f.name, width: Math.round(f.width), height: Math.round(f.height)}, selected: figma.currentPage.selection.slice(0, 8).map(n => n.name), texts});
+      } catch (e) { post({kind: 'look', id: m.id, error: String(e && e.message || e)}); }
+    }
   } catch (e) { stop(); post({kind: 'error', text: String(e && e.message || e)}); }
 };
 figma.on('close', () => { if (run) finish(true); });

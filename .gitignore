@@ -3,3 +3,5 @@
 .DS_Store
 node_modules/
 .iris-session
+.iris-agent.json
+voice.bundle.js

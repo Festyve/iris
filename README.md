@@ -51,6 +51,22 @@ The server uses `claude-opus-5-5` with adaptive thinking, structured JSON output
 
 **Figma Desktop:** choose **Plugins → Development → Import plugin from manifest** and pick **manifest.json**, then run **Iris**. The crew builds native, editable frames. Each node is tagged with its design id, and the design is saved on the page, so you can close the plugin, edit by hand, reopen it and keep changing the design with words. Cancelling a first build removes it. Cancelling a change finishes it instantly, so nothing is left half-edited. Crews of up to 250 cursors are available in Figma.
 
+## Talk to Iris (ElevenLabs)
+
+Iris is also a voice design partner. Press the gradient mic in **Talk to Iris** and just talk: "design a loyalty app for a coffee shop called Bean", "what do you think of this screen?", "make the order button bigger", "undo that". An ElevenLabs agent listens and answers out loud, and its tools drive the studio: it searches the reference vault, builds new designs, critiques what you have selected (Claude looks at the exported frame), makes changes, steps through versions and pauses or cancels the crew.
+
+Figma plugins can't open the microphone, so in Figma press **Open voice in browser**. The voice session runs in that browser tab, and the plugin listens on the local server's `/bridge`, so every build and change lands in your Figma file.
+
+Setup, once: put `ELEVENLABS_API_KEY` in `.env.local`, then
+
+```sh
+npm install
+npm run agent   # creates the Iris voice agent and saves its id to .iris-agent.json
+npm start       # builds, then starts the server with .env / .env.local
+```
+
+The agent runs on `gemini-3.5-flash` with the Sarah voice; edit `scripts/agent.mjs` and run `npm run agent` again to change its prompt, voice or tools. Reference search reads `./vault` or the folder in `IRIS_VAULT`.
+
 ## Source
 
 | File | Role |
@@ -58,7 +74,9 @@ The server uses `claude-opus-5-5` with adaptive thinking, structured JSON output
 | `layout.js` | Design document: validation, flexbox-style layout, patches, import from the kit, merging Figma edits |
 | `icons.js` | Built-in stroke icon set |
 | `designer.mjs` | Claude prompts, output schemas and validation |
-| `server.mjs` | Local service: Claude Opus 5.5 (Anthropic SDK) and ElevenLabs |
+| `server.mjs` | Local service: Claude Opus 5.5 (Anthropic SDK), ElevenLabs transcription, voice sessions, the plugin bridge and critique |
+| `voice.js` + `voice-entry.js` | Talk to Iris: the ElevenLabs voice agent client and its tools |
+| `scripts/agent.mjs` | Creates or updates the ElevenLabs agent |
 | `crew.js` | Task graph for builds and diffs, cursor scheduling, sampling any moment of a run |
 | `kit.js` | Local designer used without Claude |
 | `screen-spec.cjs` | Board format and screen arrangement |
