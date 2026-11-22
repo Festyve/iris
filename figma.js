@@ -29,6 +29,29 @@ async function loadFont(weight) {
   throw Error('The Inter font is not available in this file.');
 }
 
+// Figma limits a plugin-data value to 100 kB. Publish the index after every chunk
+// has been written so a reopened design always points to a complete revision.
+function storeDocument(page,doc) {
+  const raw=JSON.stringify(doc), old=page.getPluginData(DOC_KEY);
+  let previous; try {previous=JSON.parse(old);} catch {}
+  if(raw.length<=20000) page.setPluginData(DOC_KEY,raw);
+  else {
+    const prefix='iris-doc-'+Date.now().toString(36)+Math.random().toString(36).slice(2,7)+'-';
+    const count=Math.ceil(raw.length/20000);
+    for(let i=0;i<count;i++)page.setPluginData(prefix+i,raw.slice(i*20000,(i+1)*20000));
+    page.setPluginData(DOC_KEY,JSON.stringify({prefix,count}));
+  }
+  if(previous?.prefix?.startsWith('iris-doc-') && Number.isInteger(previous.count))
+    for(let i=0;i<previous.count;i++)page.setPluginData(previous.prefix+i,'');
+}
+function readDocument(page) {
+  const raw=page.getPluginData(DOC_KEY);if(!raw)return null;
+  const index=JSON.parse(raw);if(index.screens)return index;
+  if(!index.prefix?.startsWith('iris-doc-') || !Number.isInteger(index.count) || index.count<1 || index.count>1000)return null;
+  let value='';for(let i=0;i<index.count;i++)value+=page.getPluginData(index.prefix+i);
+  return JSON.parse(value);
+}
+
 // Find what Iris built earlier for this design, by the ids stored on each node.
 function scan(design) {
   const frames = new Map(), nodes = new Map();
@@ -270,7 +293,7 @@ function finish(silent) {
   }
   const frames = r.board.screens.map(S => r.frames.get(S.id)).filter(f => f && !f.removed);
   const section=VaultSections.organize(r,frames);
-  if (r.doc && !r.libraryId) figma.currentPage.setPluginData(DOC_KEY, JSON.stringify(r.doc));
+  if (r.doc && !r.libraryId) storeDocument(figma.currentPage,r.doc);
   figma.commitUndo();
   if (silent) return;
   if(r.libraryId) {VaultSections.next();return;}
@@ -306,8 +329,7 @@ figma.ui.onmessage = async m => {
   try {
     if (m.kind === 'ui-ready') {
       try { const k = await figma.clientStorage.getAsync('iris-key'); if (k) post({kind: 'key', key: k}); } catch (e) { /* storage unavailable */ }
-      const saved = figma.currentPage.getPluginData(DOC_KEY);
-      if (saved) { try { const doc = JSON.parse(saved); if (scan(doc.id).frames.size) post({kind: 'restore', doc}); } catch (e) { /* ignore a damaged record */ } }
+      try {const doc=readDocument(figma.currentPage);if(doc && scan(doc.id).frames.size)post({kind:'restore',doc});} catch { /* ignore an incomplete record */ }
     } else if(m.kind==='library-open') await VaultSections.openLibrary();
     else if (m.kind === 'save-key') await figma.clientStorage.setAsync('iris-key', String(m.key || ''));
     else if (m.kind === 'build') await start(m);

@@ -1,14 +1,16 @@
 # Iris — a crew of cursors that designs
 
-Describe any product and Claude designs it. Then describe changes in plain words and Claude makes them. Every time, hundreds of cursors do the work on the canvas, in the browser or live in your Figma file. They drag out frames, draw and fill shapes, round corners, snap cards into place and type every word. On a change they only touch what changes: moving, recolouring, retyping, deleting and adding.
+New designs build locally. Claude runs when you request an edit. Every time, hundreds of cursors do the work on the canvas, in the browser or live in your Figma file. They drag out frames, draw and fill shapes, round corners, snap cards into place and type every word. On a change they only touch what changes: moving, recolouring, retyping, deleting and adding.
 
 ## Build a website from the vault
 
-Choose **New**, type a subject like **poker**, choose **100**, and press **Build**. In Figma Desktop the named cursors assemble the frame on your canvas. Poker uses MetalForge’s sidebar, filters and card grid to build a playable-looking lobby with table names, game types and open seats. Iris shows the source in Versions.
+Choose **New**, type a subject like **poker**, choose **100**, and press **Build**. In Figma Desktop the named cursors assemble the frame on your canvas. Poker uses MetalForge’s layout for the lobby and two companion vault setups for browsing and details. Iris shows the source in Versions.
 
 Name a site directly, for example **recreate Stripe**, **recreate Poolsuite**, or **recreate MetalForge**, to rebuild its captured 1440 × 900 viewport. All 22 site captures have local templates. Text is extracted into editable text layers and graphic regions into editable shapes and vector paths. Typography and detailed imagery are approximations of the capture. Below-the-fold pages and interactions are outside the captures.
 
-Custom website briefs search names, subjects, aesthetics and image captions. The local builder adapts the closest template and uses an editorial layout for unmatched words. With the current Claude service connected, Iris also sends the matched screenshot, a supporting vault image when available and the editable starting layout to the model for brief-specific edits. Named reconstructions and local builds work offline. Native/mobile app briefs retain the product-design workflow.
+Website briefs match only the captured vault setups. A new site gets a home, collection and detail page with editable layers traced to their sources. The local builder adapts text to the brief, including a default vault setup for unmatched words. Native app briefs use the local phone kit. Initial builds make zero Claude requests.
+
+For edits, set **ANTHROPIC_API_KEY** on the local Iris service. **IRIS_EDIT_MODEL** defaults to **claude-haiku-5-5**. Website edits send a compact selection of relevant layer labels, the edit request and allowed vault tokens. Claude can change copy, typography, colours and visibility or add a page based on another known setup. The server validates changes before the cursors apply them.
 
 The site templates are committed in `references/sites.json`. `npm run build` refreshes the searchable image catalog. To retrace changed captures, run the two commands in `scripts/trace-sites.py` before building.
 
@@ -37,7 +39,7 @@ Containers finish before anything that sits on them, and a small change gets a s
 
 ## How it works
 
-1. **Claude designs a document, not pixels.** Claude Opus 5.5 returns a flat list of nodes (frames, text, icons, images, shapes, lines). Each node names its parent and describes layout like flexbox: rows, columns, grids, gaps, padding, alignment and fill/hug sizing. `layout.js` computes exact geometry, so spacing and alignment come out clean however long the copy is. There are 90+ built-in stroke icons.
+1. **Iris builds a document.** The local planner returns a flat list of nodes (frames, text, icons, images, shapes, lines). Each node names its parent and describes layout like flexbox: rows, columns, grids, gaps, padding, alignment and fill/hug sizing. `layout.js` computes exact geometry, so spacing and alignment come out clean however long the copy is. There are 90+ built-in stroke icons.
 2. **Every node has a stable id.** For a change, Claude gets the current document and returns a patch: `set`, `add`, `remove`, `move` or `addScreen`. It never regenerates the whole design, so everything you didn't ask about stays exactly as it was.
 3. **The crew plays the difference.** `crew.js` compares the old and new boards and schedules only the work needed. The browser and Figma replay the same timeline.
 4. **Your own edits count.** In Figma, before each change, the plugin reads the frames back. Text you retyped, colours you changed, layers you deleted or resized, and positions inside absolute (stack) containers all become part of the design Claude edits.
@@ -54,9 +56,7 @@ ANTHROPIC_API_KEY=sk-ant-... node server.mjs
 
 You can also put the key in a `.env` file and run `node --env-file=.env server.mjs`. Open the printed browser URL, or paste the printed session key into ⚙ in the browser or the Figma plugin. Set `ELEVENLABS_API_KEY` too if you want to speak briefs instead of typing.
 
-The server uses `claude-opus-5-5` with adaptive thinking, structured JSON output and server-side refusal fallback. A new design usually takes a minute or two; a change takes seconds to a minute.
-
-**Without Claude**, Iris still works: for native app requests the built-in kit turns the brief into a themed seven-screen product (five phone screens, a dashboard and a landing page), and the crew builds it. Changes need Claude.
+The edit model uses a compact response budget and a 30-second request timeout. Visual critique uses its separate model configuration.
 
 ## Use it
 
@@ -92,7 +92,7 @@ The agent runs on `gemini-3.5-flash` with the Sarah voice; edit `scripts/agent.m
 | `layout.js` | Design document: validation, flexbox-style layout, patches, import from the kit, merging Figma edits |
 | `icons.js` | Built-in stroke icon set |
 | `designer.mjs` | Claude prompts, output schemas and validation |
-| `server.mjs` | Local service: Claude Opus 5.5 (Anthropic SDK), ElevenLabs transcription, voice sessions, the plugin bridge and critique |
+| `server.mjs` | Local service: Claude edits (Anthropic SDK), ElevenLabs transcription, voice sessions, the plugin bridge and critique |
 | `voice.js` + `voice-entry.js` | Talk to Iris: the ElevenLabs voice agent client and its tools |
 | `scripts/agent.mjs` | Creates or updates the ElevenLabs agent |
 | `crew.js` | Task graph for builds and diffs, cursor scheduling, sampling any moment of a run |

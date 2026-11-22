@@ -13,103 +13,94 @@ const Websites = (() => {
   }
   function match(note) { return ReferenceMatch.select(note, ReferenceMedia, Object.keys(ReferenceSites)); }
   function titleOf(note) {
-    const named = note.match(/["“]([^"”]{1,55})["”]|\b(?:called|named)\s+(.{1,55})/i);
-    const subject = named ? named[1] || named[2] : note.replace(/^(?:(?:please|can you|i want|make|design|create|build|me|a|an|the)\s+)+/i,'')
+    const quoted=note.match(/["“]([^"”]{1,55})["”]/);
+    const named=quoted || note.match(/\b(?:called|named)\s+(.{1,55})/i);
+    const subject = named ? named[1] : note.replace(/^(?:(?:please|can you|i want|make|design|create|build|me|a|an|the)\s+)+/i,'')
       .replace(/^(?:website|landing page|site|homepage)\s+(?:(?:for|about|selling)\s+)?/i,'').replace(/\s+(?:website|site|landing page|homepage)\b.*$/i,'');
     const title = (subject || note).trim().slice(0,55);
     return title.charAt(0).toUpperCase()+title.slice(1);
   }
-  function base(name, match, bg) {
-    return {name, reference:{id:match.id,title:match.site.title,url:match.site.url || '',image:match.inspiration?.title || '',fallback:match.fallback},
-      screens:[{id:'web',name:name+' · Home',w:1440,h:900,fill:bg,layout:'stack'}],nodes:[]};
-  }
-  function add(doc,node) {
-    node.id = 'part-'+(doc.nodes.length+1); node.parent = 'web'; doc.nodes.push(node); return node;
-  }
-  function text(doc,label,x,y,w,h,size,color,weight=400,align='left') {
-    // Fit short local substitutions inside the corresponding reference slot.
-    const fit = Math.max(6,Math.min(size,w/Math.max(1,Doc.measure(label,1,weight))));
-    return add(doc,{type:'text',name:label.slice(0,60),text:label,x,y,w,h,size:fit,weight,color,lh:1,align,wrap:false});
-  }
-  function shape(doc,name,x,y,w,h,fill,r=0,stroke) {
-    return add(doc,{type:'shape',name,x,y,w,h,fill,r,...(stroke?{stroke,sw:1}:{})});
-  }
-  function lobby(note,m) {
-    const name = /called|named|["“]/i.test(note) ? titleOf(note) : 'River Room';
-    const d = base(name,m,'#0D1010'), white='#F2F4ED', muted='#A9B4AC', lime='#D7F893';
-    text(d,name,30,30,200,40,27,white,700);
-    text(d,'POKER CLUB',30,80,190,20,13,muted,600);
-    text(d,'Lobby',30,141,160,36,27,white,700);
-    ['All tables','Cash games','Tournaments','Private tables'].forEach((s,i)=>{
-      if (!i) shape(d,'Active navigation',18,207+i*48,195,40,'#26332B',8);
-      text(d,s,32,218+i*48,150,22,16,i?muted:lime,i?400:600);
-    });
-    shape(d,'Sidebar divider',229,0,1,900,'#333A35');
-    text(d,'Live tables',259,72,730,75,60,white,600);
-    text(d,'Choose a table and take a seat.',262,160,720,32,22,muted);
-    shape(d,'Private table action',1170,76,230,49,lime,24);
-    text(d,'Create private table',1182,91,205,20,16,'#182419',600,'center');
-    ['All games','Hold’em','Omaha','Open seats'].forEach((v,i)=>{
-      shape(d,v+' filter',260+i*140,219,128,40,i?'#1F2421':white,20);
-      text(d,v,265+i*140,231,118,20,15,i?white:'#182419',600,'center');
-    });
-    const names=['The Button','Night Shift','Copper Club','Sunday Social','The Turn','After Hours','Blue Bird','The Orchard'];
-    const colors=['#34694C','#385B69','#785345','#525080'];
-    names.forEach((s,i)=>{
-      const x=260+(i%4)*289,y=299+Math.floor(i/4)*278;
-      shape(d,s+' card',x,y,274,255,'#191F1C',14,'#303B34');
-      shape(d,s+' felt',x+21,y+32,232,118,colors[i%4],58,'#738477');
-      for(let j=0;j<3;j++){
-        shape(d,'Playing card',x+91+j*32,y+64,28,43,'#F5F2E8',4);
-        text(d,['A♠','K♥','7♦'][j],x+92+j*32,y+79,26,20,14,j?'#A43C43':'#15241D',700,'center');
-      }
-      text(d,s,x+16,y+166,242,30,23,white,600);
-      text(d,i%2?'Pot-limit Omaha':'No-limit Hold’em',x+16,y+203,176,21,15,muted);
-      text(d,(2+i%5)+'/6 seats',x+185,y+203,74,21,14,lime,600,'right');
-    });
-    return d;
-  }
-  const niches = [
-    [/\b(coffee|cafe|bakery|restaurant|dining|food)\b/i,'Seasonal menu','View the menu','Reservations','Visit us'],
-    [/\b(store|shop|fashion|clothing|sell|craft|shoe|jewel)/i,'The collection','Shop now','New arrivals','Our story'],
-    [/\b(travel|hotel|resort|trip|stay|tourism)/i,'Find your next stay','Explore stays','Destinations','Book a stay'],
-    [/\b(bank|payment|financ|money|budget|invest)/i,'Your money, in focus','Get started','Accounts','Pricing'],
-    [/\b(photo|portfolio|art|gallery|architect)/i,'Selected work','View collection','Projects','Contact'],
-    [/\b(music|radio|audio|song|album)/i,'Listen now','Start listening','Releases','Artists']
+  // These are product words only. Geometry and artwork always come from the selected captures.
+  const vocabularies = [
+    [/poker|hold.em|casino|card room/i, ['Live tables','Join a table','Cash games','Tournaments','No-limit Hold’em','Omaha','Private tables','Open seats','Table details','House rules']],
+    [/coffee|caf[eé]|bakery|restaurant|food/i, ['Seasonal menu','See menu','Bakery','Coffee','Breakfast','Lunch','Reserve a table','Visit us','Opening hours','Our kitchen']],
+    [/fashion|clothing|shoe|jewel|store|shop/i, ['The collection','Shop now','New arrivals','Collections','Accessories','Size guide','Wishlist','Availability','Product details','Delivery']],
+    [/travel|hotel|stay|resort/i, ['Plan a stay','Book a stay','Destinations','Rooms','Weekend stays','Experiences','Availability','Guest guide','Visit details','Amenities']],
+    [/bank|payment|financ|budget/i, ['Your accounts','Open an account','Balances','Transfers','Activity','Statements','Payments','Savings','Account details','Support']],
+    [/music|radio|audio|album/i, ['On rotation','Listen now','Releases','Artists','Live sessions','Playlists','Stations','Schedule','Release notes','Tracklist']],
+    [/ceramic|pottery|studio|artist|gallery/i, ['Studio collection','Explore work','Collections','Workshops','Current work','Editions','Visit the studio','Bookings','Studio notes','Materials']]
   ];
-  function build(note,m=match(note)) {
-    const site=ReferenceSites[m.id];
-    if (!m.exact && m.id==='metalforge' && ReferenceMatch.poker(note)) return lobby(note,m);
-    const name=m.exact?ReferenceBrands[m.id]:titleOf(note), d=base(name,m,site.bg);
-    site.shapes.forEach(([x,y,w,h,fill,path],i)=>{
-      const band=y<95?'Header':y>670?'Lower section':'Hero';
-      const n=shape(d,band+' · '+(path?'artwork':'surface')+' '+(i+1),x,y,w,h,fill);
-      if(path)n.art=m.id+'/v2/'+i;
-    });
-    if (m.exact) {
-      for(const [x,y,w,h,size,weight,color,label] of site.text) {
-        const copy=ReferenceCopy[m.id][label] || label;
-        text(d,copy,x,y,w,h,size,color,weight);
+  const general=['Selected work','Explore','Collection','Journal','Latest releases','Highlights','Contact','Availability','Details','About'];
+  const neutral=/^(log in|sign in|sign up|pricing|support|menu|search|about|help|faq|learn more|subscribe|resources|explore|settings|home|contact|next|back|continue|all|new|beta)$/i;
+
+  const pokerTables=['The Button','Night Shift','Copper Club','Sunday Social','The Turn','After Hours','Blue Bird','The Orchard'];
+  function catalogLabel(source,words,name,x,y,index) {
+    if (source==='metalforge' && x>=240 && y>210) {
+      const column=Math.max(0,Math.min(3,Math.floor((x-240)/297)));
+      const card=column+(y>650?4:0);
+      if(words[0]==='Live tables') {
+        const meta=[pokerTables[card],card%2?'Pot-limit Omaha':'No-limit Hold’em',
+          ['$1 / $2','$2 / $5','$5 / $10'][card%3],(card%4+1)+' seats open','Join waitlist'];
+        return meta[index%meta.length];
       }
-      d.reference.capture=true;
-      return d;
+      const meta=[words[card%words.length],words[8],name,words[1],words[9]];
+      return meta[index%meta.length];
     }
-    const slots=site.text.filter(s=>s[2]>=34 && s[3]>=10);
-    const main=slots.filter(s=>s[1]>85 && s[1]<710).sort((a,b)=>b[4]-a[4])[0] || slots[0];
-    const copy=niches.find(n=>n[0].test(note)) || [null,'Explore '+name,'Explore','Overview','Contact'];
-    // Preserve alignment, type scale and rhythm while removing the source brand and unrelated copy.
-    const top=slots.filter(s=>s!==main && s[1]<100).sort((a,b)=>a[0]-b[0]);
-    const body=slots.filter(s=>s!==main && s[1]>=100).sort((a,b)=>a[1]-b[1]);
-    const write=(slot,label)=>text(d,label,...slot.slice(0,5),slot[6],slot[5]);
-    if(main) write(main,name);
-    top.slice(0,4).forEach((s,i)=>write(s,[name,copy[3],copy[4],copy[2]][i]));
-    const occupied=main?[main]:[];
-    const intersects=(a,b)=>a[0]<b[0]+b[2] && a[0]+a[2]>b[0] && a[1]<b[1]+b[3] && a[1]+a[3]>b[1];
-    for(const s of body){
-      if (occupied.length>=5 || occupied.some(b=>intersects(s,b))) continue;
-      write(s,copy[occupied.length] || copy[2]); occupied.push(s);
+    return words[index%words.length];
+  }
+
+  // Companion layouts are existing captures with a collection or detail structure.
+  const collections=['metalforge','godly'];
+  const details=['apple-liquid-glass','teenage-engineering','poolsuite','ui-chords'];
+  function build(note,m=match(note),captureOnly=false) {
+    if(!m || !Object.prototype.hasOwnProperty.call(ReferenceSites,m.id)) throw Error('No usable website setup is available in the vault.');
+    const available=new Set(ReferenceMedia.filter(r=>r.path.startsWith('assets/sites/')).map(r=>r.path.slice(13,-4)));
+    const name=m.exact?ReferenceBrands[m.id]:ReferenceMatch.poker(note) && !/called|named|["“]/i.test(note)?'River Room':titleOf(note);
+    const words=(vocabularies.find(v=>v[0].test(note)) || [null,general])[1];
+    const pages=[{id:'web',source:m.id,title:'Home'}];
+    if(!captureOnly) {
+      const candidates=ids=>ids.filter(id=>available.has(id) && !pages.some(p=>p.source===id));
+      const collection=candidates(collections)[0];
+      if(!collection)throw Error('The vault needs a collection setup to build this website.');
+      pages.push({id:'collection',source:collection,title:words[2]});
+      const preferred=/music|audio|radio/i.test(note)?['ui-chords','poolsuite']: /hardware|game|poker|shop/i.test(note)?['teenage-engineering','apple-liquid-glass']:details;
+      const detail=candidates([...preferred,...details])[0];
+      if(!detail)throw Error('The vault needs a detail setup to build this website.');
+      pages.push({id:'detail',source:detail,title:words[8]});
     }
-    return d;
+    const doc={name,reference:{id:m.id,title:m.site.title,url:m.site.url || '',image:m.inspiration?.title || '',fallback:m.fallback,capture:m.exact,
+      setups:pages.map(p=>({screen:p.id,source:p.source})),vaultOnly:true},screens:[],nodes:[]};
+    for(const page of pages) {
+      const site=ReferenceSites[page.source], exact=page.id==='web' && m.exact;
+      doc.screens.push({id:page.id,name:name+' · '+page.title,w:1440,h:900,fill:site.bg,layout:'stack',vaultSource:page.source});
+      site.shapes.forEach(([x,y,w,h,fill,path],i)=>{
+        const n={id:page.id+'-s'+i,parent:page.id,type:'shape',name:(y<95?'Header':y>670?'Lower section':'Hero')+' · '+(path?'artwork ':'surface ')+(i+1),x,y,w,h,fill};
+        if(path)n.art=page.source+'/v2/'+i;
+        doc.nodes.push(n);
+      });
+      const slots=site.text;
+      const heads=slots.map((s,i)=>({s,i})).filter(({s})=>s[1]>=85 && s[1]<710 && s[2]>60).sort((a,b)=>b.s[4]-a.s[4]);
+      const hero=heads[0]?.i;
+      const nav=slots.map((s,i)=>({s,i})).filter(({s})=>s[1]<95 && s[2]>=35).sort((a,b)=>a.s[0]-b.s[0]);
+      let contentIndex=0;
+      slots.forEach(([x,y,w,h,size,weight,color,original],i)=>{
+        let label=original;
+        if(!exact) {
+          const navIndex=nav.findIndex(n=>n.i===i);
+          if(i===hero) label=page.id==='web'?name:page.title;
+          else if(navIndex===0) label=name;
+          else if(neutral.test(original)) label=original;
+          else if(navIndex>0) label=words[[2,3,6,1][(navIndex-1)%4]];
+          else if(w<38 || size<9) {
+            // Preserve legible compact symbols and values from the setup.
+            if(!/^[0-9.,:%+·×↑↓←→$€ /-]{1,12}$/.test(original)) return;
+          } else label=catalogLabel(page.source,words,name,x,y,contentIndex++);
+        }
+        const fit=Math.max(6,Math.min(size,w/Math.max(1,Doc.measure(label,1,weight))));
+        doc.nodes.push({id:page.id+'-t'+i,parent:page.id,type:'text',name:label.slice(0,60),text:label,x,y,w,h,size:fit,weight,color,lh:1,align:'left',wrap:false});
+      });
+    }
+    return doc;
   }
   return {match,build,artwork};
 })();

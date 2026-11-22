@@ -10,10 +10,12 @@ import {readFileSync, writeFileSync} from 'node:fs';
 import {join, basename} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {ElevenLabsClient} from '@elevenlabs/elevenlabs-js';
-import {design, edit} from './designer.mjs';
+import {Doc, edit} from './designer.mjs';
+import Kit from './kit.js';
+import Screens from './screen-spec.cjs';
 import {loadProfiles, profileStyle} from './profiles.mjs';
 import {capture} from './references/captures.mjs';
-import {websiteDesign} from './references/planner.mjs';
+import {websiteDesign,websiteEdit} from './references/planner.mjs';
 
 // The session key survives restarts (kept in .iris-session, never committed), so you paste it
 // into the browser or the Figma plugin once and it keeps working.
@@ -25,6 +27,7 @@ const port = Number(process.env.STUDIO_PORT || 4739);
 const origin = 'http://localhost:'+port;
 const voiceKey = process.env.ELEVENLABS_API_KEY;
 const MODEL = 'claude-opus-5-5';
+const EDIT_MODEL = process.env.IRIS_EDIT_MODEL || 'claude-haiku-5-5';
 const eleven = voiceKey ? new ElevenLabsClient({apiKey: voiceKey}) : null;
 let agentId = process.env.ELEVENLABS_AGENT_ID || '';
 if (!agentId) try { agentId = JSON.parse(await readFile(new URL('./.iris-agent.json', import.meta.url), 'utf8')).agentId || ''; } catch (e) { /* run npm run agent */ }
@@ -46,26 +49,14 @@ function reserve(path) {
   if (!budget.admit(path)) throw Object.assign(Error('Daily provider allowance reached. It resets at midnight UTC.'),{status:429});
 }
 async function ask(system, user) {
-  for (let attempt = 0; ; attempt++) {
-    reserve('/board');
-    const stream = client.beta.messages.stream({
-      model: MODEL,
-      max_tokens: outputCaps.irisBoard,
-      // Opus 5.5 always thinks; effort sets how hard. On a policy decline, retry on the recommended model.
-      thinking: {type: 'adaptive'},
-      output_config: {effort: 'medium'},
-      betas: ['server-side-fallback-2026-07-01'],
-      fallbacks: 'default',
-      system: [{type: 'text', text: system, cache_control: {type: 'ephemeral'}}],
-      messages: [{role: 'user', content: user}]
-    });
-    const message = await stream.finalMessage();
-    if (message.stop_reason === 'refusal') throw Object.assign(Error('Claude declined this request. Try describing it differently.'), {status: 422});
-    if (message.stop_reason === 'max_tokens') throw Object.assign(Error('The design was too large to finish. Ask for fewer screens.'), {status: 422});
-    const text = message.content.filter(b => b.type === 'text').map(b => b.text).join('');
-    try { return parseJson(text); }
-    catch (e) { if (attempt >= 1) throw Object.assign(Error('Claude returned an incomplete design. Try again.'), {status: 502}); }
-  }
+  reserve('/iris-edit');
+  const message=await client.messages.create({
+    model:EDIT_MODEL,max_tokens:outputCaps.irisEdit,output_config:{effort:'low'},
+    system,messages:[{role:'user',content:user}]
+  },{timeout:30000,maxRetries:0});
+  if(message.stop_reason==='refusal')throw Object.assign(Error('Claude declined this edit.'),{status:422});
+  if(message.stop_reason==='max_tokens')throw Object.assign(Error('That edit is too large. Try a smaller change.'),{status:422});
+  return parseJson(message.content.filter(b=>b.type==='text').map(b=>b.text).join(''));
 }
 
 async function collect(req, limit) { const chunks = []; let total = 0; for await (const c of req) { total += c.length; if (total > limit) throw Object.assign(Error('Request is too large.'), {status: 413}); chunks.push(c); } return Buffer.concat(chunks); }
@@ -171,7 +162,7 @@ const server = http.createServer(async (req, res) => {
     if (req.method === 'GET' && url.pathname === '/voice.js') { res.writeHead(200, {'Content-Type': 'text/javascript; charset=utf-8', 'Cache-Control': 'no-store'}); return res.end(await readFile(new URL('./voice.bundle.js', import.meta.url))); }
     if (req.method === 'GET' && url.pathname === '/bridge') { if (url.searchParams.get('key') !== secret) return json(res, 401, {error: 'Invalid session key.'}); return openBridge(req, res); }
     if (req.headers.authorization !== 'Bearer ' + secret) return json(res, 401, {error: 'Invalid session key.'});
-    if (req.method === 'GET' && req.url === '/status') return json(res, 200, {design: !!client, vaultWebsites: true, voice: !!voiceKey, model: MODEL, agent: !!(eleven && agentId), studio: studios.size > 0});
+    if (req.method === 'GET' && req.url === '/status') return json(res, 200, {design: !!client, vaultWebsites: true, voice: !!voiceKey, model: EDIT_MODEL, agent: !!(eleven && agentId), studio: studios.size > 0});
     if (req.method === 'GET' && url.pathname === '/voice/session') { reserve('/eleven-agent/session'); return await voiceSession(res); }
     if (req.method === 'POST' && url.pathname === '/bridge/command') return await relay(req, res);
     if (req.method === 'POST' && url.pathname === '/bridge/result') return await relayResult(req, res);
@@ -185,13 +176,17 @@ const server = http.createServer(async (req, res) => {
     if (req.method === 'POST' && (req.url === '/board' || req.url === '/edit')) {
       const body = JSON.parse((await collect(req, 4_000_000)).toString());
       const started = Date.now();
-      const style = await profileStyle(vaultDir, body.profile);
-      let out = req.url === '/board' ? await websiteDesign(body.note, vaultDir, client ? ask : null, style) : null;
-      if (!out) {
-        if (!client) return json(res, 503, {error: 'Connect Claude to design an app or apply edits.'});
-        out = req.url === '/board' ? await design(body.note, ask, style) : await edit(body.doc, body.note, ask, style);
+      if(typeof body.note!=='string' || !body.note.trim() || body.note.length>1500) return json(res,400,{error:'Enter a brief of up to 1500 characters.'});
+      let out;
+      if(req.url==='/board') {
+        out=await websiteDesign(body.note,vaultDir);
+        if(!out) out={doc:Doc.fromBoard(Screens.checkBoard(Kit.nativeBoard(body.note))),summary:'Built locally.'};
+      } else {
+        if(!client)return json(res,503,{error:'Set ANTHROPIC_API_KEY to enable edits.'});
+        const style=await profileStyle(vaultDir,body.profile,0);
+        out=body.doc?.reference ? await websiteEdit(body.doc,body.note,ask,style?.name) : await edit(body.doc,body.note,ask,style);
       }
-      console.log((req.url === '/board' ? 'Designed ' : 'Edited ') + (style ? 'as ' + style.name + ' ' : '') + 'in ' + ((Date.now() - started) / 1000).toFixed(1) + 's: ' + (out.summary || ''));
+      console.log((req.url==='/board'?'Local build':'Claude edit')+' completed in '+(Date.now()-started)+' ms.');
       return json(res, 200, out);
     }
     if (req.method === 'POST' && req.url === '/voice') { reserve('/voice'); return await voice(req, res); }

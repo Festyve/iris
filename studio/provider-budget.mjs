@@ -3,9 +3,9 @@ import { mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { homedir } from 'node:os';
 
-export const outputCaps = Object.freeze({plan:1536, poster:1536, screen:4096, critique:384, irisBoard:8192, irisCritique:1536});
+export const outputCaps = Object.freeze({plan:1536, poster:1536, screen:4096, critique:384, irisEdit:1800, irisBoard:8192, irisCritique:1536});
 const operations = new Map([
-  ['/board',['model-output',outputCaps.irisBoard,16384]], ['/critique',['model-output',outputCaps.irisCritique,16384]],
+  ['/iris-edit',['model-output',outputCaps.irisEdit,16384]], ['/board',['model-output',outputCaps.irisBoard,16384]], ['/critique',['model-output',outputCaps.irisCritique,16384]],
   ['/studio-plan',['model-output',outputCaps.plan,16384]], ['/design',['model-output',outputCaps.poster,16384]],
   ['/swarm',['model-output',outputCaps.poster,16384]], ['/screen',['model-output',outputCaps.screen,16384]],
   ['/persona-review',['model-output',3*outputCaps.critique,16384]],

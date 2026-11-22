@@ -546,5 +546,12 @@ const Kit = (() => {
     'Team task manager in emerald green',
     'Sleep and meditation app in rose pink'
   ];
-  return {build, pick, samples, hues: Object.keys(hues)};
+  function nativeBoard(note) {
+    const board=build(note);
+    board.screens=board.screens.filter(screen=>screen.width<700);
+    return board;
+  }
+  return {build,nativeBoard, pick, samples, hues: Object.keys(hues)};
 })();
+
+if (typeof module !== 'undefined' && module.exports) module.exports = Kit;

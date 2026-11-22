@@ -198,7 +198,7 @@ const Doc = (() => {
 
   /* ---------- patches ---------- */
   const NODE_KEYS = ['name', 'layout', 'gap', 'pad', 'align', 'alignSelf', 'justify', 'cols', 'w', 'h', 'x', 'y', 'grow', 'fill', 'fill2', 'fillDir', 'stroke', 'sw', 'r', 'shadow', 'opacity', 'text', 'size', 'weight', 'color', 'lh', 'wrap', 'icon', 'shape', 'points', 'art'];
-  const SCREEN_KEYS = ['name', 'w', 'h', 'fill', 'layout', 'gap', 'pad', 'align', 'justify'];
+  const SCREEN_KEYS = ['vaultSource', 'name', 'w', 'h', 'fill', 'layout', 'gap', 'pad', 'align', 'justify'];
   function pick(src, keys) { const o = {}; for (const k of keys) if (src && src[k] !== undefined && src[k] !== null) o[k] = src[k]; return o; }
   function subtree(doc, id) { const out = new Set([id]); let grew = true; while (grew) { grew = false; for (const n of doc.nodes) if (out.has(n.parent) && !out.has(n.id)) { out.add(n.id); grew = true; } } return out; }
   function apply(doc0, ops) {

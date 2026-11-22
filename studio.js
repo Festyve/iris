@@ -101,8 +101,8 @@
       service = await call('/status', null, null, 8000); connected = true;
       try { localStorage.setItem('iris-key', token); } catch (e) { /* storage may be unavailable */ }
       if (isPlugin) parent.postMessage({pluginMessage: {kind: 'save-key', key: token}}, '*');
-      $('ai-state').textContent = service.design ? 'Connected. Claude Opus 5.5 designs new products and makes your changes.' + (service.voice ? ' Voice is on.' : '') : 'Connected, but the server has no Anthropic credentials. Set ANTHROPIC_API_KEY and restart it.';
-      $('mode-label').textContent = service.design ? 'Claude Opus 5.5' : 'Local kit';
+      $('ai-state').textContent = service.design ? 'Connected. New builds use local templates. Claude handles requested edits.' + (service.voice ? ' Voice is on.' : '') : 'Connected, but the server has no Anthropic credentials. Set ANTHROPIC_API_KEY and restart it.';
+      $('mode-label').textContent = 'Local templates';
       $('mic').hidden = !service.voice;
       if (doc && service.design && mode !== 'edit') { setMode('edit'); brief.value = ''; }
       updateNotice(service.design ? null : 'The service is running but has no Anthropic key. Set ANTHROPIC_API_KEY and restart it.');
@@ -161,6 +161,7 @@
 
   let libraryBusy=false;
   let nextCapture=null;
+  let librarySite=null;
   function libraryStatus(message,active) {
     libraryBusy=active; $('build-library').disabled=active; $('library-status').textContent=message;
     $('build').disabled=active || busy;
@@ -178,9 +179,10 @@
     try {
       libraryStatus((m.done+1)+' of '+m.total+' · '+ReferenceBrands[m.id],true);
       const png=await fetchCapture(m.id);
-      const next=Doc.clean(Websites.build('recreate '+m.id));
-      const b=Screens.checkBoard(Doc.compile(next));
-      parent.postMessage({pluginMessage:{kind:'build',board:b,doc:next,png,libraryId:m.id,count,speed:4}},'*');
+      const next=Doc.clean(Websites.build('recreate '+m.id,Websites.match('recreate '+m.id),true));
+      revisions=[]; rev=-1; librarySite=m.id; nextCapture=png;
+      setMode('new'); brief.value='';
+      commit(next,'Building '+next.name,null,'Website library');
     } catch(error) {libraryStatus('Paused. '+error.message+' Open the library again to resume.',false);}
   }
 
@@ -206,23 +208,10 @@
     const prompt = text || Kit.samples[0];
     if (!text) brief.value = prompt;
     try {
-      let next;
-      const reference = ReferenceMatch.website(prompt) ? Websites.match(prompt) : null;
-      let detail = '', usedModel = false;
-      if (reference && (reference.exact || !canDesign() || !service.vaultWebsites)) {
-        next = Doc.clean(Websites.build(prompt, reference));
-        if (canDesign() && !service.vaultWebsites && !reference.exact) detail = 'Restart the updated service for Claude customization.';
-      } else if (canDesign()) {
-        setBusy(true, reference ? 'Designing from ' + reference.site.title + '…' : 'Claude is designing…', 'Opus 5.5 is planning screens, layout and copy for your brief. This usually takes one to three minutes.');
-        try {
-          next = Doc.clean((await call('/board', JSON.stringify({note: prompt, profile: profileSel.value}))).doc);
-          usedModel = true;
-        } catch (error) {
-          if (!reference) throw error;
-          next = Doc.clean(Websites.build(prompt, reference));
-          detail = 'Used the local reference build. ' + error.message;
-        }
-      } else next = Doc.fromBoard(Screens.checkBoard(Kit.build(prompt)));
+      const website=ReferenceMatch.website(prompt);
+      const reference=website?Websites.match(prompt):null;
+      let detail='';
+      const next=website ? Doc.clean(Websites.build(prompt,reference)) : Doc.fromBoard(Screens.checkBoard(Kit.nativeBoard(prompt)));
       nextCapture=null;
       if(isPlugin && reference?.exact && connected) {
         try {nextCapture=await fetchCapture(reference.id);}
@@ -230,7 +219,7 @@
       }
       setBusy(false);
       revisions = []; rev = -1;
-      const label = 'Built from “' + prompt + '”' + (usedModel && profileSel.value ? ' · ' + profileName() : '');
+      const label = 'Built from “' + prompt + '”';
       commit(next, label, null, [next.reference && 'Vault · ' + next.reference.title, detail].filter(Boolean).join(' · '));
       if (canDesign()) { setMode('edit'); brief.value = ''; }
     } catch (e) { setBusy(false, 'Could not build that', e.message); }
@@ -241,7 +230,7 @@
       $('settings').hidden = false; return;
     }
     try {
-      setBusy(true, 'Claude is changing ' + doc.name + '…', '“' + text + '” · Small changes take about 20 seconds; reworking a whole design can take a few minutes.');
+      setBusy(true, 'Claude is changing ' + doc.name + '…', '“' + text + '” · Applying a targeted edit.');
       let base = doc, baseBoard = board;
       if (isPlugin) {
         const read = await readback();
@@ -297,7 +286,7 @@
     status = new Array(P.layers.length).fill(-1); who = new Array(P.layers.length).fill(-1); lastRow.length = 0;
     buildTree(); buildActs(); lastFeedKey = '';
     if (!keepCamera || !userMoved) { fit(true); userMoved = false; }
-    if (isPlugin) { pluginState = 'starting'; parent.postMessage({pluginMessage: {kind: 'build', board, prev: prevBoard || null, doc, count, speed,png:nextCapture}}, '*'); nextCapture=null; }
+    if (isPlugin) { pluginState = 'starting'; parent.postMessage({pluginMessage: {kind: 'build', board, prev: prevBoard || null, doc, count, speed:librarySite?4:speed,png:nextCapture,libraryId:librarySite}}, '*'); nextCapture=null; librarySite=null; }
     setPlayIcon();
   }
 
@@ -837,10 +826,15 @@
   window.addEventListener('message', e => {
     const m = e.data && e.data.pluginMessage; if (!m) return;
     if(m.kind==='library-next') {libraryEntry(m);return;}
-    if(m.kind==='library-done') {libraryStatus(m.total+' sections · '+(m.total*4)+' panels ready',false);pluginState='idle';return;}
-    if(libraryBusy) {
-      if(m.kind==='error' || m.kind==='library-error' || m.kind==='cancelled') libraryStatus(m.text || 'Import paused. Open the library to resume.',false);
-      return;
+    if(m.kind==='library-done') {
+      if(P)t=P.total;
+      P=null;board=null;setHead('Website library ready',m.total+' sections on this page.');
+      playing=false; pluginState='done'; revisions=[]; rev=-1; doc=null;
+      renderHistory();setMode('new');brief.value='';setPlayIcon();
+      libraryStatus(m.total+' sections · '+(m.total*4)+' panels ready',false);return;
+    }
+    if(libraryBusy && ['error','library-error','cancelled'].includes(m.kind)) {
+      libraryStatus(m.text || 'Import paused. Open the library to resume.',false);pluginState='idle';return;
     }
     if (m.kind === 'tick') { t = m.t; pluginState = m.state; setPlayIcon(); }
     if (m.kind === 'done') { t = P ? P.total : 0; pluginState = 'done'; setPlayIcon(); }
@@ -894,7 +888,7 @@
       await go();
       if (!revisions.length || revisions[rev] === before) return {error: headText()};
       const run = await settle(240000);
-      return {built: true, crew: run, reference: doc.reference || null, designer: doc.reference ? 'vault reference builder' : canDesign() ? 'Claude Opus 5.5' : 'built-in kit', summary: revisions[rev].label, design: outline()};
+      return {built: true, crew: run, reference: doc.reference || null, designer: doc.reference ? 'vault reference builder' : 'built-in kit', summary: revisions[rev].label, design: outline()};
     },
     async change(text) {
       if (!doc) return {error: 'There is no design yet. Build one first.'};

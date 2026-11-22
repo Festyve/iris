@@ -55,7 +55,7 @@ const ReferenceMatch = (() => {
     return {...match, exact, inspiration, fallback:!match.weight};
   }
   function website(note) {
-    return /\b(web\s?site|web\s?page|landing|homepage|site|browser|web app)\b/i.test(note) || !/\b(mobile|phone|ios|android|app|watchos|tablet|native)\b/i.test(note);
+    return /\b(web\s?site|web\s?page|landing|homepage|site|browser|web\s?app|ecommerce|e-commerce|online store|web application)\b/i.test(note) || !/\b(mobile|phone|ios|android|app|watchos|tablet|native)\b/i.test(note);
   }
   return {select, website, poker};
 })();
