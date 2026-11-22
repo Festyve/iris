@@ -42,6 +42,11 @@ if (!vaultDir) try { if ((await stat(new URL('./vault', import.meta.url))).isDir
 let client = null;
 try { client = new Anthropic(); } catch (e) { console.warn('No Anthropic credentials found: ' + e.message); }
 
+// The SDK can construct a client even when its credential chain is empty.
+function claudeConfigured() {
+  return Boolean(client && (client.apiKey || client.authToken || client.credentials));
+}
+
 // The design format has more optional fields than structured outputs allow (24), so Claude
 // answers in plain JSON described by the prompt, and designer.mjs validates and repairs it.
 function parseJson(text) {
@@ -126,7 +131,7 @@ async function relayResult(req, res) {
 async function critique(req, res) {
   const d = JSON.parse((await collect(req, 6_000_000)).toString());
   const question = String(d.question || 'general critique').slice(0, 300);
-  if (!client) return json(res, 200, {critique: '', note: 'No Anthropic credentials, so there is no visual critique.'});
+  if (!claudeConfigured()) return json(res, 200, {critique: '', note: 'No Anthropic credentials, so there is no visual critique.'});
   const content = [];
   if (typeof d.png === 'string' && d.png.startsWith('iVBOR') && /^[A-Za-z0-9+/=]+$/.test(d.png)) content.push({type: 'image', source: {type: 'base64', media_type: 'image/png', data: d.png}});
   const style = await profileStyle(vaultDir, d.profile, 0);
@@ -173,7 +178,7 @@ const server = http.createServer(async (req, res) => {
     if (req.method === 'GET' && url.pathname === '/voice.js') { res.writeHead(200, {'Content-Type': 'text/javascript; charset=utf-8', 'Cache-Control': 'no-store'}); return res.end(await readFile(new URL('./voice.bundle.js', import.meta.url))); }
     if (req.method === 'GET' && url.pathname === '/bridge') { if (url.searchParams.get('key') !== secret) return json(res, 401, {error: 'Invalid session key.'}); return openBridge(req, res); }
     if (req.headers.authorization !== 'Bearer ' + secret) return json(res, 401, {error: 'Invalid session key.'});
-    if (req.method === 'GET' && req.url === '/status') return json(res, 200, {design: !!client, vaultWebsites: true, voice: !!voiceKey, model: EDIT_MODEL, agent: irisVoice.status().configured, studio: studios.size > 0});
+    if (req.method === 'GET' && req.url === '/status') return json(res, 200, {design: claudeConfigured(), vaultWebsites: true, voice: !!voiceKey, model: EDIT_MODEL, agent: irisVoice.status().configured, studio: studios.size > 0});
     if (req.method === 'GET' && url.pathname === '/voice/session') { reserve('/eleven-agent/session'); return await voiceSession(res,url.searchParams.get('transport')); }
     if (req.method === 'POST' && url.pathname === '/bridge/command') return await relay(req, res);
     if (req.method === 'POST' && url.pathname === '/bridge/result') return await relayResult(req, res);
@@ -193,7 +198,7 @@ const server = http.createServer(async (req, res) => {
         if (!body.doc || !Array.isArray(body.doc.nodes)) return json(res,400,{error:'Select an existing board to revise.'});
         const local=editBrief(body.doc,note);
         if(local) return json(res,200,local);
-        if(!client) return json(res,422,{error:'Try “Change headline to …”, “Set accent to #225577”, or “Replace "old text" with "new text"”. Free-form layer editing requires Claude.'});
+        if(!claudeConfigured()) return json(res,422,{error:'Try “Change headline to …”, “Set accent to #225577”, or “Replace "old text" with "new text"”. Free-form layer editing requires Claude.'});
         const out=body.doc.reference ? await websiteEdit(body.doc,note,ask,profile?.name) : await edit(body.doc,note,ask,profile);
         return json(res,200,out);
       }
@@ -234,7 +239,7 @@ const server = http.createServer(async (req, res) => {
 });
 server.on('error', e => { console.error('Could not start local service: ' + e.message); process.exitCode = 1; });
 server.listen(port, '127.0.0.1', () => console.log([
-  'Iris is running.', 'Designer: ' + (client ? MODEL : 'not configured (set ANTHROPIC_API_KEY)'), '',
+  'Iris is running.', 'Designer: ' + (claudeConfigured() ? MODEL : 'not configured (set ANTHROPIC_API_KEY)'), '',
   'Studio: '+origin+'/studio/#key='+secret,
   'Browser:  ' + origin + '/#key=' + secret,
   'Figma:    open the Iris plugin, click the gear (⚙) and paste this session key once:', '          ' + secret, '',
