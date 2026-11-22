@@ -23,11 +23,32 @@ function write(key, value) {
   catch { return false; }
 }
 
+const suggestionDetails = {
+  "Add search": "Add a search field above the entry list so readers can find an entry by its title or notes.",
+  "Remove search": "Remove the search field above the list to give the entries more space.",
+  "Add filter": "Add a shortlist filter above the entries so readers can return to the items they saved.",
+  "Remove filter": "Remove the shortlist filter to simplify browsing the full collection.",
+  "Switch to the editorial layout": "Give the introduction a wide opening spread so readers see the project story before the entries.",
+  "Switch to the index layout": "Place the introduction beside the ruled list on wide screens so readers can scan entries sooner.",
+};
+
+function PlannerLabel({ mode }) {
+  return <small className="sc-planner">{mode === "gemini" ? "Gemini planning" : "Local rule-based planning"}</small>;
+}
+
+function referenceFor(plan) {
+  const decisions = plan.decisions || [];
+  const related = decisions.find(d => plan.suggestion?.toLowerCase().includes(d.feature));
+  return related?.source || decisions.find(d => plan.referenceIds?.includes(d.id))?.source ||
+    plan.matches?.find(m => plan.referenceIds?.includes(m.id))?.title;
+}
+
 function PlanCard({ result: plan, toolCallId }) {
   const { build, eligible, busy } = useContext(Controls);
   const live = eligible(toolCallId, plan);
   const [direction, setDirection] = useState(plan.approvedDirection || plan.direction || "editorial");
   return <section className="sc-card" aria-label="Proposed plan">
+    <PlannerLabel mode={plan.planningMode} />
     <strong>{plan.title || "Proposed design"}</strong>
 
     {plan.matches?.length > 0 && <details><summary>Reference decisions ({plan.matches.length})</summary>
@@ -56,6 +77,7 @@ function RunCard({ result }) {
   const live = result.id === run?.id;
   return <section className="sc-card sc-activity" aria-label="Build activity">
     <strong>Build activity <small>{result.status}</small></strong>
+    {result.error && <p>{result.error}</p>}
     <ul>{result.tasks.map(task => <li key={task.id}>
       <span>{task.label}</span><small>{task.status}</small>
       {(task.error || task.artifact) && <details><summary>{task.error ? "Error" : "Artifact"}</summary>
@@ -69,13 +91,20 @@ function RunCard({ result }) {
 }
 
 function DeliveryCard({ result }) {
-  const { current, pending, busy, change } = useContext(Controls);
+  const { current, pending, versions, run, busy, change } = useContext(Controls);
   const editable = current?.version === result.version && current?.plan?.id === result.planId;
+  const plan = editable ? current.plan : versions?.find(v => v.version === result.version && v.plan?.id === result.planId)?.plan;
+  const source = result.source || (plan && referenceFor(plan));
   return <section className="sc-card" aria-label="Delivered design">
+    <PlannerLabel mode={result.planningMode || plan?.planningMode} />
     <strong>{result.title} · v{result.version}</strong>
     <p>{result.path}</p>
-    {result.suggestion && <button type="button" disabled={!editable || busy || Boolean(pending)}
-      onClick={() => change(result.suggestion)}>Try change · {result.suggestion}</button>}
+    {result.suggestion && <>
+      <p>{suggestionDetails[result.suggestion]}</p>
+      {source && <p className="sc-source">Design reference · {source}</p>}
+      <button type="button" className="sc-primary" disabled={!editable || busy || Boolean(pending) || active(run?.status)}
+        onClick={() => change(result)}>Apply change · {result.suggestion}</button>
+    </>}
   </section>;
 }
 
@@ -133,10 +162,10 @@ function Surface({ runtime, refs, selectedIds, project, run, busy, report, stora
   const dockLeft = placement.side === "left";
   return <aside className={'sc-companion ' + (dockLeft ? "sc-left" : "sc-right")} aria-label="Studio companion" onKeyDown={keyboard}>
     {!placement.open && <button className="sc-launch" type="button" ref={launcher} aria-controls={panelId}
-      aria-expanded={false} onClick={() => open()}><span aria-hidden="true">✳</span> Ask Second Cursor
+      aria-expanded={false} onClick={() => open()}><span className="sc-mark" aria-hidden="true" /> Ask Second Cursor
       {active(run?.status) && <small>{run.status}</small>}</button>}
     {placement.open && <ThreadPrimitive.Root className="sc-panel" id={panelId}>
-      <header className="sc-head"><strong>Second Cursor</strong>
+      <header className="sc-head"><span className="sc-mark" aria-hidden="true" /><strong>Second Cursor</strong>
         <button type="button" title="Dock left or right (Alt + arrow)" onClick={() => setPlacement(p => ({ ...p, side: dockLeft ? "right" : "left" }))}>
           Dock {dockLeft ? "right" : "left"}</button>
         <button type="button" title="Reset placement (Alt + Home)" onClick={() => setPlacement(p => ({ ...p, side: "right" }))}>Reset</button>
@@ -189,7 +218,7 @@ function Conversation({ refs = [], selectedIds = [], project = {}, run, onBrief,
   useEffect(() => {
     if (!run?.id) return;
     const id = 'run:' + run.id;
-    const snapshot = { id: run.id, status: run.status, tasks: (run.tasks || []).map(({ id, label, status, artifact, error, detail }) =>
+    const snapshot = { id: run.id, status: run.status, error: describe(run.error), tasks: (run.tasks || []).map(({ id, label, status, artifact, error, detail }) =>
       ({ id, label, status, artifact: describe(artifact), error: describe(error), detail: describe(detail) })) };
     const entry = { id, role: "assistant", content: [tool("buildActivity", id, snapshot)] };
     setMessages(list => {
@@ -214,16 +243,31 @@ function Conversation({ refs = [], selectedIds = [], project = {}, run, onBrief,
     finally { lock.current = false; setBusy(false); }
   }
 
+  async function stage(text, ids, userMessage, attachments = []) {
+    append("user", userMessage, { attachments, request: true });
+    const { message, plan } = await onBrief(text, ids);
+    const reply = message || plan?.mechanism || (plan ? "Plan ready." : "What would you like to clarify?");
+    const content = [textPart(reply)];
+    if (plan?.mechanism && !reply.includes(plan.mechanism)) content.push(textPart(plan.mechanism));
+    const callId = uid();
+    if (plan) content.push(tool("proposeDesign", callId, { ...plan, revision: Boolean(project.current && !project.startFresh) }));
+    append("assistant", content, { response: true });
+    return { plan, callId };
+  }
+
   function brief(text, attachments = []) {
+    const ids = attachments.filter(a => !a.id.startsWith("canvas:")).map(a => a.id);
+    return perform(() => stage(text, ids, text, attachments));
+  }
+
+  function change(delivery) {
+    const current = project.current;
+    if (project.startFresh || project.pending || active(run?.status) ||
+        current?.version !== delivery.version || current?.plan?.id !== delivery.planId) return;
     return perform(async () => {
-      append("user", text, { attachments, request: true });
-      const ids = attachments.filter(a => !a.id.startsWith("canvas:")).map(a => a.id);
-      const { message, plan } = await onBrief(text, ids);
-      const reply = message || plan?.mechanism || (plan ? "Plan ready." : "What would you like to clarify?");
-      const content = [textPart(reply)];
-      if (plan?.mechanism && !reply.includes(plan.mechanism)) content.push(textPart(plan.mechanism));
-      if (plan) content.push(tool("proposeDesign", uid(), { ...plan, revision: Boolean(project.current && !project.startFresh) }));
-      append("assistant", content, { response: true });
+      const { plan, callId } = await stage(delivery.suggestion, current.plan.referenceIds || [],
+        "Apply change · " + delivery.suggestion + " · v" + delivery.version);
+      if (plan) await executePlan(callId, plan.direction);
     });
   }
 
@@ -248,19 +292,28 @@ function Conversation({ refs = [], selectedIds = [], project = {}, run, onBrief,
     return perform(async () => {
       const action = project.current && !project.startFresh ? "Apply plan" : "Build plan";
       append("user", [action, plan.title, direction].join(" · "));
-      setMessages(list => list.map(m => m.id === latest.id ? {
-        ...m, content: m.content.map(part => part.toolCallId === callId
-          ? { ...part, result: { ...part.result, approvedDirection: direction } } : part),
-      } : m));
-      const artifact = await onBuild(direction);
-      if (artifact?.plan) {
-        append("assistant", [tool("deliverDesign", uid(), {
-          version: artifact.version, path: artifact.path, title: artifact.plan.title,
-          planId: artifact.plan.id, suggestion: artifact.plan.suggestion,
-        })]);
-      }
-      if (artifact !== null) setMessages(list => list.map(m => m.id === latest.id ? { ...m, applied: true } : m));
+      await executePlan(callId, direction);
     });
+  }
+
+  async function executePlan(callId, direction) {
+    const artifact = await onBuild(direction);
+    if (artifact === null) {
+      append("assistant", "The build did not deliver a new version.");
+      return;
+    }
+    setMessages(list => list.map(m => {
+      if (!m.response || !m.content.some(part => part.toolCallId === callId)) return m;
+      return { ...m, applied: true, content: m.content.map(part => part.toolCallId === callId
+        ? { ...part, result: { ...part.result, approvedDirection: direction } } : part) };
+    }));
+    if (artifact?.plan) {
+      const { plan, version, path } = artifact;
+      append("assistant", [tool("deliverDesign", uid(), {
+        version, path, title: plan.title, planId: plan.id, suggestion: plan.suggestion,
+        planningMode: plan.planningMode, source: referenceFor(plan),
+      })]);
+    }
   }
 
   const runtime = useExternalStoreRuntime({
@@ -268,7 +321,7 @@ function Conversation({ refs = [], selectedIds = [], project = {}, run, onBrief,
     onNew: message => brief(message.content.filter(p => p.type === "text").map(p => p.text).join("\n").trim(), message.attachments),
   });
   return <AssistantRuntimeProvider runtime={runtime}>
-    <Controls.Provider value={{ build, eligible, current: project.startFresh ? null : project.current, pending: project.pending, busy, run, onCancel, onRetry, perform, report, change: brief }}>
+    <Controls.Provider value={{ build, eligible, current: project.startFresh ? null : project.current, pending: project.pending, versions: project.versions, busy, run, onCancel, onRetry, perform, report, change }}>
       <Surface {...{ runtime, refs, selectedIds: Array.from(selectedIds), project, run, busy, report, storageError }}/>
     </Controls.Provider>
   </AssistantRuntimeProvider>;

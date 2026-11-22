@@ -36,7 +36,40 @@
   font-weight: 630;
 }
 .sc-companion .sc-launch { display: flex; align-items: center; gap: 10px; padding: 8px 14px; }
-.sc-launch span { font-size: 22px; color: var(--sc-accent); }
+/* A folded corner and two offset ink eyes give the note a face at icon size. */
+.sc-mark {
+  display: inline-block;
+  position: relative;
+  flex: 0 0 19px;
+  width: 19px;
+  height: 20px;
+  margin-inline: 1px 3px;
+  background: var(--sc-paper);
+  border: 1.5px solid var(--sc-ink);
+  border-radius: 3px 3px 6px 3px;
+  transform: rotate(-7deg);
+}
+.sc-mark::before {
+  content: "";
+  position: absolute;
+  top: -1px;
+  right: -1px;
+  border: 3px solid var(--sc-accent);
+  border-left-color: var(--sc-ink);
+  border-bottom-color: var(--sc-ink);
+}
+.sc-mark::after {
+  content: "";
+  position: absolute;
+  top: 8px;
+  left: 4px;
+  width: 3px;
+  height: 4px;
+  background: var(--sc-ink);
+  border-radius: 2px;
+  box-shadow: 6px -1px var(--sc-ink);
+}
+.sc-planner, .sc-source { color: #505947; font-size: 12px; }
 .sc-panel {
   display: flex;
   flex-direction: column;
