@@ -1,20 +1,24 @@
 # Sponsor integration map
 
-Setup snapshot, 22 November 2026. Roles below are implementation targets unless the status explicitly says verified. Connecting an MCP documentation server gives the coding assistant documentation; it does not put that provider into the application.
+Runtime evidence for the Second Cursor studio, 22 November 2026. A configured service has the inputs to attempt a call. A verified result records a successful operation. Codevisor tools and the application's server have separate credentials.
 
-| Provider | Concrete job | Verified setup / remaining work | Official source |
-| --- | --- | --- | --- |
-| Codevisor | Build and revise the project with visible coding work and checks | Repo registered locally and project chat opened. Codex harness authenticated. Existing four tests pass and generated build succeeds. Git push was attempted and returned HTTP 403, permission denied to `rehanjafar`. Check repository collaborator access and Git credential permissions. | https://codevisor.dev/ |
-| ElevenLabs | Spoken briefs, spoken feedback and transcription | Existing `server.mjs` implements Scribe transcription. Application needs `ELEVENLABS_API_KEY`. Codevisor's hosted ElevenLabs connector currently needs attention; a raw API key used as its OAuth bearer token failed a live request. | https://elevenlabs.io/docs/ |
-| assistant-ui | Floating conversation, attachments and real tool progress cards | Codevisor documentation MCP connected at `https://www.assistant-ui.com/mcp`, seven tools. Live `search_docs` succeeded. React runtime/components still need application integration. | https://www.assistant-ui.com/docs/llm |
-| Fiber AI | Retrieve target-company and audience context that informs the design brief | Codevisor MCP connected at `https://mcp.fiber.ai/mcp/v2`. Authenticated credit request succeeded with 2,500 credits available and zero used at setup. Application adapter not implemented. | https://docs.fiber.ai/build/mcp |
-| Alter | Scope external actions to the active user/project and show approvals where appropriate | Read-only Alter Docs MCP connected at `https://mcp.alterauth.com/mcp`, 14 tools. Runtime app/agent identity, credentials and grants still required. | https://docs.alterauth.com/mcp/ |
-| Wasp | Companion web app with saved projects, reference records, auth and backend actions | Installed CLI verified at version 0.26.1. No Wasp app has been scaffolded in this vanilla-JS repo. Use the current agent-integration docs. | https://wasp.sh/docs/getting-started/agent-integration |
-| TraceRoot AI | Trace brief → reference retrieval → build → critique, including failures and latency | Need project/API key and SDK wiring. Official JS SDK is `@traceroot-ai/traceroot`. No application tracing verified. | https://github.com/traceroot-ai/traceroot |
-| Expected Parrot | Run structured simulated-persona reviews of a proposed UI and return actionable critique | Need Expected Parrot/model access and an EDSL review job. No live review verified. | https://docs.expectedparrot.com/ |
-| Rowboat Labs | Preserve linked design decisions, brand constraints and revision history across builds | Suitable Markdown-memory architecture. Hosted team integration requires an actual organization address and OAuth. No team endpoint or runtime integration configured. | https://github.com/rowboatlabs/rowboat |
-| Maritime | Execute generated-app builds and browser checks in isolated remote computers | Need account/API key and an explicitly chosen compute budget. No remote computer created. | https://maritime.sh/docs |
-| Ploid | Identify relevant public professional audiences or potential research participants when the brief needs it | Hosted MCP is `https://api.ploid.com/mcp`, with workspace-scoped OAuth. Needs user sign-in/approval and an actual use case. No search or outreach performed. | https://ploid.com/documentation/mcp |
+| Provider | Job | Evidence and runtime status |
+| --- | --- | --- |
+| Codevisor | Develop and verify the project, dispatch scoped repository work | **Verified for development.** The branch includes separate vault, compiler, companion and integration commits. Git push to the team origin returned 403. |
+| ElevenLabs | Transcribe briefs and read design feedback | **Transport implemented, live calls unavailable.** Authenticated `/voice` and `/speech` use the Scribe and streaming TTS adapters. Upload, record, editable transcript, playback, mute and cancellation are wired. Both routes returned safe 503 errors without keys. |
+| assistant-ui | Floating conversation, attachments, plan approval, task and delivery cards | **Verified in Chromium.** Attached a selected note to a real runtime message and built and revised an artifact from its tool cards. Read-only Codevisor documentation queries also succeeded. |
+| Fiber AI | Supply company context that changes a design | **Verified authoring-time lookup.** Company enrichment for `slug=y-combinator` returned HTTP 200, organization 167872, cost 2 credits. The optional founder-audience note stores the sourced observation. A tested founder landing page uses that note to put eligibility and Apply before program details. |
+| Wasp | Persistent project records | Installed Wasp 0.26.1 and evaluated its current React, Node and database shell. The core studio runs with IndexedDB and the existing Node server. Backend synchronization is tracked below. |
+| Alter | Per-user, per-project grants for external actions | **Docs verified.** The connected MCP returned the multi-user broker guide. Runtime requires an app identity, grants and credentials. |
+| TraceRoot | Trace retrieval, planning, implementation and verification | Requires a project and API key. Local task records are available in the studio. |
+| Expected Parrot | Structured simulated-persona critique | Requires inference access and an EDSL runner. No live critique has been verified. |
+| Rowboat | Linked design decisions and revision memory | Requires the team's organization endpoint and authentication. Local project versions retain decision history. |
+| Maritime | Isolated remote builds and browser checks | Local dispatch tooling is being prepared separately. No cloud computers or remote agent runs verified. Account, capacity and budget are prerequisites. |
+| Ploid | Audience research scoped to a brief | Requires workspace access. No outreach performed. |
+
+Gemini planning is an optional server-side runtime through authenticated `POST /studio-plan`. Its bounded plan feeds the same HTML compiler as local rules. Model output never becomes executable source. Missing `GEMINI_API_KEY` returned 503 in the route check. The completed browser journeys used local planning.
+
+Official integration documentation: [ElevenLabs](https://elevenlabs.io/docs/), [assistant-ui](https://www.assistant-ui.com/docs/llm), [Fiber](https://docs.fiber.ai/build/mcp), [Wasp](https://wasp.sh/docs/getting-started/agent-integration), [Alter](https://docs.alterauth.com/mcp/), [TraceRoot](https://github.com/traceroot-ai/traceroot), [Expected Parrot](https://docs.expectedparrot.com/), [Rowboat](https://github.com/rowboatlabs/rowboat), [Maritime](https://maritime.sh/docs), [Ploid](https://ploid.com/documentation/mcp).
 
 ## Existing non-sponsor tools
 
@@ -26,11 +30,6 @@ For each runtime integration, retain a successful request identifier or trace, a
 
 Do not count logos, empty adapters, mocked responses or documentation queries as completed application integrations. Add a provider to the live journey once its result changes a useful decision or delivers an artifact.
 
-## Next credentials and setup
+## Runtime configuration
 
-1. Configure the existing app's `GEMINI_API_KEY` and `ELEVENLABS_API_KEY` through an ignored local `.env` or deployment secret settings.
-2. For trace/critique coverage, obtain TraceRoot project access and Expected Parrot inference access.
-3. For broader sponsor coverage, provide the team's Rowboat organization address and configure Alter, Maritime and Ploid through their official account flows.
-4. Wire Fiber through a server-side provider adapter or an approved agent tool gateway. A key stored in Codevisor is not implicitly an application environment variable.
-
-Use a separate configured/unavailable/verified status for each provider. Never silently substitute fabricated external results.
+Keep server secrets in the ignored `.env`. Gemini uses `GEMINI_API_KEY`. ElevenLabs transcription uses `ELEVENLABS_API_KEY`, speech playback additionally uses `ELEVENLABS_VOICE_ID`, and conversational sessions require `ELEVENLABS_AGENT_ID`. Restart the server after changing credentials. Use the session link printed by the server for authenticated calls.
