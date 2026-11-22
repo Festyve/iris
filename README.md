@@ -110,3 +110,48 @@ npm test
 ```
 
 The tests cover the layout engine, patches, kit import and Figma read-back merging. They check that every task in a build or an edit runs exactly once and in order, and that runs end exactly on the new design. They also run the Claude designer flow and the Figma plugin against stand-ins for the API and for Figma: a build, then a change that edits nodes in place and keeps a manual edit, then a restore.
+
+## Second Cursor design studio
+
+Build a working landing page or small application from a brief and your own reference notes. The browser stores the vault snapshots, selected references and versioned HTML locally. The companion shows the source of each design decision and the result of each tool.
+
+The original responsive poster adapter, its plugin manifest and its shared-canvas tests are preserved in `poster-adapter/`. The root plugin uses the team’s current Iris design engine.
+
+## Run locally
+
+Use Node 24.22.1 or later and Wasp 0.26.1 for the studio with its SQLite project archive. On this machine the dependencies and archive database are installed. From this directory run:
+
+```sh
+npm start
+```
+
+For a fresh checkout, run `npm ci` and follow the initial database setup in [the Wasp archive runbook](wasp-studio/README.md). The launcher builds the studio and starts or reuses the local services. The archive API runs on port 3002 and its browser on 3003.
+
+Open **http://localhost:4739/studio/**. For server-backed features, use the private studio link printed by the server. The fragment contains a temporary session key. The Iris browser remains at **http://localhost:4739/** and the Figma development plugin still loads from `manifest.json`.
+
+## Try the reference-to-build flow
+
+1. Drop Markdown notes and their screenshots together, select a folder, or click **Load design-vault demo**. Open a reference to inspect its original note, linked images and attribution.
+2. Select **Founder audience · YC** from the demo. Open **Write a brief**, attach the selected note, and enter `Build a landing page named "Founder Workshop" for a startup accelerator`.
+3. Review the reference decisions and choose **Build plan**. Try **Apply** inside the preview to prepare a local application draft.
+4. Ask `Set title to Founder Field Notes` and apply the plan. Download the self-contained HTML, reload the page or restore an earlier version.
+5. For an app, use **New design** and try `Build a searchable app named "Field Index" for design references`. Add an entry and shortlist it. The studio saves the generated artifact. Entries typed inside its demo preview last for that preview session.
+
+Local planning uses bounded rules, two compositions and a set of subject profiles. Gemini can choose a structured design plan when the server has `GEMINI_API_KEY`. The compiler produces the HTML, checks it, and renders it in isolated frames at 390 and 1024 pixels before saving a version. A failed or cancelled run keeps the previous deliverable.
+
+**Talk to your repository** uses a private ElevenAgents WebSocket session. Its six client tools can inspect this project, propose and build a design, cancel a run, dispatch a Codevisor worktree task and read its result. The server signs sessions with `ELEVENLABS_API_KEY` and `ELEVENLABS_AGENT_ID`. Successful dispatch returns a task ID; the completed task report identifies any code changes or commit.
+
+Set secrets in the ignored `.env`. Scribe transcription requires `ELEVENLABS_API_KEY`. Spoken feedback also requires `ELEVENLABS_VOICE_ID`. The studio lets you edit a transcript in the companion before submitting it. Integration availability and evidence are recorded in [the integration map](docs/INTEGRATIONS.md).
+
+The checked-in browser evidence shows the working companion, the revised mobile app, and the landing page informed by the founder reference. [Desktop build](docs/evidence/studio-desktop.png) · [Mobile revision](docs/evidence/studio-mobile.png) · [Founder landing](docs/evidence/founder-landing.png)
+
+## Verify the studio
+
+```sh
+npm test
+npx playwright install chromium
+node tests/browser/journey.mjs
+STUDIO_URL=http://localhost:4739/studio/ npx playwright test tests/vault.browser.spec.js
+```
+
+Start the built studio server first for browser checks. The journey script prints its temporary screenshot directory. To use an installed Chrome browser, set `CHROME_CHANNEL=chrome` for that script.

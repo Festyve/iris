@@ -1,5 +1,8 @@
 // Local service for Iris: Claude designs and edits; ElevenLabs transcribes spoken briefs and runs the Talk to Iris voice agent.
 import Anthropic from '@anthropic-ai/sdk';
+import {outputCaps} from './studio/provider-budget.mjs';
+import {budget,studioRoute} from './studio-http.mjs';
+import {serveStudio} from './studio/server.mjs';
 import http from 'node:http';
 import {randomBytes} from 'node:crypto';
 import {readFile, readdir, stat} from 'node:fs/promises';
@@ -18,7 +21,8 @@ const keyFile = new URL('./.iris-session', import.meta.url);
 let secret = '';
 try { secret = readFileSync(keyFile, 'utf8').trim(); } catch { /* first run */ }
 if (!/^[0-9a-f]{48}$/.test(secret)) { secret = randomBytes(24).toString('hex'); writeFileSync(keyFile, secret + '\n', {mode: 0o600}); }
-const origin = 'http://localhost:4739';
+const port = Number(process.env.STUDIO_PORT || 4739);
+const origin = 'http://localhost:'+port;
 const voiceKey = process.env.ELEVENLABS_API_KEY;
 const MODEL = 'claude-opus-5-5';
 const eleven = voiceKey ? new ElevenLabsClient({apiKey: voiceKey}) : null;
@@ -38,11 +42,15 @@ function parseJson(text) {
   if (start < 0 || end <= start) throw Error('no JSON object');
   return JSON.parse(text.slice(start, end + 1));
 }
+function reserve(path) {
+  if (!budget.admit(path)) throw Object.assign(Error('Daily provider allowance reached. It resets at midnight UTC.'),{status:429});
+}
 async function ask(system, user) {
   for (let attempt = 0; ; attempt++) {
+    reserve('/board');
     const stream = client.beta.messages.stream({
       model: MODEL,
-      max_tokens: 64000,
+      max_tokens: outputCaps.irisBoard,
       // Opus 5.5 always thinks; effort sets how hard. On a policy decline, retry on the recommended model.
       thinking: {type: 'adaptive'},
       output_config: {effort: 'medium'},
@@ -121,8 +129,9 @@ async function critique(req, res) {
   if (typeof d.png === 'string' && d.png.startsWith('iVBOR') && /^[A-Za-z0-9+/=]+$/.test(d.png)) content.push({type: 'image', source: {type: 'base64', media_type: 'image/png', data: d.png}});
   const style = await profileStyle(vaultDir, d.profile, 0);
   content.push({type: 'text', text: (style ? 'Judge it against this house style.\n' + style.text + '\n\n' : '') + 'Question: ' + question + '\nFrame: ' + JSON.stringify(d.frame || {}) + '\nVisible copy: ' + JSON.stringify((d.texts || []).slice(0, 40))});
+  reserve('/critique');
   const message = await client.messages.create({
-    model: MODEL, max_tokens: 2000, thinking: {type: 'adaptive'}, output_config: {effort: 'low'},
+    model: MODEL, max_tokens: outputCaps.irisCritique, thinking: {type: 'adaptive'}, output_config: {effort: 'low'},
     system: 'You are Iris, a senior product designer looking over a colleague\'s shoulder at their Figma frame. Answer their question, or give a general critique. Reply in at most four short plain sentences meant to be spoken aloud: one thing that works, then the two highest-impact, specific improvements (hierarchy, spacing, alignment, contrast, type, copy). Name elements by what they are, never by hex code or layer id. No markdown.',
     messages: [{role: 'user', content}]
   });
@@ -154,15 +163,16 @@ async function references(url, res) {
 const server = http.createServer(async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*'); res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type'); res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   try {
-    if (!['localhost:4739', '127.0.0.1:4739'].includes(req.headers.host)) return json(res, 403, {error: 'Local host required.'});
+    if (!['localhost:'+port, '127.0.0.1:'+port].includes(req.headers.host)) return json(res, 403, {error: 'Local host required.'});
     if (req.method === 'OPTIONS') { res.writeHead(204); return res.end(); }
+    if (await serveStudio(req,res)) return;
     if (req.method === 'GET' && (req.url === '/' || req.url.startsWith('/?'))) { res.writeHead(200, {'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store'}); return res.end(await readFile(new URL('./ui.html', import.meta.url))); }
     const url = new URL(req.url, origin);
     if (req.method === 'GET' && url.pathname === '/voice.js') { res.writeHead(200, {'Content-Type': 'text/javascript; charset=utf-8', 'Cache-Control': 'no-store'}); return res.end(await readFile(new URL('./voice.bundle.js', import.meta.url))); }
     if (req.method === 'GET' && url.pathname === '/bridge') { if (url.searchParams.get('key') !== secret) return json(res, 401, {error: 'Invalid session key.'}); return openBridge(req, res); }
     if (req.headers.authorization !== 'Bearer ' + secret) return json(res, 401, {error: 'Invalid session key.'});
     if (req.method === 'GET' && req.url === '/status') return json(res, 200, {design: !!client, vaultWebsites: true, voice: !!voiceKey, model: MODEL, agent: !!(eleven && agentId), studio: studios.size > 0});
-    if (req.method === 'GET' && url.pathname === '/voice/session') return await voiceSession(res);
+    if (req.method === 'GET' && url.pathname === '/voice/session') { reserve('/eleven-agent/session'); return await voiceSession(res); }
     if (req.method === 'POST' && url.pathname === '/bridge/command') return await relay(req, res);
     if (req.method === 'POST' && url.pathname === '/bridge/result') return await relayResult(req, res);
     if (req.method === 'POST' && url.pathname === '/critique') return await critique(req, res);
@@ -184,8 +194,8 @@ const server = http.createServer(async (req, res) => {
       console.log((req.url === '/board' ? 'Designed ' : 'Edited ') + (style ? 'as ' + style.name + ' ' : '') + 'in ' + ((Date.now() - started) / 1000).toFixed(1) + 's: ' + (out.summary || ''));
       return json(res, 200, out);
     }
-    if (req.method === 'POST' && req.url === '/voice') return await voice(req, res);
-    json(res, 404, {error: 'Unknown endpoint.'});
+    if (req.method === 'POST' && req.url === '/voice') { reserve('/voice'); return await voice(req, res); }
+    return await studioRoute(req,res);
   } catch (e) {
     if (res.headersSent) return res.end();
     const [status, message] = failure(e);
@@ -194,8 +204,9 @@ const server = http.createServer(async (req, res) => {
   }
 });
 server.on('error', e => { console.error('Could not start local service: ' + e.message); process.exitCode = 1; });
-server.listen(4739, '127.0.0.1', () => console.log([
+server.listen(port, '127.0.0.1', () => console.log([
   'Iris is running.', 'Designer: ' + (client ? MODEL : 'not configured (set ANTHROPIC_API_KEY)'), '',
+  'Studio: '+origin+'/studio/#key='+secret,
   'Browser:  ' + origin + '/#key=' + secret,
   'Figma:    open the Iris plugin, click the gear (⚙) and paste this session key once:', '          ' + secret, '',
   'Leave this running while you design. Press Ctrl-C to stop.'].join('\n')));

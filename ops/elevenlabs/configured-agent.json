@@ -1,0 +1,13 @@
+{
+  "agentId": "agent_6401m825d6ebemq8gxpw8w6ry2zf",
+  "privateAuthentication": true,
+  "recordVoice": false,
+  "toolIds": {
+    "get_project_context": "tool_3201m825fmaheg8t59kvn89csn36",
+    "submit_design_brief": "tool_4201m825hdkdfdbbja2mf9wqb0xq",
+    "build_current_plan": "tool_8801m825fhk3fn0s5nyq9kny0vzx",
+    "cancel_build": "tool_6901m825fgerfpcage3wqacc280j",
+    "send_repo_task": "tool_0201m825fnebf8jvn7x9sy01yrs0",
+    "get_repo_task_status": "tool_1901m825ffdveyb95wdrkwv4eqtq"
+  }
+}

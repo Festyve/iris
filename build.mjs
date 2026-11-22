@@ -1,3 +1,4 @@
+import './poster-adapter/build.mjs';
 import {readFile, writeFile} from 'node:fs/promises';
 import {fileURLToPath} from 'node:url';
 const root = new URL('./', import.meta.url);
