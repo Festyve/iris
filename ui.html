@@ -1,10 +1,30 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Iris</title><style>
 *{box-sizing:border-box}body{margin:0;color:#201d25;background:#e8e5e0;font:14px/1.4 Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}button,input,textarea{font:inherit}button{cursor:pointer}button:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid #946dff;outline-offset:2px}header{display:flex;align-items:center;gap:12px;background:#211f25;color:white;padding:16px 28px}header b{font-size:18px;letter-spacing:-.6px}header span:last-child{margin-left:auto;font-size:12px;color:#cfccd3}.mark{display:inline-block;width:20px;height:24px;background:#bd9cff;clip-path:polygon(0 0,100% 59%,55% 65%,37% 100%)}main{display:grid;grid-template-columns:minmax(0,1fr) 300px;min-height:calc(100vh - 58px)}.stage{padding:40px 3vw;background-image:radial-gradient(#c5c0ba .8px,transparent .8px);background-size:12px 12px}.boards{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:24px;align-items:start}figure{margin:0;min-width:0}figcaption{font:600 11px ui-monospace,monospace;letter-spacing:1px;color:#574e61;text-transform:uppercase;margin:0 0 10px}svg.board{display:block;width:100%;height:auto;box-shadow:0 8px 23px #30273820;touch-action:none}#desktop [data-role]{cursor:grab}#desktop [data-role]:active{cursor:grabbing}.stage p{font-size:12px;color:#554f59}.panel{background:#fcfbf9;border-left:1px solid #d5d0cd;padding:24px 18px}h1{font-size:24px;letter-spacing:-1.2px;line-height:1.15;margin:2px 0 8px}p{margin:8px 0 15px}.note,details{font-size:12px;color:#625a68}label{display:block;font-size:12px;font-weight:650;margin:16px 0 6px}input,textarea{width:100%;border:1px solid #cfc9d1;border-radius:6px;padding:8px;background:white}input[type=range]{padding:0;accent-color:#7047bb}textarea{resize:vertical;min-height:66px}button{padding:8px 10px;border-radius:6px;border:1px solid #ccc5d1;background:white;color:#32283b;font-size:12px}.primary{background:#47315e;color:white;border-color:#47315e}.wide{width:100%}.row{display:flex;gap:5px;flex-wrap:wrap;margin:6px 0 9px}button[aria-pressed=true]{background:#eadff9;border-color:#9167cb}button:disabled{opacity:.55;cursor:default}.status{min-height:34px;font-size:12px;color:#584a65}.rule{margin:18px 0;border:0;border-top:1px solid #ded9de}summary{cursor:pointer}.saved{max-width:200px;margin-top:28px}.saved:empty{display:none}.plugin header,.plugin .stage,.plugin .browser-only{display:none}.plugin main{display:block;min-height:0}.plugin .panel{border:0;padding:16px}.plugin h1{font-size:20px}.plugin .rule{margin:10px 0}.plugin label{margin-top:9px}@media(max-width:780px){main{display:flex;flex-direction:column}.stage{padding:16px}.panel{border:0}.boards{gap:12px}}
 [hidden]{display:none!important}.swarm-controls{border-top:1px solid #ded9de;border-bottom:1px solid #ded9de;padding:12px 0;margin-bottom:16px}.swarm-controls h2{font-size:15px;margin:0 0 8px}.swarm-controls select{font:inherit;padding:5px;border:1px solid #cfc9d1;border-radius:5px}.swarm-controls progress{width:100%;height:4px;accent-color:#7047bb}.swarm-controls .note{margin:6px 0 2px}.swarm-controls label{margin:0}.fleet-top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}.fleet-top b{font-size:18px}#fleet-canvas{display:block;width:100%;max-height:72vh}#fleet-canvas svg[role=button]{cursor:zoom-in}.plugin .panel{padding:12px 15px}
-.creating .browser-only,.creating label[for="brief"],.creating #brief,.creating #apply,.creating #watchLabel,.creating #presets,.creating label:has(+ #presets),.creating #keep{display:none!important}#new-ui{margin:10px 0}</style></head><body><header><i class="mark"></i><b>Iris</b><span>Responsive design studio</span></header><main>
+.creating .browser-only,.creating label[for="brief"],.creating #brief,.creating #apply,.creating #watchLabel,.creating #presets,.creating label:has(+ #presets),.creating #keep{display:none!important}#new-ui{margin:10px 0}.profile-label{margin:10px 0 4px}#profile{width:100%;font:inherit;padding:5px;border:1px solid #cfc9d1;border-radius:5px;background:white}#profile-note{margin:4px 0 8px}
+.talk{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;align-items:center;margin:4px 0 16px;padding:12px;border-radius:12px;background:#f3eefb;border:1px solid #e1d6f3}
+#talk{--level:0;position:relative;width:48px;height:48px;padding:0;border-radius:50%;border:0;background:radial-gradient(circle at 35% 30%,#c4a6ff,#7047bb 70%);box-shadow:0 0 0 calc(var(--level)*14px) #9167cb33,0 4px 14px #47315e40;transition:box-shadow .08s linear,transform .2s;grid-row:span 2}
+#talk::before{content:"";position:absolute;inset:15px 18px;border-radius:9px;background:white;transition:all .2s}
+#talk::after{content:"";position:absolute;left:14px;right:14px;bottom:11px;height:7px;border:2px solid white;border-top:0;border-radius:0 0 10px 10px}
+#talk[data-mode=connecting]{animation:talkpulse 1s ease-in-out infinite}
+#talk[data-mode=listening]::before,#talk[data-mode=speaking]::before{inset:16px;border-radius:3px}
+#talk[data-mode=listening]::after,#talk[data-mode=speaking]::after{display:none}
+#talk[data-mode=speaking]{background:radial-gradient(circle at 35% 30%,#ffb3d9,#bd4f8f 70%)}
+#talk:hover{transform:scale(1.05)}
+@keyframes talkpulse{50%{transform:scale(.92);opacity:.75}}
+@media(prefers-reduced-motion:reduce){#talk{transition:none}#talk[data-mode=connecting]{animation:none}}
+.talk b{font-size:14px;align-self:end}.talk .note{margin:0;align-self:start;font-size:11.5px}
+.talk #talk-open{grid-column:1/-1;margin-top:6px}
+#transcript{grid-column:1/-1;list-style:none;margin:8px 0 0;padding:0;max-height:168px;overflow:auto;display:flex;flex-direction:column;gap:5px}
+#transcript li{font-size:12px;line-height:1.35;padding:6px 9px;border-radius:10px;max-width:88%}
+#transcript .you{align-self:flex-end;background:white;border:1px solid #ded9de}
+#transcript .iris{align-self:flex-start;background:#47315e;color:white}
+#transcript .tool{align-self:center;background:none;padding:0;color:#7047bb;font:600 10.5px ui-monospace,monospace;letter-spacing:.3px}
+</style></head><body><header><i class="mark"></i><b>Iris</b><span>Responsive design studio</span></header><main>
 <section class="stage"><div id="fleet-preview" hidden><div class="fleet-top"><b>Responsive layouts</b><button id="back">Back to desktop</button></div><svg id="fleet-canvas" aria-label="Responsive layouts with live cursor assignments"></svg><p class="note">Click a layout to inspect it. Click again to see the full set.</p></div><div class="boards"><figure><figcaption>Desktop · your canvas</figcaption><svg id="desktop" class="board" aria-label="Editable desktop poster"></svg></figure><figure><figcaption>Mobile · Iris</figcaption><svg id="mobile" class="board" aria-label="Mobile proposal"></svg></figure></div><p>Drag the headline or flower on desktop to art-direct the mobile version.</p><div id="saved" class="saved"></div></section>
 <section class="panel"><h1>Iris</h1><p class="note">Design a new screen or adapt an existing frame.</p>
-<section class="swarm-controls"><h2>Cursor swarm</h2><select id="formation" aria-label="Swarm view"><option value="shared">Shared canvas</option><option value="grid">Responsive grid</option><option value="create">New UI from brief</option></select><div id="new-ui" hidden><label for="screen-brief">What should Iris build?</label><textarea id="screen-brief" maxlength="700" placeholder="A mobile transit departures screen"></textarea><p class="note" id="screen-mode">Local starters: transit, task board, spending. Connect Gemini for a custom screen.</p></div><div class="row"><select id="workers" aria-label="Cursor count"><option value="100">100 cursors</option><option value="25">25 cursors</option><option value="5">5 cursors</option></select><button id="launch" class="primary">Launch swarm</button></div><progress id="meter" max="1" value="0"></progress><p class="note" role="status" id="fleet-status">Ready</p><div class="row"><button id="pause" hidden>Pause</button><button id="cancel" hidden>Cancel run</button></div></section><div class="browser-only"><label for="scale">Flower size</label><input id="scale" type="range" min="260" max="780" value="500"><label for="headline">Headline</label><input id="headline" value="After / Hours" maxlength="32"></div>
+<section class="talk" aria-label="Talk to Iris"><button id="talk" data-mode="idle" aria-pressed="false" aria-label="Talk to Iris"></button><b id="talk-label">Talk to Iris</b><p class="note" id="talk-state" role="status">Connect the local service, then tap to talk.</p><button id="talk-open" class="wide" hidden>Open voice in browser</button><ol id="transcript" hidden aria-live="polite"></ol></section>
+<section class="swarm-controls"><h2>Cursor swarm</h2><select id="formation" aria-label="Swarm view"><option value="shared">Shared canvas</option><option value="grid">Responsive grid</option><option value="create">New UI from brief</option></select><label for="profile" class="profile-label">Design profile</label><select id="profile" aria-label="Design profile"><option value="">General designer</option></select><p class="note" id="profile-note" hidden></p><div id="new-ui" hidden><label for="screen-brief">What should Iris build?</label><textarea id="screen-brief" maxlength="700" placeholder="A mobile transit departures screen"></textarea><p class="note" id="screen-mode">Local starters: transit, task board, spending. Connect Gemini for a custom screen.</p></div><div class="row"><select id="workers" aria-label="Cursor count"><option value="100">100 cursors</option><option value="25">25 cursors</option><option value="5">5 cursors</option></select><button id="launch" class="primary">Launch swarm</button></div><progress id="meter" max="1" value="0"></progress><p class="note" role="status" id="fleet-status">Ready</p><div class="row"><button id="pause" hidden>Pause</button><button id="cancel" hidden>Cancel run</button></div></section><div class="browser-only"><label for="scale">Flower size</label><input id="scale" type="range" min="260" max="780" value="500"><label for="headline">Headline</label><input id="headline" value="After / Hours" maxlength="32"></div>
 <label>Mobile composition</label><div class="row" id="presets"></div><button id="keep" class="wide">Keep this mobile version</button>
 <hr class="rule"><label for="brief">Art direction</label><textarea id="brief" maxlength="700" placeholder="Keep the overlap. Put the date at the top."></textarea><label id="watchLabel" hidden><input id="watch" type="checkbox" style="width:auto"> AI review after desktop edits</label><div class="row"><button id="apply" class="primary">Ask coworker</button><button id="voice">Record note</button><button id="audiofile" hidden>Use audio file</button><input id="file" type="file" accept="audio/*" hidden></div><p class="status" role="status" id="status">Local mode · try “keep the overlap” or “stack the title.”</p>
 <details id="settings"><summary>Connect local AI service</summary><label for="token">Session key from server</label><input id="token" type="password" autocomplete="off"><button style="margin-top:6px" id="connect">Connect</button></details></section></main><script>
@@ -297,7 +317,7 @@ async function call(path,body,type){
 }
 async function connect(){
   token=byId('token').value.trim();connected=false;
-  try{service=await call('/status');connected=true;byId('screen-mode').textContent=service.design?'Gemini designs a new screen from your brief.':'Local starters: transit, task board, spending. Connect Gemini for a custom screen.';byId('watchLabel').hidden=customSource||!service.design;byId('settings').open=false;
+  try{service=await call('/status');connected=true;byId('screen-mode').textContent=service.design?'Gemini designs a new screen from your brief.':'Local starters: transit, task board, spending. Connect Gemini for a custom screen.';byId('watchLabel').hidden=customSource||!service.design;byId('settings').open=false;if(typeof onServiceConnected==='function')onServiceConnected();
     say((service.design?'AI design connected':'Set GEMINI_API_KEY for AI design')+' · '+(service.voice?'voice connected':'voice key missing'))}
   catch(e){say('Connection failed. Check that the local server is running and the session key matches.')}
 }
@@ -333,7 +353,7 @@ async function ask(auto=false){
   if(!note){say('Enter a design direction first.');return}
   if(!connected||!service.design){localDirection(note);return}
   const before=version,seq=++requestNo;say('Reviewing the layout…');
-  try{const png=await snapshot();const result=await call('/design',JSON.stringify({source,plan,note,png}));if(seq!==requestNo)return;
+  try{const png=await snapshot();const result=await call('/design',JSON.stringify({source,plan,note,png,profile:byId('profile').value}));if(seq!==requestNo)return;
     if(before!==version){say('The design changed during review. Ask again with the current version.');return}
     update(result.plan,result.focus);say(result.reason)}
   catch(e){say(e.message)}
@@ -442,7 +462,7 @@ fleetEl('launch').onclick=async()=>{
     if(fleetEl('formation').value==='create'){
       const note=fleetEl('screen-brief').value.trim();if(!note)throw Error('Describe the screen to build.');
       fleetEl('fleet-status').textContent=connected&&service.design?'Planning your screen…':'Preparing local starter…';
-      const screen=Screens.check(connected&&service.design?(await call('/screen',JSON.stringify({note}))).screen:Screens.starter(note));
+      const screen=Screens.check(connected&&service.design?(await call('/screen',JSON.stringify({note,profile:fleetEl('profile').value}))).screen:Screens.starter(note));
       if(plugin){parent.postMessage({pluginMessage:{kind:'new-screen',screen,count}},'*');return}
       browserRun=buildWebScreen(screen,count);fleetView('running',0,count,1,0);browserRun.anim=requestAnimationFrame(browserTick);return;
     }
@@ -451,7 +471,7 @@ fleetEl('launch').onclick=async()=>{
       fleetEl('fleet-status').textContent='Art director is assigning layer edits…';
       const context=await getFleetContext();sourceKey=context.sourceKey;
       const note=byId('brief').value.trim()||(shared?'Polish the selected design on a single shared canvas at its current width.':'Adapt this design to compact, medium and wide product screens.');
-      const result=await call('/swarm',JSON.stringify({source:context.source,png:context.png,note,plan}));
+      const result=await call('/swarm',JSON.stringify({source:context.source,png:context.png,note,plan,profile:fleetEl('profile').value}));
       brief=result.patches;say(result.reason);
     }
     if(plugin){parent.postMessage({pluginMessage:{kind:'launch-fleet',count,brief,sourceKey,shared}},'*');return}
@@ -536,5 +556,172 @@ function buildWebScreen(screen,count){
   document.querySelector('.boards').hidden=true;document.querySelector('.stage > p').hidden=true;
   return {shared:true,build,jobs,frames:1,elapsed:0,last:performance.now(),anim:0,lastDone:0,active:0};
 }
+
+// Talk to Iris: a live ElevenLabs voice agent whose client tools drive the cursor swarm.
+// In Figma the plugin also listens on /bridge, so a voice session in the browser can drive the canvas
+// (Figma plugin windows usually cannot open the microphone).
+const talkEl=id=>document.getElementById(id);
+let talk=null,talkMeter=0,bridgeSource=null;
+const toolLabels={look_at_canvas:'Looking at your canvas',build_screen:'Building a new screen',refine_design:'Refining the selected design',control_build:'Controlling the swarm',find_references:'Searching design references',set_profile:'Switching design profile'};
+function talkLine(who,text){
+  text=String(text||'').replace(/\[[a-z][a-z ]{0,24}\]\s*/gi,'').trim();
+  if(!text)return;const list=talkEl('transcript'),li=document.createElement('li');
+  li.className=who;li.textContent=text;list.appendChild(li);
+  while(list.children.length>12)list.firstChild.remove();
+  list.hidden=false;list.scrollTop=list.scrollHeight;
+}
+function talkState(mode,text){talkEl('talk').dataset.mode=mode;talkEl('talk').setAttribute('aria-pressed',String(mode!=='idle'));talkEl('talk-label').textContent=mode==='idle'?'Talk to Iris':'End conversation';talkEl('talk-state').textContent=text}
+async function callLong(path,body,ms){
+  const r=await fetch(api+path,{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body,signal:AbortSignal.timeout(ms)});
+  const data=await r.json();if(!r.ok)throw Error(data.error||'Service unavailable');return data;
+}
+const fleetBusy=()=>['running','paused','starting'].includes(fleetState);
+function waitForFleet(limit){
+  const started=Date.now();
+  return new Promise(resolve=>{const timer=setInterval(()=>{
+    const status=fleetEl('fleet-status').textContent;
+    if(fleetState==='finished'){clearInterval(timer);resolve({ok:true,status})}
+    else if(fleetState==='idle'){clearInterval(timer);resolve({ok:false,error:status==='Ready'?'The run was canceled before it finished.':status})}
+    else if(Date.now()-started>limit){clearInterval(timer);resolve({ok:true,status:'Still running: '+status})}
+  },250)});
+}
+let lookSeq=0;
+function pluginLook(){
+  const id=++lookSeq;
+  return new Promise((resolve,reject)=>{
+    function done(e){const m=e.data&&e.data.pluginMessage;if(!m||m.kind!=='look'||m.id!==id)return;clearTimeout(timer);window.removeEventListener('message',done);if(m.error)reject(Error(m.error));else resolve(m)}
+    const timer=setTimeout(()=>{window.removeEventListener('message',done);reject(Error('Figma did not return the frame in time.'))},9000);
+    window.addEventListener('message',done);parent.postMessage({pluginMessage:{kind:'look',id}},'*');
+  });
+}
+const localTools={
+  async look_at_canvas({question}){
+    let ctx;
+    if(plugin)ctx=await pluginLook();
+    else{const c=await getFleetContext();ctx={png:c.png,selected:[],source:Object.assign({name:'Browser canvas'},c.source)}}
+    let critique='';
+    if(connected&&service.design)try{critique=(await callLong('/critique',JSON.stringify({png:ctx.png,source:ctx.source,question,profile:talkEl('profile').value}),32000)).critique}catch(e){critique=''}
+    const layers=(ctx.source.layers||[]).slice(0,40).map(l=>l.text?l.name+' ("'+l.text+'")':l.name);
+    return {frame:ctx.source.name,size:Math.round(ctx.source.width)+' by '+Math.round(ctx.source.height),selected:ctx.selected,layers,critique:critique||'No vision critique available, so judge from the layer names and say you cannot see the pixels.'};
+  },
+  async build_screen({brief,cursors,profile}){
+    if(fleetBusy())return {error:'A build is already running. Pause or cancel it first.'};
+    if(profile!==undefined)setProfile(profile);
+    if(!brief||!String(brief).trim())return {error:'The brief was empty.'};
+    fleetEl('formation').value='create';switchMode();fleetEl('screen-brief').value=String(brief).slice(0,700);
+    numberInput.value=['5','25','100'].includes(String(cursors))?String(cursors):'100';
+    fleetEl('launch').click();const r=await waitForFleet(100000);
+    if(!r.ok)return {built:false,error:r.error};
+    return {built:true,status:r.status,profile:currentProfileName(),planner:connected&&service.design?'Gemini designed a custom screen from the brief':'Gemini is not connected, so a local starter screen was used'};
+  },
+  async refine_design({direction,mode,profile}){
+    if(fleetBusy())return {error:'A build is already running. Pause or cancel it first.'};
+    if(profile!==undefined)setProfile(profile);
+    fleetEl('formation').value=mode==='grid'?'grid':'shared';switchMode();byId('brief').value=String(direction||'').slice(0,700);
+    fleetEl('launch').click();const r=await waitForFleet(80000);
+    return r.ok?{done:true,status:r.status,note:byId('status').textContent}:{done:false,error:r.error};
+  },
+  async control_build({action}){
+    if(!fleetBusy())return {state:fleetState,note:'Nothing is running.'};
+    if(action==='cancel')fleetEl('cancel').click();
+    else if((action==='pause'&&fleetState==='running')||(action==='resume'&&fleetState==='paused'))fleetEl('pause').click();
+    await new Promise(r=>setTimeout(r,400));return {state:fleetState};
+  },
+  async set_profile({profile}){
+    const ok=setProfile(profile);
+    return ok?{profile:currentProfileName()}:{error:'Unknown profile. Options: '+profiles.map(p=>p.id).join(', ')};
+  },
+  async find_references({query}){
+    if(!connected)return {results:[],note:'Local service not connected.'};
+    return await call('/references?q='+encodeURIComponent(String(query||'').slice(0,120)));
+  }
+};
+async function runTool(name,args){
+  if(!localTools[name])return {error:'Unknown tool '+name};
+  return await localTools[name](args||{});
+}
+// Voice side: route to the Figma plugin when one is connected, otherwise act on this window.
+async function voiceTool(name,args){
+  talkLine('tool',toolLabels[name]||name);
+  let result;
+  try{
+    const remote=!plugin&&connected&&(await call('/status')).studio;
+    result=remote?(await callLong('/bridge/command',JSON.stringify({tool:name,args}),118000)).result:await runTool(name,args);
+  }catch(e){result={error:e.message}}
+  if(result&&result.error)talkLine('tool','⚠ '+result.error);
+  return JSON.stringify(result);
+}
+function loadVoiceClient(){
+  if(window.IrisVoice)return Promise.resolve();
+  return new Promise((resolve,reject)=>{const s=document.createElement('script');s.src=api+'/voice.js';
+    s.onload=()=>window.IrisVoice?resolve():reject(Error('Voice client did not load. Run npm start.'));
+    s.onerror=()=>reject(Error('Voice client did not load. Run npm start.'));document.head.appendChild(s)});
+}
+function animateOrb(){
+  cancelAnimationFrame(talkMeter);
+  const step=()=>{if(!talk){talkEl('talk').style.setProperty('--level',0);return}
+    const mode=talkEl('talk').dataset.mode,v=mode==='speaking'?talk.getOutputVolume():talk.getInputVolume();
+    talkEl('talk').style.setProperty('--level',Math.min(1,v*2.2).toFixed(3));talkMeter=requestAnimationFrame(step)};
+  talkMeter=requestAnimationFrame(step);
+}
+async function startTalk(){
+  if(!connected){byId('settings').open=true;talkState('idle','Connect the local service first: paste the session key below.');return}
+  if(!service.agent){talkState('idle','Voice agent missing. Set ELEVENLABS_API_KEY, run npm run agent, restart the server.');return}
+  talkState('connecting','Connecting…');
+  try{const s=await navigator.mediaDevices.getUserMedia({audio:true});s.getTracks().forEach(t=>t.stop())}
+  catch(e){
+    if(plugin){talkEl('talk-open').hidden=false;talkState('idle','Figma blocks the microphone here. Open voice in your browser; Iris will still drive this canvas.')}
+    else talkState('idle','Microphone access was denied. Allow it in the browser and try again.');
+    return;
+  }
+  try{
+    await loadVoiceClient();
+    const {conversationToken}=await call('/voice/session');
+    const tools={};for(const name of Object.keys(localTools))tools[name]=args=>voiceTool(name,args);
+    talk=await window.IrisVoice.Conversation.startSession({conversationToken,connectionType:'webrtc',clientTools:tools,
+      onConnect:()=>{talkState('listening','Listening…');animateOrb()},
+      onDisconnect:()=>{talk=null;talkState('idle','Conversation ended.')},
+      onError:m=>talkState(talk?'listening':'idle',String(m||'Voice error')),
+      onModeChange:({mode})=>{if(talk)talkState(mode,mode==='speaking'?'Iris is speaking':'Listening…')},
+      onMessage:m=>talkLine((m.role||m.source)==='user'?'you':'iris',m.message)});
+    talk.sendContextualUpdate((!plugin&&service.studio?'The designer has the Iris plugin open in Figma; your tools act on their live Figma canvas. ':'')+'Active design profile: '+currentProfileName()+'.');
+  }catch(e){talk=null;talkState('idle',e.message||'Could not start the conversation.')}
+}
+talkEl('talk').onclick=()=>{if(talk){const t=talk;talk=null;t.endSession();talkState('idle','Conversation ended.')}else if(talkEl('talk').dataset.mode!=='connecting')startTalk()};
+talkEl('talk-open').onclick=()=>parent.postMessage({pluginMessage:{kind:'open-voice',url:api+'/#key='+encodeURIComponent(token)}},'*');
+// Plugin side of the bridge: run tool calls sent from a browser voice session.
+function openBridge(){
+  if(!plugin||bridgeSource)return;
+  bridgeSource=new EventSource(api+'/bridge?key='+encodeURIComponent(token));
+  bridgeSource.onmessage=async e=>{
+    let cmd;try{cmd=JSON.parse(e.data)}catch{return}
+    let result;try{result=await runTool(cmd.tool,cmd.args)}catch(err){result={error:err.message}}
+    try{await call('/bridge/result',JSON.stringify({id:cmd.id,result}))}catch{}
+  };
+}
+// Design profiles from vault/Profiles, chosen in the panel or by voice.
+let profiles=[];
+const currentProfileName=()=>{const p=profiles.find(x=>x.id===talkEl('profile').value);return p?p.name:'General designer'};
+function showProfileNote(){const p=profiles.find(x=>x.id===talkEl('profile').value);talkEl('profile-note').hidden=!p;talkEl('profile-note').textContent=p?p.tagline:''}
+function setProfile(id){
+  id=String(id||'').trim();if(id==='general')id='';
+  if(id&&!profiles.some(p=>p.id===id))return false;
+  talkEl('profile').value=id;showProfileNote();try{localStorage.setItem('iris-profile',id)}catch{}
+  if(talk)talk.sendContextualUpdate('Active design profile is now: '+currentProfileName()+'.');
+  return true;
+}
+async function loadProfileOptions(){
+  try{profiles=(await call('/profiles')).profiles||[]}catch{profiles=[]}
+  const sel=talkEl('profile');sel.replaceChildren(new Option('General designer',''));
+  for(const p of profiles)sel.appendChild(new Option(p.name,p.id));
+  let saved='';try{saved=localStorage.getItem('iris-profile')||''}catch{}
+  if(profiles.some(p=>p.id===saved))sel.value=saved;showProfileNote();
+}
+talkEl('profile').onchange=()=>setProfile(talkEl('profile').value);
+function onServiceConnected(){
+  openBridge();loadProfileOptions();
+  talkState('idle',service.agent?(service.studio&&!plugin?'Ready. Iris will act on your open Figma file.':'Ready. Tap to talk.'):'Voice agent missing. Run npm run agent and restart the server.');
+}
+talkState('idle',plugin?'Connect the local service, then tap to talk.':'Connect the local service, then tap to talk.');
 
 </script></body></html>

@@ -50,6 +50,20 @@ figma.ui.onmessage=async msg=>{
   try{
     if(msg.kind==='ui-ready'){if(inputFrame&&!inputFrame.removed)figma.ui.postMessage({kind:'custom-source',name:inputFrame.name});else figma.ui.postMessage({kind:'blank-source'});return}
     if(msg.kind==='new-screen'){await startScreen(msg.screen,[5,25,100].includes(msg.count)?msg.count:100);return}
+    if(msg.kind==='open-voice'){figma.openExternal(String(msg.url));return}
+    if(msg.kind==='look'){
+      try{
+        // Climb from the selected layer to its top-level frame so Iris sees the whole screen.
+        const sel=figma.currentPage.selection[0];let f=sel;
+        while(f&&f.parent&&f.parent.type!=='PAGE')f=f.parent;
+        if(!f||!('exportAsync' in f))f=targetFrame()||figma.currentPage.children.filter(n=>n.type==='FRAME').pop();
+        if(!f)throw Error('Nothing is on this page yet. Select a frame or ask Iris to build one.');
+        const img=await f.exportAsync({format:'PNG',constraint:{type:'WIDTH',value:Math.min(900,Math.max(320,Math.round(f.width)))}});
+        const kids='children' in f?f.children.slice(0,60):[];
+        figma.ui.postMessage({kind:'look',id:msg.id,png:figma.base64Encode(img),selected:figma.currentPage.selection.slice(0,8).map(n=>n.name),
+          source:{name:f.name,width:Math.round(f.width),height:Math.round(f.height),layers:kids.map(n=>({name:n.name,type:n.type,x:Math.round(n.x),y:Math.round(n.y),w:Math.round(n.width),h:Math.round(n.height),text:n.type==='TEXT'?n.characters.slice(0,80):undefined}))}});
+      }catch(e){figma.ui.postMessage({kind:'look',id:msg.id,error:e.message})}
+      return}
     if(['fleet-context','launch-fleet','apply','keep','snapshot'].includes(msg.kind)&&!targetFrame())await startSample();
     if(msg.kind==='fleet-context'){
       try{const f=targetFrame();if(!f)throw Error('Select a source frame.');

@@ -54,7 +54,7 @@ async function call(path,body,type){
 }
 async function connect(){
   token=byId('token').value.trim();connected=false;
-  try{service=await call('/status');connected=true;byId('screen-mode').textContent=service.design?'Gemini designs a new screen from your brief.':'Local starters: transit, task board, spending. Connect Gemini for a custom screen.';byId('watchLabel').hidden=customSource||!service.design;byId('settings').open=false;
+  try{service=await call('/status');connected=true;byId('screen-mode').textContent=service.design?'Gemini designs a new screen from your brief.':'Local starters: transit, task board, spending. Connect Gemini for a custom screen.';byId('watchLabel').hidden=customSource||!service.design;byId('settings').open=false;if(typeof onServiceConnected==='function')onServiceConnected();
     say((service.design?'AI design connected':'Set GEMINI_API_KEY for AI design')+' · '+(service.voice?'voice connected':'voice key missing'))}
   catch(e){say('Connection failed. Check that the local server is running and the session key matches.')}
 }
@@ -90,7 +90,7 @@ async function ask(auto=false){
   if(!note){say('Enter a design direction first.');return}
   if(!connected||!service.design){localDirection(note);return}
   const before=version,seq=++requestNo;say('Reviewing the layout…');
-  try{const png=await snapshot();const result=await call('/design',JSON.stringify({source,plan,note,png}));if(seq!==requestNo)return;
+  try{const png=await snapshot();const result=await call('/design',JSON.stringify({source,plan,note,png,profile:byId('profile').value}));if(seq!==requestNo)return;
     if(before!==version){say('The design changed during review. Ask again with the current version.');return}
     update(result.plan,result.focus);say(result.reason)}
   catch(e){say(e.message)}

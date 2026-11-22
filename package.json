@@ -1,0 +1,20 @@
+{
+  "name": "iris",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs",
+    "agent": "node --env-file-if-exists=.env --env-file-if-exists=.env.local scripts/agent.mjs",
+    "start": "node build.mjs && node --env-file-if-exists=.env --env-file-if-exists=.env.local server.mjs",
+    "test": "node --test tests/*.cjs",
+    "fiber": "node --env-file-if-exists=.env --env-file-if-exists=.env.local scripts/fiber-designers.mjs"
+  },
+  "dependencies": {
+    "@elevenlabs/client": "^1.37.1",
+    "@elevenlabs/elevenlabs-js": "^2.79.0",
+    "@fiberai/sdk": "^0.0.66"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2"
+  }
+}

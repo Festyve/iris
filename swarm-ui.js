@@ -84,7 +84,7 @@ fleetEl('launch').onclick=async()=>{
     if(fleetEl('formation').value==='create'){
       const note=fleetEl('screen-brief').value.trim();if(!note)throw Error('Describe the screen to build.');
       fleetEl('fleet-status').textContent=connected&&service.design?'Planning your screen…':'Preparing local starter…';
-      const screen=Screens.check(connected&&service.design?(await call('/screen',JSON.stringify({note}))).screen:Screens.starter(note));
+      const screen=Screens.check(connected&&service.design?(await call('/screen',JSON.stringify({note,profile:fleetEl('profile').value}))).screen:Screens.starter(note));
       if(plugin){parent.postMessage({pluginMessage:{kind:'new-screen',screen,count}},'*');return}
       browserRun=buildWebScreen(screen,count);fleetView('running',0,count,1,0);browserRun.anim=requestAnimationFrame(browserTick);return;
     }
@@ -93,7 +93,7 @@ fleetEl('launch').onclick=async()=>{
       fleetEl('fleet-status').textContent='Art director is assigning layer edits…';
       const context=await getFleetContext();sourceKey=context.sourceKey;
       const note=byId('brief').value.trim()||(shared?'Polish the selected design on a single shared canvas at its current width.':'Adapt this design to compact, medium and wide product screens.');
-      const result=await call('/swarm',JSON.stringify({source:context.source,png:context.png,note,plan}));
+      const result=await call('/swarm',JSON.stringify({source:context.source,png:context.png,note,plan,profile:fleetEl('profile').value}));
       brief=result.patches;say(result.reason);
     }
     if(plugin){parent.postMessage({pluginMessage:{kind:'launch-fleet',count,brief,sourceKey,shared}},'*');return}
