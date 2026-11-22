@@ -1,67 +1,309 @@
-figma.showUI(__html__, {width:332,height:670,themeColors:true});
-let desk,phone,arrow,last='',direction=Object.assign({},SC.initial),active=false;
-const fonts={Title:{family:'Inter',style:'Black'},normal:{family:'Inter',style:'Regular'}};
-function paint(hex){return [{type:'SOLID',color:{r:parseInt(hex.slice(1,3),16)/255,g:parseInt(hex.slice(3,5),16)/255,b:parseInt(hex.slice(5,7),16)/255}}]}
-function hex(n,fallback){const p=Array.isArray(n.fills)&&n.fills[0];if(!p||p.type!=='SOLID')return fallback;return '#'+['r','g','b'].map(k=>Math.round(p.color[k]*255).toString(16).padStart(2,'0')).join('')}
-function drawFrame(scene,name,x,y) {
-  const frame=figma.createFrame();frame.name=name;frame.resize(scene.width,scene.height);frame.x=x;frame.y=y;frame.fills=paint(scene.bg);frame.clipsContent=true;
-  for(const role of SC.roles){
-    const v=scene.layers[role];
-    let n;
-    if(role==='Hero'){n=figma.createNodeFromSvg(SC.art(v.fill));n.rescale(v.w/n.width)}
-    else {n=figma.createText();n.fontName=role==='Title'?fonts.Title:fonts.normal;n.characters=v.text;
-      n.fontSize=v.size;n.lineHeight={unit:'PERCENT',value:role==='Title'?92:110};n.textAutoResize='HEIGHT';n.resize(v.w,n.height);n.textAlignHorizontal=v.align==='right'?'RIGHT':'LEFT';n.fills=paint(v.fill)}
-    frame.appendChild(n);n.name=role;n.x=v.x;n.y=v.y;
+/* Figma side: plays the crew timeline with real, editable Figma layers.
+   Frames are dragged out, shapes drawn and filled, corners rounded, cards aligned and text
+   typed by visible cursor layers. Every node is tagged with its design id, so later changes
+   only touch what changed, and the design is stored on the page so it can be edited again. */
+figma.showUI(__html__, {width: 380, height: 760, themeColors: false});
+
+const STYLES = {100: 'Thin', 200: 'Extra Light', 300: 'Light', 400: 'Regular', 500: 'Medium', 600: 'Semi Bold', 700: 'Bold', 800: 'Extra Bold', 900: 'Black'};
+const ARROW = 'M0 0L0 16.2L4.4 12.1L7.4 18.8L10.2 17.6L7.3 11L13 11Z';
+const SCREEN_KEY = 'iris-screen', LAYER_KEY = 'iris-layer', DESIGN_KEY = 'iris-design', DOC_KEY = 'iris-doc';
+let run = null;
+
+const rgb = hex => ({r: parseInt(hex.slice(1, 3), 16) / 255, g: parseInt(hex.slice(3, 5), 16) / 255, b: parseInt(hex.slice(5, 7), 16) / 255});
+const toHex = c => '#' + [c.r, c.g, c.b].map(v => Math.round(v * 255).toString(16).padStart(2, '0')).join('').toUpperCase();
+const solid = hex => ({type: 'SOLID', color: rgb(hex)});
+const light = hex => { const c = rgb(hex); return c.r * .299 + c.g * .587 + c.b * .114 > .62; };
+function paints(f) {
+  if (!f) return [];
+  if (typeof f === 'string') return [solid(f)];
+  return [{type: 'GRADIENT_LINEAR', gradientTransform: f.dir === 'v' ? [[0, 1, 0], [-1, 0, 1]] : [[.5, .5, 0], [-.5, .5, .5]],
+    gradientStops: [{position: 0, color: Object.assign(rgb(f.from), {a: 1})}, {position: 1, color: Object.assign(rgb(f.to), {a: 1})}]}];
+}
+const post = m => figma.ui.postMessage(m);
+const key = v => JSON.stringify(v === undefined ? null : v);
+
+async function loadFont(weight) {
+  for (const style of [STYLES[weight] || 'Regular', weight >= 600 ? 'Bold' : 'Regular']) {
+    try { await figma.loadFontAsync({family: 'Inter', style}); return style; } catch (e) { /* try the fallback */ }
   }
-  return frame;
+  throw Error('The Inter font is not available in this file.');
 }
-function read(){
-  const s=SC.base();s.bg=hex(desk,s.bg);s.width=desk.width;s.height=desk.height;
-  for(const role of SC.roles){const n=desk.children.find(c=>c.name===role);if(!n)throw Error('Restore the '+role+' layer to resume.');
-    const v=s.layers[role];Object.assign(v,{x:n.x,y:n.y,w:n.width,h:n.height});
-    if(n.type==='TEXT'){v.text=n.characters;v.size=typeof n.fontSize==='number'?n.fontSize:v.size;v.fill=hex(n,v.fill)}
-  }return s;
+
+// Find what Iris built earlier for this design, by the ids stored on each node.
+function scan(design) {
+  const frames = new Map(), nodes = new Map();
+  for (const f of figma.currentPage.children) {
+    if (f.type !== 'FRAME') continue;
+    const sid = f.getPluginData(SCREEN_KEY);
+    if (!sid || f.getPluginData(DESIGN_KEY) !== design) continue;
+    frames.set(sid, f);
+    for (const n of f.children) { const lid = n.getPluginData(LAYER_KEY); if (lid) nodes.set(sid + '/' + lid, n); }
+  }
+  return {frames, nodes};
 }
-function cursor(x,y){
-  if(!arrow||arrow.removed){arrow=figma.createNodeFromSvg('<svg xmlns="http://www.w3.org/2000/svg" width="28" height="32"><path d="M2 2L25 16L15 18L10 29Z" fill="#7A47E7" stroke="white" stroke-width="2"/></svg>');arrow.name='Iris · pointer';arrow.locked=true}
-  figma.currentPage.appendChild(arrow);arrow.x=x;arrow.y=y;
+
+async function start(m) {
+  if (run) finish(true);
+  const board = Screens.checkBoard(m.board, true), prev = m.prev ? Screens.checkBoard(m.prev, true) : null;
+  for (const s of [...board.screens, ...(prev ? prev.screens : [])]) { const c = rgb(s.background); s.dark = (c.r + c.g + c.b) / 3 < .4; }
+  const P = Crew.plan(board, Math.min(250, m.count || 100), {prev});
+  const fonts = {};
+  const weights = new Set([600]);
+  for (const s of [...board.screens, ...(prev ? prev.screens : [])]) for (const L of s.layers) if (L.kind === 'text') weights.add(L.weight);
+  for (const w of weights) fonts[w] = await loadFont(w);
+
+  const design = (m.doc && m.doc.id) || board.id || 'design';
+  const found = scan(design), page = figma.currentPage, B = P.bounds;
+  let dx, dy;
+  const anchor = board.screens.concat(prev ? prev.screens : []).find(s => found.frames.has(s.id));
+  if (prev && anchor) { const f = found.frames.get(anchor.id); dx = f.x - anchor.x; dy = f.y - anchor.y; }
+  else {
+    let ox = Math.round(figma.viewport.center.x - B.w / 2), oy = Math.round(figma.viewport.center.y - B.h / 2);
+    const existing = page.children.map(n => n.absoluteBoundingBox).filter(Boolean);
+    if (existing.length) { ox = Math.max(...existing.map(b => b.x + b.width)) + 400; oy = Math.min(...existing.map(b => b.y)); }
+    dx = ox - B.x; dy = oy - B.y;
+  }
+  // A fresh build never reuses frames from an older design on the page.
+  if (!prev) { found.frames.clear(); found.nodes.clear(); }
+
+  const crewLayer = figma.createFrame();
+  crewLayer.name = 'Iris · crew (temporary)'; crewLayer.fills = []; crewLayer.clipsContent = false;
+  crewLayer.resize(1, 1); crewLayer.x = dx; crewLayer.y = dy; crewLayer.locked = true;
+  page.appendChild(crewLayer);
+
+  if (!prev) {
+    const view = figma.viewport.bounds;
+    figma.viewport.center = {x: dx + B.x + B.w / 2, y: dy + B.y + B.h / 2};
+    figma.viewport.zoom = figma.viewport.zoom * Math.min(view.width / (B.w * 1.12), view.height / (B.h * 1.12));
+  }
+
+  // Board order of every layer, used to keep Figma's stacking order in step.
+  const order = new Map();
+  P.screens.forEach(E => { for (let li = E.range[0]; li < E.range[1]; li++) order.set(E.S.id + '/' + P.layers[li].L.id, li); });
+  run = {P, board, prev, design, doc: m.doc, dx, dy, fonts, crewLayer, t: 0, speed: m.speed || 1, paused: false, last: Date.now(), lastPost: 0,
+    frames: found.frames, nodes: found.nodes, cache: new Map(), order, cursors: [], cursorScale: 1};
+  run.timer = setInterval(step, 70);
+  post({kind: 'tick', t: 0, state: 'running'});
 }
-function render(force,focus) {
-  if(!active||!desk||desk.removed)return;
-  const s=read(),sig=JSON.stringify(s)+JSON.stringify(direction);if(!force&&sig===last)return;
-  const m=SC.mobile(s,direction);
-  // Clone the real hero so the proposal preserves vector edits and fills.
-  const fresh=drawFrame(m,'Mobile · proposal',desk.x+desk.width+84,desk.y);
-  const placeholder=fresh.children.find(n=>n.name==='Hero'), art=desk.children.find(n=>n.name==='Hero').clone();
-  fresh.insertChild(1,art);art.rescale(m.layers.Hero.w/art.width);art.x=placeholder.x;art.y=placeholder.y;placeholder.remove();
-  if(phone&&!phone.removed)phone.remove();phone=fresh;last=sig;
-  const target=m.layers[focus]||m.layers.Title;cursor(phone.x+target.x+8,phone.y+target.y+8);
-  figma.ui.postMessage({kind:'scene',source:s});
+
+function step() {
+  const r = run; if (!r) return;
+  try {
+    const now = Date.now();
+    if (!r.paused) r.t = Math.min(r.P.total, r.t + (now - r.last) / 1000 * r.speed);
+    r.last = now;
+    apply(r, r.t);
+    if (now - r.lastPost > 120) { r.lastPost = now; post({kind: 'tick', t: r.t, state: r.paused ? 'paused' : 'running'}); }
+    if (r.t >= r.P.total) finish(false);
+  } catch (e) {
+    stop(); if (typeof process !== 'undefined' && process.env && process.env.IRIS_DEBUG) console.error(e); post({kind: 'error', text: 'The crew stopped: ' + (e && e.message || e)});
+  }
 }
-let failure='';
-function tick(){try{render(false);failure=''}catch(e){if(String(e)!==failure){failure=String(e);figma.ui.postMessage({kind:'error',text:failure})}}}
-async function startSample(){
-  await Promise.all([figma.loadFontAsync(fonts.Title),figma.loadFontAsync(fonts.normal)]);
-  if(desk&&!desk.removed)return;
-  const center=figma.viewport.center;desk=drawFrame(SC.base(),'Desktop · edit me',Math.round(center.x-650),Math.round(center.y-300));active=true;render(true);figma.viewport.scrollAndZoomIntoView([desk,phone]);figma.currentPage.selection=inputFrame&&!inputFrame.removed?[inputFrame]:[desk];
-  setInterval(tick,650);
+
+function apply(r, t) {
+  const {P, dx, dy} = r;
+  P.screens.forEach((E, si) => {
+    const S = E.S, st = Crew.screenAt(P, si, t);
+    let f = r.frames.get(S.id);
+    if (!st) { if (E.ghost && f && !f.removed) { f.remove(); r.frames.delete(S.id); } return; }
+    if (!f || f.removed) {
+      f = figma.createFrame(); f.name = S.name; f.fills = [solid('#FFFFFF')]; f.clipsContent = true;
+      f.x = S.x + dx; f.y = S.y + dy; f.setPluginData(SCREEN_KEY, S.id); f.setPluginData(DESIGN_KEY, r.design);
+      figma.currentPage.insertChild(figma.currentPage.children.indexOf(r.crewLayer), f);
+      r.frames.set(S.id, f);
+    }
+    if (f.name !== S.name && !E.ghost) f.name = S.name;
+    const w = Math.max(1, Math.round(st.w)), h = Math.max(1, Math.round(st.h));
+    if (f.width !== w || f.height !== h) f.resize(w, h);
+    const bg = st.paint >= .45 ? st.paintTo : st.paintFrom, c = r.cache.get('screen/' + S.id) || {};
+    if (c.bg !== bg) { f.fills = [solid(bg)]; c.bg = bg; r.cache.set('screen/' + S.id, c); }
+    if (E.ghost) f.opacity = Math.max(0, st.alpha);
+    for (let li = E.range[0]; li < E.range[1]; li++) {
+      const ref = P.layers[li], ls = Crew.layerAt(P, li, t), id = S.id + '/' + ref.L.id;
+      if (!ls) { const n = r.nodes.get(id); if (ref.ghost && n && !n.removed) { n.remove(); r.nodes.delete(id); } continue; }
+      if (E.ghost) continue;
+      layer(r, f, S, ref, ls, li);
+    }
+  });
+  cursors(r, t);
 }
-figma.ui.onmessage=async msg=>{
-  try{
-    if(msg.kind==='ui-ready'){if(inputFrame&&!inputFrame.removed)figma.ui.postMessage({kind:'custom-source',name:inputFrame.name});else figma.ui.postMessage({kind:'blank-source'});return}
-    if(msg.kind==='new-screen'){await startScreen(msg.screen,[5,25,100].includes(msg.count)?msg.count:100);return}
-    if(['fleet-context','launch-fleet','apply','keep','snapshot'].includes(msg.kind)&&!targetFrame())await startSample();
-    if(msg.kind==='fleet-context'){
-      try{const f=targetFrame();if(!f)throw Error('Select a source frame.');
-        const img=await f.exportAsync({format:'PNG',constraint:{type:'WIDTH',value:720}});
-        figma.ui.postMessage({kind:'fleet-context',id:msg.id,sourceKey:f.id,source:{name:f.name,width:f.width,height:f.height,layers:f.children.slice(0,64).map((n,index)=>({index,name:n.name,type:n.type,x:n.x,y:n.y,w:n.width,h:n.height}))},png:figma.base64Encode(img)});
-      }catch(e){figma.ui.postMessage({kind:'fleet-context',id:msg.id,error:e.message})}return}
-    if(msg.kind==='launch-fleet'){await launchFleet([5,25,100].includes(msg.count)?msg.count:100,msg.brief,msg.sourceKey,msg.shared);return}
-    if(msg.kind==='pause-fleet'){pauseFleet();return}
-    if(msg.kind==='stop-fleet'){stopFleet();return}
-    if(msg.kind==='snapshot'){try{const img=await desk.exportAsync({format:'PNG',constraint:{type:'WIDTH',value:720}});figma.ui.postMessage({kind:'snapshot',id:msg.id,png:figma.base64Encode(img)})}catch(e){figma.ui.postMessage({kind:'snapshot',id:msg.id})}return}
-    if(msg.kind==='apply'){direction=SC.normalize(msg.plan);render(true,msg.focus)}
-    if(msg.kind==='keep'&&phone&&!phone.removed){const saved=phone.clone();saved.name='Mobile · saved';saved.x=phone.x;saved.y=phone.y+phone.height+64;while(figma.currentPage.children.some(n=>n!==saved&&n.name==='Mobile · saved'&&n.x===saved.x&&n.y===saved.y))saved.y+=saved.height+64;figma.notify('Editable mobile frame saved below the proposal.')}
-  }catch(e){figma.ui.postMessage({kind:'error',text:String(e)})}
+
+function place(r, f, S, li, n) {
+  // Insert just above the last tagged sibling that comes earlier on the board.
+  let at = 0;
+  f.children.forEach((c, i) => { const lid = c.getPluginData(LAYER_KEY); const k = lid ? r.order.get(S.id + '/' + lid) : undefined; if (k !== undefined && k < li) at = i + 1; });
+  f.insertChild(Math.min(at, f.children.length), n);
+}
+
+function makeNode(r, L, ls) {
+  let n;
+  if (L.kind === 'text') { n = figma.createText(); n.textAutoResize = 'WIDTH_AND_HEIGHT'; }
+  else if (L.kind === 'line') { n = figma.createVector(); n.fills = []; n.strokeCap = 'ROUND'; n.strokeJoin = 'ROUND'; }
+  else if (L.kind === 'icon') { n = figma.createNodeFromSvg(Icons.svg(ls.icon, 24, ls.color, L.sw || 2)); n.clipsContent = false; if (L.w !== 24) n.rescale(L.w / 24); }
+  else n = L.kind === 'ellipse' ? figma.createEllipse() : figma.createRectangle();
+  return n;
+}
+
+function layer(r, f, S, ref, ls, li) {
+  const L = ref.L, id = S.id + '/' + L.id;
+  let n = r.nodes.get(id), c = r.cache.get(id);
+  if (n && n.removed) n = null;
+  if (!c) { c = {}; r.cache.set(id, c); }
+  const wantType = L.kind === 'text' ? 'TEXT' : L.kind === 'line' ? 'VECTOR' : L.kind === 'icon' ? 'FRAME' : L.kind === 'ellipse' ? 'ELLIPSE' : 'RECTANGLE';
+  // Icons are rebuilt when their glyph or colour changes; any node of the wrong type is replaced.
+  if (n && (n.type !== wantType || (L.kind === 'icon' && c.glyph !== undefined && c.glyph !== ls.icon + ls.color) || (L.kind === 'icon' && c.glyph === undefined && ref.prev && (ref.prev.icon !== ls.icon || ref.prev.stroke !== ls.color)))) { n.remove(); n = null; }
+  if (!n) {
+    n = makeNode(r, L, ls); n.name = L.name; n.setPluginData(LAYER_KEY, L.id);
+    place(r, f, S, li, n); r.nodes.set(id, n);
+    for (const k of Object.keys(c)) delete c[k];
+  }
+  if (L.kind === 'icon') c.glyph = ls.icon + ls.color;
+  if (n.name !== L.name) n.name = L.name;
+  const opacity = Math.round((L.opacity === undefined ? 1 : L.opacity) * ls.alpha * (L.kind === 'icon' ? Math.min(1, ls.scale) : 1) * 100) / 100;
+  if (c.opacity !== opacity) { n.opacity = Math.max(0, Math.min(1, opacity)); c.opacity = opacity; }
+  const b = ls.box, exact = ls.final && ls.alpha === 1;
+
+  if (L.kind === 'text') {
+    const T = ls.layer, chars = Math.max(1, ls.chars), stamp = key([ls.text.slice(0, chars), T.size, T.weight, T.lh, T.align, ls.color, exact ? 'final' : [Math.round(b.x), Math.round(b.y), Math.round(b.w)]]);
+    if (c.text === stamp) return;
+    c.text = stamp;
+    n.fontName = {family: 'Inter', style: r.fonts[T.weight] || r.fonts[600]};
+    n.fontSize = T.size; n.lineHeight = {unit: 'PERCENT', value: T.lh * 100};
+    n.letterSpacing = {unit: 'PERCENT', value: T.size >= 28 ? -2 : 0};
+    n.textAlignHorizontal = T.align === 'center' ? 'CENTER' : T.align === 'right' ? 'RIGHT' : 'LEFT';
+    n.characters = ls.text.slice(0, chars);
+    n.fills = [solid(ls.color)];
+    n.x = T.align === 'center' ? b.x + (b.w - n.width) / 2 : T.align === 'right' ? b.x + b.w - n.width : b.x;
+    n.y = b.y;
+    return;
+  }
+  if (L.kind === 'line') {
+    const stamp = key([Math.round(ls.trace * 60), ls.color, L.sw]);
+    if (c.line === stamp) return;
+    c.line = stamp;
+    n.strokes = [solid(ls.color)]; n.strokeWeight = L.sw;
+    const pts = ls.pts || ref.pts, at = Crew.polyPoint(pts, ls.trace), end = ls.trace >= 1 ? pts.length - 1 : at.index;
+    const path = pts.slice(0, end + 1).map(p => ({x: p.x - S.x, y: p.y - S.y}));
+    if (ls.trace < 1) path.push({x: at.x - S.x, y: at.y - S.y});
+    if (path.length < 2) path.push({x: path[0].x + .01, y: path[0].y});
+    n.vectorPaths = [{windingRule: 'NONE', data: path.map((p, i) => (i ? 'L ' : 'M ') + p.x.toFixed(2) + ' ' + p.y.toFixed(2)).join(' ')}];
+    // Re-anchor so the geometry sits where the path says, however Figma normalises it.
+    const bb = n.absoluteBoundingBox, fb = f.absoluteTransform;
+    if (bb) { n.x += fb[0][2] + Math.min(...path.map(p => p.x)) - bb.x; n.y += fb[1][2] + Math.min(...path.map(p => p.y)) - bb.y; }
+    return;
+  }
+  if (L.kind === 'icon') {
+    const where = exact ? 'final' : key([Math.round(b.x * 2), Math.round(b.y * 2)]);
+    if (c.box !== where) { c.box = where; n.x = b.x; n.y = b.y; }
+    return;
+  }
+  const where = exact ? 'final' : [b.x, b.y, b.w, b.h].map(v => Math.round(v * 2) / 2).join(',');
+  if (c.box !== where) { c.box = where; n.resize(Math.max(.5, b.w), Math.max(.5, b.h)); n.x = b.x; n.y = b.y; }
+  const paint = ls.fill >= .45 ? ls.fillTo : ls.fillFrom, look = key([paint, L.stroke, L.sw, L.shadow, S.dark]);
+  if (c.look !== look) {
+    c.look = look;
+    const placeholder = paint === Crew.PLACEHOLDER;
+    n.fills = L.fill || (paint && !placeholder) ? paints(paint) : [];
+    if (L.stroke || (!L.fill && placeholder)) { n.strokes = [solid(placeholder && !L.fill ? Crew.PLACEHOLDER : L.stroke)]; n.strokeWeight = L.sw || 1; n.strokeAlign = 'CENTER'; } else n.strokes = [];
+    n.effects = L.shadow && !placeholder ? [{type: 'DROP_SHADOW', color: S.dark ? {r: 0, g: 0, b: 0, a: .5} : {r: .086, g: .086, b: .19, a: .13}, offset: {x: 0, y: 10}, radius: 30, spread: 0, visible: true, blendMode: 'NORMAL', showShadowBehindNode: false}] : [];
+  }
+  if (L.kind === 'rect') { const rad = exact ? ls.radius : Math.round(ls.radius * 2) / 2; if (c.r !== rad) { c.r = rad; n.cornerRadius = rad; } }
+}
+
+function makeCursor(r, c) {
+  const g = figma.createFrame(); g.name = 'Cursor · ' + c.name; g.fills = []; g.clipsContent = false; g.resize(14, 19);
+  const arrow = figma.createNodeFromSvg('<svg xmlns="http://www.w3.org/2000/svg" width="14" height="20" viewBox="-0.7 -0.7 14.4 20.4"><path d="' + ARROW + '" fill="' + c.color + '" stroke="#FFFFFF" stroke-width="1.4" stroke-linejoin="round"/></svg>');
+  arrow.fills = []; g.appendChild(arrow); arrow.x = -.7; arrow.y = -.7;
+  const chip = figma.createFrame(); chip.name = 'Name'; chip.layoutMode = 'HORIZONTAL'; chip.primaryAxisSizingMode = 'AUTO'; chip.counterAxisSizingMode = 'AUTO';
+  chip.paddingLeft = chip.paddingRight = 6; chip.paddingTop = chip.paddingBottom = 3; chip.cornerRadius = 5; chip.fills = [solid(c.color)];
+  const label = figma.createText(); label.fontName = {family: 'Inter', style: r.fonts[600]}; label.fontSize = 10.5; label.characters = c.name; label.fills = [solid(light(c.color) ? '#101014' : '#FFFFFF')];
+  chip.appendChild(label); g.appendChild(chip); chip.x = 11; chip.y = 16;
+  r.crewLayer.appendChild(g);
+  if (r.cursorScale !== 1) g.rescale(r.cursorScale);
+  return g;
+}
+
+function cursors(r, t) {
+  const scale = 1 / Math.max(.02, figma.viewport.zoom);
+  if (scale / r.cursorScale > 1.2 || scale / r.cursorScale < .83) {
+    for (const g of r.cursors) if (g && !g.removed) g.rescale(scale / r.cursorScale);
+    r.cursorScale = scale;
+  }
+  for (const c of r.P.crew) {
+    const s = Crew.cursorAt(r.P, c, t);
+    let g = r.cursors[c.id];
+    if (!s) { if (g && g.visible) g.visible = false; continue; }
+    if (!g) g = r.cursors[c.id] = makeCursor(r, c);
+    if (!g.visible) g.visible = true;
+    const x = Math.round(s.x * 2) / 2, y = Math.round(s.y * 2) / 2;
+    if (g.x !== x) g.x = x;
+    if (g.y !== y) g.y = y;
+    const a = Math.round(s.alpha * 10) / 10;
+    if (g.opacity !== a) g.opacity = a;
+  }
+}
+
+function stop() {
+  const r = run; if (!r) return null;
+  clearInterval(r.timer); run = null;
+  if (!r.crewLayer.removed) r.crewLayer.remove();
+  return r;
+}
+
+// Jump to the end state, put every layer in board order and remember the design on the page.
+function finish(silent) {
+  const r = run; if (!r) return;
+  apply(r, r.P.total);
+  stop();
+  for (const S of r.board.screens) {
+    const f = r.frames.get(S.id); if (!f || f.removed) continue;
+    S.layers.forEach((L, i) => { const n = r.nodes.get(S.id + '/' + L.id); if (n && !n.removed) f.insertChild(Math.min(i, f.children.length - 1), n); });
+  }
+  if (r.doc) figma.currentPage.setPluginData(DOC_KEY, JSON.stringify(r.doc));
+  figma.commitUndo();
+  if (silent) return;
+  const frames = r.board.screens.map(S => r.frames.get(S.id)).filter(f => f && !f.removed);
+  if (!r.prev) { figma.currentPage.selection = frames; figma.viewport.scrollAndZoomIntoView(frames); }
+  figma.notify(r.prev ? 'Iris applied the change.' : 'Iris built ' + frames.length + ' editable screens.');
+  post({kind: 'done', t: r.P.total});
+}
+
+// Cancelling a first build removes it; cancelling a change finishes it at once, so nothing is left half-edited.
+function cancel() {
+  const r = run; if (!r) return;
+  if (r.prev) { finish(false); return; }
+  stop();
+  for (const f of r.frames.values()) if (f && !f.removed) f.remove();
+  post({kind: 'cancelled'});
+}
+
+function readback(design) {
+  const found = scan(design), nodes = [];
+  for (const [id, n] of found.nodes) {
+    if (n.removed) continue;
+    const out = {id: id.slice(id.indexOf('/') + 1), x: n.x, y: n.y, w: n.width, h: n.height};
+    const first = list => Array.isArray(list) && list[0] && list[0].type === 'SOLID' ? toHex(list[0].color) : undefined;
+    if (n.type === 'TEXT') { out.text = n.characters; out.fill = first(n.fills); }
+    else if (n.type === 'VECTOR') out.fill = first(n.strokes);
+    else if (n.type === 'RECTANGLE' || n.type === 'ELLIPSE') out.fill = first(n.fills);
+    nodes.push(out);
+  }
+  return {screens: [...found.frames.keys()], nodes};
+}
+
+figma.ui.onmessage = async m => {
+  try {
+    if (m.kind === 'ui-ready') {
+      try { const k = await figma.clientStorage.getAsync('iris-key'); if (k) post({kind: 'key', key: k}); } catch (e) { /* storage unavailable */ }
+      const saved = figma.currentPage.getPluginData(DOC_KEY);
+      if (saved) { try { const doc = JSON.parse(saved); if (scan(doc.id).frames.size) post({kind: 'restore', doc}); } catch (e) { /* ignore a damaged record */ } }
+    } else if (m.kind === 'save-key') await figma.clientStorage.setAsync('iris-key', String(m.key || ''));
+    else if (m.kind === 'build') await start(m);
+    else if (m.kind === 'readback') post({kind: 'readback', id: m.id, read: run ? null : readback(m.design)});
+    else if (m.kind === 'pause' && run) { run.paused = true; post({kind: 'tick', t: run.t, state: 'paused'}); }
+    else if (m.kind === 'resume' && run) { run.paused = false; run.last = Date.now(); post({kind: 'tick', t: run.t, state: 'running'}); }
+    else if (m.kind === 'speed' && run) run.speed = m.speed;
+    else if (m.kind === 'cancel') cancel();
+  } catch (e) { stop(); post({kind: 'error', text: String(e && e.message || e)}); }
 };
-figma.on('close',()=>{if(nativeRun)dropBoard(nativeRun);if(arrow&&!arrow.removed)arrow.remove()});
+figma.on('close', () => { if (run) finish(true); });

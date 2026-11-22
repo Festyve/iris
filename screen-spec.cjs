@@ -1,61 +1,116 @@
-/* Ordered primitives are the transport between the planner and both renderers. */
+/* A board is a set of screens made of ordered primitives (back to front).
+   It is the contract between the planners (local kit or Gemini) and both renderers. */
 const Screens = (() => {
-  const color = value => typeof value === 'string' && /^#[a-f0-9]{6}$/i.test(value);
-  function check(screen){
-    const {name,width,height,background,layers}=screen||{};
-    if(typeof name!=='string'||!name.trim()||name.length>90||!color(background)||
-      !Number.isInteger(width)||width<240||width>1920||!Number.isInteger(height)||height<240||height>2400||
-      !Array.isArray(layers)||!layers.length||layers.length>180)throw Error('Invalid screen definition.');
-    for(const v of layers){
-      if(!v||!['rect','text','ellipse'].includes(v.kind)||!color(v.fill)||typeof v.name!=='string'||!v.name.trim()||
-        ![v.x,v.y,v.w,v.h].every(Number.isFinite)||v.x<0||v.y<0||v.w<1||v.h<1||
-        v.x+v.w>width+1||v.y+v.h>height+1)throw Error('Invalid geometry in the screen plan.');
-      if(v.kind==='text'&&(typeof v.text!=='string'||!v.text.trim()||v.text.length>240||!Number.isFinite(v.size)||v.size<8||v.size>110))throw Error('Invalid text in the screen plan.');
-      if(v.radius!==undefined&&(!Number.isFinite(v.radius)||v.radius<0))throw Error('Invalid corner radius.');
-    }
-    return screen;
+  const HEX = /^#[a-f0-9]{6}$/i;
+  const OVERFLOW = 260; // screens clip their content, so shapes may bleed a little past the edge
+  const isHex = v => typeof v === 'string' && HEX.test(v);
+  const num = (v, lo, hi) => Number.isFinite(v) && v >= lo && v <= hi;
+
+  function paint(v) {
+    if (isHex(v)) return v.toUpperCase();
+    if (v && typeof v === 'object' && isHex(v.from) && isHex(v.to)) return {from: v.from.toUpperCase(), to: v.to.toUpperCase(), dir: v.dir === 'v' ? 'v' : 'd'};
+    return null;
   }
-  function starter(brief){
-    const mobile=/transit|metro|train|commut|departure|bus stop/i.test(brief);
-    const board=/kanban|task|sprint|project board/i.test(brief);
-    const finance=/spend|budget|expense|financ|wallet/i.test(brief);
-    if(!mobile&&!board&&!finance)throw Error('Connect Gemini for this custom brief, or try a local transit, task board, or spending screen.');
-    const ink='#172523',muted='#51655E',leaf='#D9F79B',white='#FFFFFF',paper='#F4F6F1';
-    const quoted=brief.match(/["“]([^"”\n]{1,32})["”]/);
-    const name=quoted?quoted[1]:mobile?'Northline':board?'Studio board':'Ledger';
-    const width=mobile?390:1040,height=mobile?780:690,layers=[];
-    const shape=(kind,name,x,y,w,h,fill,radius=0)=>layers.push({kind,name,x,y,w,h,fill,radius});
-    const box=(name,x,y,w,h,fill,r=0)=>shape('rect',name,x,y,w,h,fill,r);
-    const label=(text,x,y,w,size,fill=ink,bold=false)=>layers.push({kind:'text',name:text.slice(0,50),text,x,y,w,h:Math.ceil(size*1.32),size,fill,bold});
-    if(mobile){
-      box('Station header',0,0,390,307,ink);label(name,24,28,300,22,leaf,true);
-      label('Union Station',24,98,345,38,white,true);label('Northbound platform',25,152,330,17,'#C1D4CC');
-      box('Departure highlight',24,207,342,70,leaf,14);label('Next train',40,219,180,14);label('3 min',258,223,94,26,ink,true);
-      label('Departures',24,338,320,26,ink,true);
-      ['North York Centre','Finch','Sheppard–Yonge','Finch'].forEach((s,i)=>{
-        const y=397+i*76;shape('ellipse','Line marker',24,y,30,30,'#F7CA51');label('1',34,y+5,13,15,ink,true);
-        label(s,70,y,212,18,ink,true);label('Platform 2',70,y+30,180,13,muted);label([3,8,13,19][i]+' min',308,y+3,65,15);
-        box('Divider',24,y+59,342,1,'#CFDAD1');
-      });
-      box('Save station',24,715,342,44,ink,12);label('Save station',137,727,130,15,white,true);
-    }else if(board){
-      box('Navigation',0,0,width,67,ink);label(name,32,19,420,23,leaf,true);
-      label('Product sprint',32,99,610,40,ink,true);label('Design and engineering',34,159,560,17,muted);
-      const cols=[['Backlog','Search filters','Update shortcuts','Export states'],['In progress','Mobile navigation','Activity history'],['In review','Color system','Keyboard focus']];
-      cols.forEach((col,i)=>{const x=32+i*328;
-        box(col[0]+' column',x,220,312,420,'#E4EBE2',16);label(col[0],x+16,237,230,21,ink,true);
-        col.slice(1).forEach((s,k)=>{const y=292+k*101;box('Task card',x+12,y,288,85,white,12);label(s,x+26,y+14,255,18,ink,true);label(['Design','Engineering','Product'][k],x+26,y+48,235,13,muted)});
-      });
-    }else{
-      box('Sidebar',0,0,188,height,ink);label(name,20,31,151,24,leaf,true);
-      ['Overview','Activity','Budgets','Reports'].forEach((s,i)=>label(s,22,122+i*44,145,16,i?'#C1D4CC':white,i===0));
-      label('Spending overview',218,44,790,42,ink,true);label('November',220,110,300,17,muted);
-      box('Total card',218,165,785,217,ink,16);label('Total spending',245,191,360,17,leaf);label('$2,480',242,239,390,54,white,true);
-      [40,55,36,62,90,75,103,85,125,103,133,153].forEach((v,i)=>box('Daily spending',590+i*32,351-v,20,v,leaf,4));
-      label('Recent activity',219,415,610,27,ink,true);['Neighborhood market','City transit','Paper & ink'].forEach((s,i)=>{const y=479+i*57;label(s,221,y,440,18);label(['$68.40','$24.00','$42.50'][i],895,y,108,17,ink,true);box('Divider',220,y+37,784,1,'#CDD8D1')});
+
+  function layer(v, width, height, fallbackId) {
+    if (!v || typeof v !== 'object') throw Error('Invalid layer in the screen plan.');
+    const kind = v.kind;
+    if (!['rect', 'ellipse', 'text', 'line', 'icon'].includes(kind)) throw Error('Unknown layer kind: ' + kind);
+    if (typeof v.name !== 'string' || !v.name.trim()) throw Error('Every layer needs a name.');
+    if (![v.x, v.y, v.w, v.h].every(Number.isFinite) || v.w < 0.5 || v.h < 0.5 ||
+      v.x < -OVERFLOW || v.y < -OVERFLOW || v.x + v.w > width + OVERFLOW || v.y + v.h > height + OVERFLOW)
+      throw Error('Invalid geometry in the screen plan (' + v.name + ').');
+    const out = {id: typeof v.id === 'string' && v.id ? v.id : fallbackId, kind, name: v.name.trim().slice(0, 60), x: v.x, y: v.y, w: v.w, h: v.h};
+    if (v.opacity !== undefined) { if (!num(v.opacity, 0, 1)) throw Error('Invalid opacity.'); if (v.opacity < 1) out.opacity = v.opacity; }
+    if (kind === 'icon') {
+      const stroke = paint(v.stroke || v.fill);
+      if (!isHex(stroke) || typeof v.icon !== 'string') throw Error('An icon needs a name and a colour.');
+      return Object.assign(out, {icon: v.icon, stroke, sw: num(v.sw, 0.5, 6) ? v.sw : 2, fill: null});
     }
-    return check({name,width,height,background:paper,layers});
+    if (kind === 'line') {
+      const stroke = paint(v.stroke || v.fill);
+      if (!isHex(stroke)) throw Error('A line needs a stroke colour.');
+      if (!Array.isArray(v.points) || v.points.length < 2 || v.points.length > 64 ||
+        !v.points.every(p => Array.isArray(p) && num(p[0], 0, 1) && num(p[1], 0, 1))) throw Error('Invalid line points.');
+      return Object.assign(out, {stroke, sw: num(v.sw, 0.5, 24) ? v.sw : 2, points: v.points.map(p => [p[0], p[1]]), fill: null});
+    }
+    const fill = v.fill === null || v.fill === undefined ? null : paint(v.fill);
+    if (v.fill && !fill) throw Error('Invalid fill colour (' + v.name + ').');
+    out.fill = fill;
+    if (kind === 'text') {
+      const size = v.size;
+      if (typeof v.text !== 'string' || !v.text.length || v.text.length > 800) throw Error('Invalid text in the screen plan.');
+      if (!num(size, 6, 120)) throw Error('Invalid text size.');
+      if (!isHex(fill)) throw Error('Text needs a solid colour.');
+      const weight = v.bold ? 700 : num(v.weight, 100, 900) ? Math.round(v.weight / 100) * 100 : 400;
+      return Object.assign(out, {text: v.text, size, weight, align: ['center', 'right'].includes(v.align) ? v.align : 'left', lh: num(v.lh, 0.8, 2.2) ? v.lh : 1.3});
+    }
+    const radius = v.r !== undefined ? v.r : v.radius;
+    if (radius !== undefined && !num(radius, 0, 2000)) throw Error('Invalid corner radius.');
+    if (radius) out.r = Math.min(radius, v.w / 2, v.h / 2);
+    if (v.stroke !== undefined && v.stroke !== null) { if (!isHex(v.stroke)) throw Error('Invalid stroke.'); out.stroke = v.stroke.toUpperCase(); out.sw = num(v.sw, 0.5, 24) ? v.sw : 1; }
+    if (!fill && !out.stroke) throw Error('A shape needs a fill or a stroke (' + v.name + ').');
+    if (v.shadow) out.shadow = true;
+    return out;
   }
-  return {check,starter};
+
+  // Lenient checking drops individual bad layers (model output) instead of failing the screen.
+  function check(screen, lenient, index = 0) {
+    const {name, width, height, background, layers} = screen || {};
+    if (typeof name !== 'string' || !name.trim() || name.length > 90 || !isHex(background) ||
+      !Number.isInteger(width) || width < 240 || width > 1920 || !Number.isInteger(height) || height < 240 || height > 2400 ||
+      !Array.isArray(layers) || layers.length > 600) throw Error('Invalid screen definition.');
+    const id = typeof screen.id === 'string' && screen.id ? screen.id : 'screen' + (index + 1);
+    const out = [];
+    layers.forEach((v, i) => { try { out.push(layer(v, width, height, id + ':' + i)); } catch (e) { if (!lenient) throw e; } });
+    if (!out.length && !lenient) throw Error('Invalid screen definition.');
+    const s = {id, name: name.trim(), width, height, background: background.toUpperCase(), layers: out};
+    if (Number.isFinite(screen.x) && Number.isFinite(screen.y)) { s.x = screen.x; s.y = screen.y; }
+    return s;
+  }
+
+  // Phones and tablets share the first row; wide screens go on the second.
+  function arrange(screens, gap = 120) {
+    const fixed = screens.filter(s => Number.isFinite(s.x)), loose = screens.filter(s => !Number.isFinite(s.x));
+    if (fixed.length) {
+      // Keep everything already on the board where it is; new screens join the end of their row.
+      for (const s of loose) {
+        const wide = s.width >= 700, row = fixed.filter(f => (f.width >= 700) === wide);
+        const ref = row.length ? row : fixed;
+        s.x = Math.max(...ref.map(f => f.x + f.width)) + gap;
+        s.y = row.length ? Math.min(...row.map(f => f.y)) : Math.max(...fixed.map(f => f.y + f.height)) + gap * 1.4;
+        fixed.push(s);
+      }
+      return screens;
+    }
+    const rows = [screens.filter(s => s.width < 700), screens.filter(s => s.width >= 700)].filter(r => r.length);
+    const widths = rows.map(r => r.reduce((sum, s) => sum + s.width, 0) + gap * (r.length - 1));
+    const total = Math.max(...widths);
+    let y = 0;
+    rows.forEach((row, i) => {
+      let x = (total - widths[i]) / 2;
+      for (const s of row) { s.x = Math.round(x); s.y = y; x += s.width + gap; }
+      y += Math.max(...row.map(s => s.height)) + gap * 1.4;
+    });
+    return screens;
+  }
+
+  function checkBoard(board, lenient) {
+    if (!board || !Array.isArray(board.screens) || !board.screens.length || board.screens.length > 12) throw Error('Invalid board.');
+    const screens = arrange(board.screens.map((s, i) => check(s, lenient, i)));
+    const total = screens.reduce((n, s) => n + s.layers.length, 0);
+    if (total > 2400) throw Error('That board is too large for one run.');
+    const out = {name: String(board.name || screens[0].name).slice(0, 60), screens};
+    if (typeof board.id === 'string' && board.id) out.id = board.id;
+    return out;
+  }
+
+  function bounds(board) {
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    for (const s of board.screens) { x0 = Math.min(x0, s.x); y0 = Math.min(y0, s.y); x1 = Math.max(x1, s.x + s.width); y1 = Math.max(y1, s.y + s.height); }
+    return {x: x0, y: y0, w: x1 - x0, h: y1 - y0};
+  }
+
+  return {check, checkBoard, arrange, bounds, isHex, paint};
 })();
-if(typeof module!=='undefined'&&module.exports)module.exports=Screens;
+if (typeof module !== 'undefined' && module.exports) module.exports = Screens;

@@ -1,53 +1,76 @@
-# Iris — Figma cursor swarm
+# Iris — a crew of cursors that designs
 
-Iris gives you a team of up to 100 visible cursors in Figma. Describe a new screen and watch them build editable layers, or select an existing frame to refine it and explore responsive layouts.
+Describe any product and Claude designs it. Then describe changes in plain words and Claude makes them. Every time, hundreds of cursors do the work on the canvas, in the browser or live in your Figma file. They drag out frames, draw and fill shapes, round corners, snap cards into place and type every word. On a change they only touch what changes: moving, recolouring, retyping, deleting and adding.
 
-## Build a new UI
+## What the cursors do
 
-Open **Iris** on a blank Figma canvas, or choose **New UI from brief** in the swarm menu. Describe a screen and click **Build new UI**. Cursors assemble a separate editable Figma frame from named text and shape layers. Runs can be paused, resumed or canceled. New screens are placed beside existing work.
+| Task | What the cursor does |
+| --- | --- |
+| **Frame** / **Paint** | Drags out each screen and floods its background (or resizes and repaints it) |
+| **Draw** | Drags out shapes with a live W × H readout |
+| **Fill** | Clicks a shape and a colour ripple fills it (on a change, the new colour ripples over the old one) |
+| **Round** | Pulls the corner handle to the new radius |
+| **Align** | Drags containers onto the grid while smart guides snap; on a change, moves things to their new place, and their contents ride along |
+| **Type** | Types each string with a caret; on a change, selects the old text and types the new |
+| **Icon** / **Trace** | Places icons and draws chart lines |
+| **Delete** | Selects a removed layer and it fades out |
 
-Local mode provides three distinct starters: a mobile transit screen, a task board, and a spending overview. Include a quoted name to name the product. For example, try `A mobile transit screen called "Northline"`. With the Gemini design service connected, a brief can specify an entirely different product, layout, viewport, palette and copy. Creating a screen sends just its brief to the planner. The output is an editable single-screen design.
+Containers finish before anything that sits on them, and a small change gets a small crew.
 
-The shared-canvas and responsive-grid cursor paths now run 2.5 times faster. A full shared-canvas run takes about six seconds of animation, excluding planning and editor overhead.
+## How it works
 
-## Launch the swarm
+1. **Claude designs a document, not pixels.** Claude Opus 5.5 returns a flat list of nodes (frames, text, icons, images, shapes, lines). Each node names its parent and describes layout like flexbox: rows, columns, grids, gaps, padding, alignment and fill/hug sizing. `layout.js` computes exact geometry, so spacing and alignment come out clean however long the copy is. There are 90+ built-in stroke icons.
+2. **Every node has a stable id.** For a change, Claude gets the current document and returns a patch: `set`, `add`, `remove`, `move` or `addScreen`. It never regenerates the whole design, so everything you didn't ask about stays exactly as it was.
+3. **The crew plays the difference.** `crew.js` compares the old and new boards and schedules only the work needed. The browser and Figma replay the same timeline.
+4. **Your own edits count.** In Figma, before each change, the plugin reads the frames back. Text you retyped, colours you changed, layers you deleted or resized, and positions inside absolute (stack) containers all become part of the design Claude edits.
+5. **Versions.** Every build and change is a version. Undo/redo (⌘Z / ⇧⌘Z) or pick one in the Versions panel, and the crew animates the canvas back or forward to it.
 
-Open **ui.html**, choose **Shared canvas** and **100 cursors**, then click **Launch swarm**. Numbered, color-tagged cursors enter in waves, visit layer positions, pause, and move to their next assignments. The panel shows the live active count. In Figma the pass runs on one editable working copy of the selected frame. The local pass snaps eligible layer positions to whole pixels. Voice and model planning are optional.
+## Set up Claude
 
-Choose **Responsive grid** to build breakpoint variants. The sample has five layers. Twenty workers each own the same role at different viewport sizes, forming 100 assignments across 20 layouts from 320 to 1440 pixels. Click a layout to zoom in. Pause and resume the run, or cancel to return to the desktop canvas. The 5- and 25-cursor options build smaller sets.
-
-In Figma, select a product frame before running the plugin, or use the sample desktop it creates. Click **Launch swarm**. Colored pointer layers travel to their assignments as the plugin positions, sizes, and reveals editable design layers. The completed frames remain together on the page. Cancel removes only the current unfinished board. The agent arrows are temporary plugin-created layers. They do not require inviting other Figma accounts.
-
-The sample uses an art-directed responsive layout. For custom frames the starting point uses native auto-layout or proportional geometry; each lane handles a group of top-level layers. The displayed assignment count reflects the actual number of occupied lanes. Extremely large selections need a smaller run.
-
-With Gemini connected, each launch sends one source preview, indexed layer list and design direction to the model. Its plan assigns bounded edits by layer and viewport size. One art director coordinates the cursor workers. Disconnected runs use the local layout engine. To give a brief, type a direction before launch, or transcribe a voice note with ElevenLabs.
-
-## Try it immediately
-
-Open **ui.html** in a browser. Drag the title or flower, resize the flower, and compare Follow desktop, Stack, and Overlap. Keep this mobile version saves a snapshot below the browser canvas. These controls use local layout rules. Typed shortcuts such as “Keep the overlap and put the date at the top” work offline. Freeform art direction requires the AI service below.
-
-## Run inside Figma
-
-In Figma Desktop, open a design file. Choose **Plugins → Development → Import plugin from manifest** and select **manifest.json** from this folder. Run **Iris** from the Development menu. With no frame selected, the plugin opens in New UI from brief mode. The existing-frame modes can still launch the After Hours sample. With a frame selected, it opens the swarm controls for that frame.
-
-Move or resize the desktop Title or Hero layer or edit the headline. A purple pointer marks the area under review in the mobile proposal. Keep this mobile version creates an independent editable Figma frame below the live proposal. The live proposal is regenerated on source changes. Edit the saved frame to refine it by hand. The prototype expects its five named layers.
-
-## Enable AI and voice
-
-Install Node.js 22 or later. Set **GEMINI_API_KEY** for freeform design direction and **ELEVENLABS_API_KEY** for spoken direction in your local environment, then run the command below from this folder. You can supply these variables in a local .env file using Node's --env-file flag. GEMINI_MODEL overrides the default gemini-2.5-flash. Choose a Gemini model supporting image input and structured responses.
+Install Node.js 22 or later, then in this folder:
 
 ```sh
-node server.mjs
+npm install
+ANTHROPIC_API_KEY=sk-ant-... node server.mjs
 ```
 
-Open the browser URL printed in the terminal, or paste the printed session key into **Connect local AI service** in the Figma plugin. The server binds to 127.0.0.1. Keep the terminal open while using the service.
+You can also put the key in a `.env` file and run `node --env-file=.env server.mjs`. Open the printed browser URL, or paste the printed session key into ⚙ in the browser or the Figma plugin. Set `ELEVENLABS_API_KEY` too if you want to speak briefs instead of typing.
 
-Try **“Keep the overlap. Put the date at the top and make the flower bigger.”** Enable AI review after desktop edits for automatic proposals, or use Ask coworker for individual requests. Each AI request sends a desktop PNG, its layer geometry, the current mobile controls and the direction to Gemini. The model can choose stacking or overlap, hero scale, text alignment and date position. Voice notes go to ElevenLabs Scribe on recording completion. If the host denies microphone access, use an audio file or type the direction.
+The server uses `claude-opus-5-5` with adaptive thinking, structured JSON output and server-side refusal fallback. A new design usually takes a minute or two; a change takes seconds to a minute.
+
+**Without Claude**, Iris still works: the built-in kit turns any brief into a themed seven-screen product (five phone screens, a dashboard and a landing page), and the crew builds it. Changes need Claude.
+
+## Use it
+
+**Browser:** open **ui.html**. A demo build starts right away.
+- Pick a crew size (50–1,000), type a brief and press **Build**.
+- Once Claude is connected, the prompt switches to **Edit**: describe a change and press **Apply**. Click the pill to go back to **New**.
+- Drag to pan. Pinch or Ctrl/⌘ + scroll to zoom. Double-click a screen to focus it, and press **F** to fit.
+- Space plays and pauses, the arrow keys step through time and **R** replays. Drag the timeline to scrub.
+- **Export SVG** downloads the board.
+
+**Figma Desktop:** choose **Plugins → Development → Import plugin from manifest** and pick **manifest.json**, then run **Iris**. The crew builds native, editable frames. Each node is tagged with its design id, and the design is saved on the page, so you can close the plugin, edit by hand, reopen it and keep changing the design with words. Cancelling a first build removes it. Cancelling a change finishes it instantly, so nothing is left half-edited. Crews of up to 250 cursors are available in Figma.
 
 ## Source
 
-Edit engine.js for the shared layout rules, figma.js for the native plugin, template.html and app.js for the UI, and server.mjs for the optional model service. After editing plugin or UI sources, run `node build.mjs` to regenerate plugin.js and ui.html. No npm dependencies are required.
+| File | Role |
+| --- | --- |
+| `layout.js` | Design document: validation, flexbox-style layout, patches, import from the kit, merging Figma edits |
+| `icons.js` | Built-in stroke icon set |
+| `designer.mjs` | Claude prompts, output schemas and validation |
+| `server.mjs` | Local service: Claude Opus 5.5 (Anthropic SDK) and ElevenLabs |
+| `crew.js` | Task graph for builds and diffs, cursor scheduling, sampling any moment of a run |
+| `kit.js` | Local designer used without Claude |
+| `screen-spec.cjs` | Board format and screen arrangement |
+| `studio.js` + `template.html` | Browser studio and plugin panel |
+| `figma.js` | Figma plugin: plays runs with native layers, stores and reads back the design |
+
+After editing sources, run `npm run build` to regenerate **plugin.js** and **ui.html**.
 
 ## Verify
 
-Run `node --test tests/*.test.cjs` to check screen generation, layer placement, cursor timing, role assignment and responsive layouts.
+```sh
+npm test
+```
+
+The tests cover the layout engine, patches, kit import and Figma read-back merging. They check that every task in a build or an edit runs exactly once and in order, and that runs end exactly on the new design. They also run the Claude designer flow and the Figma plugin against stand-ins for the API and for Figma: a build, then a change that edits nodes in place and keeps a manual edit, then a restore.
