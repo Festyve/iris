@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { droppedFiles, importFiles, readLibrary, removeReference, saveReferences } from './vault.mjs';
+import { droppedFiles, importFiles, readLibrary, referenceOrigin, removeReference, saveReferences } from './vault.mjs';
 import './library.css';
 
 const demoNotes = import.meta.glob('../design-vault/references/**/*.md', { query: '?raw', import: 'default' });
@@ -20,14 +20,20 @@ async function demoFiles() {
   }));
 }
 
+function OriginBadge({ item }) {
+  return <span className="vault-origin">{referenceOrigin(item) === 'demo' ? 'Design-vault demo' : 'Imported snapshot'}</span>;
+}
+
 function Thumbnail({ asset }) {
   const [url, setUrl] = useState('');
+  const [failedUrl, setFailedUrl] = useState(null);
   useEffect(() => {
     const url = URL.createObjectURL(asset.blob);
     setUrl(url);
     return () => URL.revokeObjectURL(url);
   }, [asset.blob]);
-  return url && <img loading="lazy" src={url} alt={asset.path.split('/').pop()} />;
+  if (url === failedUrl) return <span className="vault-decode-error" role="status">Could not decode image: {asset.path}</span>;
+  return url && <img loading="lazy" src={url} alt={asset.path.split('/').pop()} onError={() => setFailedUrl(url)} />;
 }
 
 function Detail({ item, close, remove, busy }) {
@@ -40,12 +46,21 @@ function Detail({ item, close, remove, busy }) {
   return <dialog ref={dialog} className="vault-detail" aria-labelledby="vault-detail-title" onCancel={close}>
     <div className="vault-detail-head"><span>Reference detail</span><button type="button" onClick={close}>Close</button></div>
     <h2 id="vault-detail-title">{item.title}</h2>
+    <OriginBadge item={item} />
     <p className="vault-path">{item.path}</p>
+    {item.author && <p>By {item.author}</p>}
+    {item.warnings?.length > 0 && <div className="vault-errors"><strong>Unresolved images</strong>
+      <ul>{item.warnings.map((message, i) => <li key={i}>{message}</li>)}</ul>
+    </div>}
     {item.tags.length > 0 && <p className="vault-tags">{item.tags.join(' · ')}</p>}
     {item.images.map(asset => <Thumbnail key={asset.path} asset={asset} />)}
     {item.observation && <><h3>Observation</h3><p>{item.observation}</p></>}
     {item.adaptation && <><h3>Adaptation</h3><p>{item.adaptation}</p></>}
-    {item.body && <details><summary>Original note</summary><p>{item.body}</p></details>}
+    {typeof item.originalMarkdown === 'string'
+      ? <details><summary>Original Markdown</summary><pre>{item.originalMarkdown}</pre></details>
+      : typeof item.body === 'string' && <details><summary>Saved note body</summary>
+        <p>Re-import this note to capture its original Markdown and frontmatter.</p><pre>{item.body}</pre>
+      </details>}
     <div className="vault-detail-foot">
       {item.sourceUrl && <a href={item.sourceUrl} target="_blank" rel="noreferrer">Visit source ↗</a>}
       <button type="button" disabled={busy} onClick={remove}>Remove reference</button>
@@ -100,7 +115,7 @@ export default function Library({ onChange, selectedIds = [], onSelect, onError 
   }
   function ingest(getFiles, batch) {
     return run(async () => {
-      const result = await importFiles(await getFiles(), batch);
+      const result = await importFiles(await getFiles(), batch, refs);
       if (result.refs.length) await saveReferences(result.refs);
       publish(await readLibrary());
       report(result.errors);
@@ -128,7 +143,7 @@ export default function Library({ onChange, selectedIds = [], onSelect, onError 
   const activeTag = tags.includes(tag) ? tag : '';
   const query = search.trim().toLowerCase();
   const visible = refs.filter(ref => (!activeTag || ref.tags.includes(activeTag)) &&
-    [ref.title, ref.path, ref.sourceUrl, ref.observation, ref.adaptation, ref.body, ...ref.tags].join(' ').toLowerCase().includes(query));
+    [ref.title, ref.author, ref.path, ref.sourceUrl, ref.observation, ref.adaptation, ref.body, ...ref.tags].join(' ').toLowerCase().includes(query));
   const detail = refs.find(ref => ref.id === detailId);
   return <section className={'vault-library' + (drag ? ' vault-over' : '')} aria-label="Reference library"
     onDragOver={event => { if (event.dataTransfer.types.includes('Files')) { event.preventDefault(); setDrag(true); } }}
@@ -139,7 +154,8 @@ export default function Library({ onChange, selectedIds = [], onSelect, onError 
       <span>{refs.length} {refs.length === 1 ? 'reference' : 'references'}</span>
     </header>
     <div className="vault-import">
-      <div><strong>Drop your references here</strong><p>Markdown notes, images, or an Obsidian folder.</p></div>
+      <div><strong>Drop your references here</strong><p>Markdown notes, images, or an Obsidian folder.</p>
+        <p className="vault-access">Imports are local snapshots. No live folder access.</p></div>
       <div className="vault-actions">
         <button type="button" className="vault-primary" disabled={busy} onClick={() => fileInput.current.click()}>Choose files</button>
         <button type="button" disabled={busy} onClick={() => folderInput.current.click()}>Choose folder</button>
@@ -168,6 +184,9 @@ export default function Library({ onChange, selectedIds = [], onSelect, onError 
           ? <Thumbnail asset={item.images[0]} /> : <span>{item.observation || item.title}</span>}</div>
         <h3>{item.title}</h3>
       </button>
+      <div className="vault-card-meta"><OriginBadge item={item} />
+        {item.warnings?.length > 0 && <span className="vault-warning-count">{item.warnings.length} unresolved image {item.warnings.length === 1 ? 'link' : 'links'}</span>}
+      </div>
       {item.tags.length > 0 && <span className="vault-tags">{item.tags.join(' · ')}</span>}
       <label><input type="checkbox" aria-label={'Select ' + item.title} checked={selectedIds.includes(item.id)} onChange={e => {
         onSelect?.(e.target.checked ? [...selectedIds, item.id] : selectedIds.filter(id => id !== item.id));

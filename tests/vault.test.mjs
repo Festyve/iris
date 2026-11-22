@@ -98,3 +98,40 @@ test('the bundled collection resolves both After Hours screenshots and retrieves
   const founder = refs.find(ref => ref.title.includes('Founder audience'));
   assert.equal(rankReferences(refs, 'YC program for founders', ['accelerator'])[0].id, founder.id);
 });
+
+test('store the exact UTF-8 Markdown, author and per-note image warnings', async () => {
+  const original = '\uFEFF---\r\nauthor: Rémi\r\n---\r\n# Press kit\r\n  ![[missing.png]]  \r\n![cover][undefined]\r\n';
+  const { refs, errors } = await importFiles([entry('Vault/kit.md', original), entry('Vault/other.md', '# Other')]);
+  assert.equal(refs[0].originalMarkdown, original);
+  assert.equal(refs[0].author, 'Rémi');
+  assert.deepEqual(refs[0].warnings, ['missing.png — Image missing from collection', 'undefined — Image link definition missing']);
+  assert.deepEqual(refs[0].warnings, errors.map(issue => issue.message));
+  assert.deepEqual(refs[1].warnings, []);
+});
+
+test('folder re-imports preserve selection IDs, clear repaired warnings and isolate the demo', async () => {
+  const first = await importFiles([entry('Vault/ref.md', '![[ok.png]]')]);
+  const repaired = [entry('Vault/ref.md', '# Revised\n![[ok.png]]'), entry('Vault/ok.png', 'blob')];
+  const latest = (await importFiles(repaired)).refs[0];
+  assert.equal(latest.id, first.refs[0].id);
+  assert.deepEqual(latest.warnings, []);
+  assert.equal(latest.origin, 'snapshot');
+  const demo = (await importFiles(repaired, 'design-vault-demo', [latest])).refs[0];
+  assert.notEqual(demo.id, latest.id);
+  assert.equal(demo.origin, 'demo');
+  const legacy = { id: 'old-batch:Vault:ref.md', path: 'Vault/ref.md' };
+  assert.equal((await importFiles(repaired, undefined, [legacy, demo])).refs[0].id, legacy.id);
+  assert.notEqual((await importFiles([entry('Other/ref.md')])).refs[0].id, latest.id);
+});
+
+test('loose re-imports deduplicate identical notes and distinguish unrelated files and attachments', async () => {
+  const loose = async (note, image) => (await importFiles([entry('ref.md', note), entry('art.png', image)])).refs[0].id;
+  const text = '# Note\n![[art.png]]';
+  const first = await loose(text, 'image one');
+  assert.equal(await loose(text, 'image one'), first);
+  assert.notEqual(await loose(text, 'image two'), first);
+  assert.notEqual(await loose('Another note', 'image one'), first);
+  const a = (await importFiles([entry('art.png', 'one')])).refs[0];
+  const b = (await importFiles([entry('art.png', 'two')])).refs[0];
+  assert.notEqual(a.id, b.id);
+});

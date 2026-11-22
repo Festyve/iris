@@ -70,3 +70,10 @@
   .vault-filters select { max-width: 50%; }
   .vault-actions button, .vault-filters :is(input, select) { min-height: 44px; }
 }
+.vault-import .vault-access { font-size: 13px; }
+.vault-origin { display: inline-block; width: fit-content; border: 1px solid var(--vault-line); padding: 1px 6px; font: 12px/1.5 ui-monospace, monospace; }
+.vault-card-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin-block: 3px 6px; }
+.vault-warning-count, .vault-decode-error { color: #813c20; font-size: 13px; }
+.vault-decode-error { display: block; padding: 10px; }
+.vault-detail > .vault-origin { margin-top: 12px; }
+.vault-detail pre { white-space: pre-wrap; overflow-wrap: anywhere; padding: 10px; background: #eeeade; font: 13px/1.5 ui-monospace, monospace; }

@@ -64,9 +64,10 @@ function parseNote(text, path) {
   for (const match of body.matchAll(imageSyntax)) {
     const target = match[1] || match[3] || match[4] || definitions.get((match[5] || match[2]).toLowerCase());
     if (target) links.push({ target: target.trim(), wiki: Boolean(match[1]) });
+    else if (match[5] !== undefined) links.push({ missingDefinition: match[5] || match[2] });
   }
   return {
-    title, tags, links, body,
+    title, tags, links, body, originalMarkdown: text, author: strings(meta.author ?? meta.authors).join(', '),
     sourceUrl: safeSource(string(meta.source_url || meta.sourceUrl || meta.source || meta.url) || body.match(/https?:\/\/[^\s<>)\]]+/i)?.[0] || ''),
     observation: string(meta.observation) || section(/observ|what works/) || intro || sections[0]?.text || '',
     adaptation: string(meta.adaptation) || section(/adapt|application/),
@@ -74,9 +75,37 @@ function parseNote(text, path) {
   };
 }
 
-// A collection is one picked/dropped folder or the loose files in one gesture.
-// Local links never consult IndexedDB or another collection.
-export async function importFiles(entries, batch = crypto.randomUUID()) {
+export function referenceOrigin(ref) {
+  return ref.origin ?? (ref.id.startsWith('design-vault-demo:') ? 'demo' : 'snapshot');
+}
+
+async function digest(data) {
+  const bytes = new Uint8Array(await crypto.subtle.digest('SHA-256', data));
+  return Array.from(bytes, byte => byte.toString(16).padStart(2, '0')).join('');
+}
+
+// Loose files have no directory identity. Include the note and its actual
+// attachments so equally named files from unrelated picks can coexist.
+async function looseIdentity(ref, imageDigests) {
+  const parts = [ref.originalMarkdown ?? null];
+  for (const asset of ref.images) {
+    if (!imageDigests.has(asset)) {
+      imageDigests.set(asset, asset.blob.arrayBuffer().then(digest));
+    }
+    parts.push([asset.path, await imageDigests.get(asset)]);
+  }
+  return 'loose-' + await digest(new TextEncoder().encode(JSON.stringify(parts)));
+}
+
+// Each top-level folder is its own collection. Loose files share only this import.
+export async function importFiles(entries, batch, existingRefs = []) {
+  // Preserve previously issued project selection IDs for unambiguous folder paths.
+  const previousIds = new Map();
+  for (const ref of existingRefs) {
+    if (referenceOrigin(ref) === 'snapshot' && ref.path.includes('/')) {
+      previousIds.set(ref.path, previousIds.has(ref.path) ? null : ref.id);
+    }
+  }
   const groups = new Map();
   const errors = [];
   const refs = [];
@@ -99,8 +128,10 @@ export async function importFiles(entries, batch = crypto.randomUUID()) {
   for (const [group, files] of groups) {
     const images = new Map();
     const used = new Set();
+    const collectionRefs = [];
     const makeBase = path => ({
-      id: [batch, group, path].map(encodeURIComponent).join(':'), path: [group, path].filter(Boolean).join('/'),
+      path: [group, path].filter(Boolean).join('/'),
+      origin: batch === 'design-vault-demo' ? 'demo' : 'snapshot', warnings: [],
       images: [], tags: [], sourceUrl: '', observation: '', adaptation: '',
     });
     for (const [path, file] of files) {
@@ -112,10 +143,12 @@ export async function importFiles(entries, batch = crypto.randomUUID()) {
       const ref = makeBase(path);
       try {
         if (!/\.(?:md|markdown|mdown)$/i.test(path)) throw new Error('Unsupported file type');
-        const { links, ...note } = parseNote(await file.text(), path);
+        const text = new TextDecoder('utf-8', { ignoreBOM: true, fatal: true }).decode(await file.arrayBuffer());
+        const { links, ...note } = parseNote(text, path);
         Object.assign(ref, note);
-        for (const { target, root, wiki } of links) {
+        for (const { target, root, wiki, missingDefinition } of links) {
           try {
+            if (missingDefinition !== undefined) throw new Error('Image link definition missing');
             const base = path.split('/').slice(0, -1);
             const vaultRelative = root && !/^\.{1,2}\//.test(target);
             const resolved = resolvePath(vaultRelative ? [] : base, target);
@@ -132,13 +165,27 @@ export async function importFiles(entries, batch = crypto.randomUUID()) {
             if (!asset) throw new Error('Image missing from collection');
             if (!ref.images.includes(asset)) ref.images.push(asset);
             used.add(asset.path);
-          } catch (error) { errors.push({ path: ref.path, message: target + ' — ' + error.message }); }
+          } catch (error) {
+            const message = (target ?? missingDefinition) + ' — ' + error.message;
+            ref.warnings.push(message);
+            errors.push({ path: ref.path, message });
+          }
         }
-        refs.push(ref);
+        collectionRefs.push(ref);
       } catch (error) { errors.push({ path: ref.path, message: error.message }); }
     }
     for (const [path, asset] of images) {
-      if (!used.has(path)) refs.push({ ...makeBase(path), title: basename(path), images: [asset] });
+      if (!used.has(path)) collectionRefs.push({ ...makeBase(path), title: basename(path), images: [asset] });
+    }
+    const imageDigests = new Map();
+    for (const ref of collectionRefs) {
+      try {
+        const namespace = batch ?? (group ? 'folder' : await looseIdentity(ref, imageDigests));
+        const path = group ? ref.path.slice(group.length + 1) : ref.path;
+        const id = [namespace, group, path].map(encodeURIComponent).join(':');
+        ref.id = (!batch && group && previousIds.get(ref.path)) || id;
+        refs.push(ref);
+      } catch (error) { errors.push({ path: ref.path, message: error.message }); }
     }
   }
   return { refs, errors };
