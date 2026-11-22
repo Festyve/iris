@@ -1,5 +1,5 @@
 {
-  "evaluated_at": "2026-11-22T18:15:01.618038+00:00",
+  "evaluated_at": "2026-11-22T19:32:06.585065+00:00",
   "endpoint": "https://1e4878ee-23cb-40bb-8140-c0ccfc27889f.mtm.sh/studio-api/repo/question",
   "method": "POST",
   "edsl_version": "1.0.8.dev1",
@@ -13,16 +13,17 @@
       "http_status": 200,
       "response": {
         "repo": "Festyve/iris",
-        "commit": "ce329d24c1163f708ab86a0f5378baee39b899ad",
+        "commit": "60ccf524d89610a7890d976059ec12a113f99dba",
         "citations": [
           {
             "path": "README.md",
-            "line": 10,
-            "commit": "ce329d24c1163f708ab86a0f5378baee39b899ad"
+            "line": 125,
+            "commit": "60ccf524d89610a7890d976059ec12a113f99dba"
           }
         ],
         "status": "answered",
-        "answer": "npm start"
+        "answer": "npm start",
+        "freshness": "verified-main"
       },
       "passed": true
     },
@@ -32,10 +33,11 @@
       "http_status": 200,
       "response": {
         "repo": "Festyve/iris",
-        "commit": "ce329d24c1163f708ab86a0f5378baee39b899ad",
+        "commit": "60ccf524d89610a7890d976059ec12a113f99dba",
         "citations": [],
         "status": "clarification",
-        "answer": "Which part of Second Cursor do you mean: starting the studio, importing references, checking previews, running tests, or rebuilding the Figma plugin?"
+        "answer": "Which part of Second Cursor do you mean: starting the studio, importing references, checking previews, running tests, usage limits, or rebuilding the Figma plugin?",
+        "freshness": "verified-main"
       },
       "passed": true
     },
@@ -45,10 +47,11 @@
       "http_status": 200,
       "response": {
         "repo": "Festyve/iris",
-        "commit": "ce329d24c1163f708ab86a0f5378baee39b899ad",
+        "commit": "60ccf524d89610a7890d976059ec12a113f99dba",
         "citations": [],
         "status": "out_of_scope",
-        "answer": "I can read the approved Second Cursor project snapshot only."
+        "answer": "I can read the approved Second Cursor project snapshot only.",
+        "freshness": "verified-main"
       },
       "passed": true
     }

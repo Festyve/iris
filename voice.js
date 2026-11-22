@@ -137,7 +137,7 @@
     try {
       state('connecting', 'Connecting to Iris…');
       await loadClient();
-      const {signedUrl} = await Iris.call('/voice/session', null, null, 15000);
+      const {signedUrl} = await Iris.call('/voice/session?transport=websocket', null, null, 15000);
       const clientTools = {}; for (const name of Object.keys(tools)) clientTools[name] = args => voiceTool(name, args);
       talk = await window.IrisVoice.Conversation.startSession({
         signedUrl, connectionType: 'websocket', clientTools,

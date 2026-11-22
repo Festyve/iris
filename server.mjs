@@ -10,6 +10,7 @@ import {readFile, readdir, stat} from 'node:fs/promises';
 import {readFileSync, writeFileSync} from 'node:fs';
 import {join, basename} from 'node:path';
 import {fileURLToPath} from 'node:url';
+import {ElevenLabsClient} from '@elevenlabs/elevenlabs-js';
 import {createElevenAgentService} from './studio/elevenagent-service.mjs';
 import {design, edit} from './designer.mjs';
 import {loadProfiles, profileStyle} from './profiles.mjs';
@@ -91,7 +92,16 @@ async function voice(req, res) {
 
 
 // ---------- Talk to Iris: ElevenLabs agent sessions, plugin bridge, critique, references ----------
-async function voiceSession(res) {
+async function voiceSession(res, transport) {
+  if (!transport || transport === 'webrtc') {
+    if (!voiceKey || !agentId) return json(res,503,{error:'Configure the Iris ElevenLabs key and agent ID.'});
+    try {
+      const client = new ElevenLabsClient({apiKey:voiceKey});
+      const {token} = await client.conversationalAi.conversations.getWebrtcToken({agentId});
+      return json(res,200,{conversationToken:token});
+    } catch { return json(res,502,{error:'ElevenLabs could not issue a WebRTC token for this agent.'}); }
+  }
+  if (transport !== 'websocket') return json(res,400,{error:'Unsupported voice transport.'});
   try { json(res, 200, await irisVoice.createSession()); }
   catch (error) { json(res, error.status || 502, {error: error.message}); }
 }
@@ -171,7 +181,7 @@ const server = http.createServer(async (req, res) => {
     if (req.method === 'GET' && url.pathname === '/bridge') { if (url.searchParams.get('key') !== secret) return json(res, 401, {error: 'Invalid session key.'}); return openBridge(req, res); }
     if (req.headers.authorization !== 'Bearer ' + secret) return json(res, 401, {error: 'Invalid session key.'});
     if (req.method === 'GET' && req.url === '/status') return json(res, 200, {design: !!client, vaultWebsites: true, voice: !!voiceKey, model: MODEL, agent: irisVoice.status().configured, studio: studios.size > 0});
-    if (req.method === 'GET' && url.pathname === '/voice/session') { reserve('/eleven-agent/session'); return await voiceSession(res); }
+    if (req.method === 'GET' && url.pathname === '/voice/session') { reserve('/eleven-agent/session'); return await voiceSession(res,url.searchParams.get('transport')); }
     if (req.method === 'POST' && url.pathname === '/bridge/command') return await relay(req, res);
     if (req.method === 'POST' && url.pathname === '/bridge/result') return await relayResult(req, res);
     if (req.method === 'POST' && url.pathname === '/critique') return await critique(req, res);
