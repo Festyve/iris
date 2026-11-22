@@ -43,9 +43,11 @@ test('poker retrieves a gallery and actual game imagery, and unsupported subject
 test('initial generation stays local, every shape comes from its named setup, and no vault fails closed',async()=>{
   const {doc}=await websiteDesign('A bank website called "Cedar"',root,()=>assert.fail('initial model call'));
   const templates=JSON.parse(await (await import('node:fs/promises')).readFile(new URL('../references/sites.json',import.meta.url)));
+  const raster=JSON.parse(await (await import('node:fs/promises')).readFile(new URL('../references/raster-layouts.json',import.meta.url)));
   for(const n of doc.nodes) {
     const setup=doc.screens.find(s=>s.id===n.parent).vaultSource;
-    const row=templates[setup][n.type==='shape'?'shapes':'text'][Number(n.id.match(/\d+$/)[0])];
+    const rows=n.type==='shape'?raster[setup].shapes:templates[setup].text;
+    const row=rows[Number(n.id.match(/\d+$/)[0])];
     assert.deepEqual([n.x,n.y,n.w,n.h],row.slice(0,4));
     if(n.type==='shape')assert.equal(n.fill,row[4]);
   }
@@ -60,4 +62,11 @@ test('a requested edit calls the model once, contains no image payload, and reje
     return {changes:[{id:changed,text:'Laurel',x:1500},{id:'invented',text:'BAD'},{addPage:'outside-the-vault'}]};
   });
   assert.equal(calls,1);assert.equal(ops.length,1);assert.equal(ops[0].id,changed);assert.equal(ops[0].node.text,'Laurel');assert.equal(ops[0].node.x,undefined);
+});
+
+test('coffee shop uses a menu and hours directory drawn from vault layouts',async()=>{
+  const {doc}=await websiteDesign('coffee shop',root);
+  assert.deepEqual(doc.screens.map(s=>s.vaultSource),['gumroad','paco','emilkowal']);
+  assert.ok(doc.nodes.some(n=>n.parent==='collection' && n.text==='Granola bowl'));
+  assert.ok(doc.nodes.some(n=>n.parent==='detail' && n.text==='Saturday–Sunday   8 am – 4 pm'));
 });

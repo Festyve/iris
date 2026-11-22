@@ -33,22 +33,28 @@ const Websites = (() => {
   const general=['Selected work','Explore','Collection','Journal','Latest releases','Highlights','Contact','Availability','Details','About'];
   const neutral=/^(log in|sign in|sign up|pricing|support|menu|search|about|help|faq|learn more|subscribe|resources|explore|settings|home|contact|next|back|continue|all|new|beta)$/i;
 
-  const pokerTables=['The Button','Night Shift','Copper Club','Sunday Social','The Turn','After Hours','Blue Bird','The Orchard'];
-  function catalogLabel(source,words,name,x,y,index) {
-    if (source==='metalforge' && x>=240 && y>210) {
-      const column=Math.max(0,Math.min(3,Math.floor((x-240)/297)));
-      const card=column+(y>650?4:0);
-      if(words[0]==='Live tables') {
-        const meta=[pokerTables[card],card%2?'Pot-limit Omaha':'No-limit Hold’em',
-          ['$1 / $2','$2 / $5','$5 / $10'][card%3],(card%4+1)+' seats open','Join waitlist'];
-        return meta[index%meta.length];
-      }
-      const meta=[words[card%words.length],words[8],name,words[1],words[9]];
-      return meta[index%meta.length];
-    }
-    return words[index%words.length];
+  function shapeNodes(source,parent) {
+    return RasterLayouts[source].shapes.map(([x,y,w,h,fill,image,name],i)=>({
+      id:parent+'-s'+i,parent,type:'shape',name,x,y,w,h,fill,...(image?{art:source+'/v3/'+i}:{})
+    }));
   }
-
+  // The café brief uses the vault's three-column index as a printed menu,
+  // and its compact directory as a list of opening times and pickup details.
+  const cafeCopy={
+    gumroad:[null,'Menu','Café','Bakery','Visit us','About','Our story','Hours','See menu',null,null,
+      'Fresh coffee and pastries, made daily in our kitchen.','Stop by for a cup or take a look at the menu.',null,
+      'See menu','Explore the bakery','Find our opening hours','Freshly baked',null,null,'Find your','daily cup'],
+    paco:['Bakery','The counter menu changes with the season. Here’s what we’re making today.',
+      'Ask the barista about today’s single-origin pour-over.','Baked here each morning, served until sold out.',
+      'Coffee','Filter','Single-origin beans','Brewed to order','Bakery','Butter','Cultured butter','in a flaky croissant.',
+      'Kitchen','Market toast','Ricotta, lemon zest','and fresh herbs.','Rye bun','Dark chocolate','and flaky salt.',
+      'Morning roll','Cinnamon sugar','and orange.','Granola bowl','Yogurt and berries.','Lunch','Soup of the day','with sourdough.',
+      'Note','Our kitchen works with wheat, milk, eggs and nuts. Ask us about ingredients.',
+      'Oat milk is available for every coffee.'],
+    emilkowal:['Opening hours','Visit the café','Hours','Monday–Friday   7 am – 5 pm','Saturday–Sunday   8 am – 4 pm',
+      'At the café','Breakfast','Served from opening until 11 am.','Lunch','From 11 am until the kitchen closes.',
+      'Bakery counter','Fresh pastries while they last.','To go','Order at the counter for pickup.']
+  };
   // Companion layouts are existing captures with a collection or detail structure.
   const collections=['metalforge','godly'];
   const details=['apple-liquid-glass','teenage-engineering','poolsuite','ui-chords'];
@@ -57,13 +63,14 @@ const Websites = (() => {
     const available=new Set(ReferenceMedia.filter(r=>r.path.startsWith('assets/sites/')).map(r=>r.path.slice(13,-4)));
     const name=m.exact?ReferenceBrands[m.id]:ReferenceMatch.poker(note) && !/called|named|["“]/i.test(note)?'River Room':titleOf(note);
     const words=(vocabularies.find(v=>v[0].test(note)) || [null,general])[1];
+    const cafe=/\bcoffee\b|caf[eé]|bakery|espresso/i.test(note) && !m.exact;
     const pages=[{id:'web',source:m.id,title:'Home'}];
     if(!captureOnly) {
       const candidates=ids=>ids.filter(id=>available.has(id) && !pages.some(p=>p.source===id));
-      const collection=candidates(collections)[0];
+      const collection=candidates(cafe?['paco',...collections]:collections)[0];
       if(!collection)throw Error('The vault needs a collection setup to build this website.');
       pages.push({id:'collection',source:collection,title:words[2]});
-      const preferred=/music|audio|radio/i.test(note)?['ui-chords','poolsuite']: /hardware|game|poker|shop/i.test(note)?['teenage-engineering','apple-liquid-glass']:details;
+      const preferred=cafe?['emilkowal',...details]:/music|audio|radio/i.test(note)?['ui-chords','poolsuite']: /hardware|game|poker/i.test(note)?['teenage-engineering','apple-liquid-glass']:details;
       const detail=candidates([...preferred,...details])[0];
       if(!detail)throw Error('The vault needs a detail setup to build this website.');
       pages.push({id:'detail',source:detail,title:words[8]});
@@ -73,34 +80,34 @@ const Websites = (() => {
     for(const page of pages) {
       const site=ReferenceSites[page.source], exact=page.id==='web' && m.exact;
       doc.screens.push({id:page.id,name:name+' · '+page.title,w:1440,h:900,fill:site.bg,layout:'stack',vaultSource:page.source});
-      site.shapes.forEach(([x,y,w,h,fill,path],i)=>{
-        const n={id:page.id+'-s'+i,parent:page.id,type:'shape',name:(y<95?'Header':y>670?'Lower section':'Hero')+' · '+(path?'artwork ':'surface ')+(i+1),x,y,w,h,fill};
-        if(path)n.art=page.source+'/v2/'+i;
-        doc.nodes.push(n);
-      });
-      const slots=site.text;
-      const heads=slots.map((s,i)=>({s,i})).filter(({s})=>s[1]>=85 && s[1]<710 && s[2]>60).sort((a,b)=>b.s[4]-a.s[4]);
-      const hero=heads[0]?.i;
-      const nav=slots.map((s,i)=>({s,i})).filter(({s})=>s[1]<95 && s[2]>=35).sort((a,b)=>a.s[0]-b.s[0]);
+      doc.nodes.push(...shapeNodes(page.source,page.id));
+      const slots=RasterLayouts[page.source].text.map(([i,ink])=>({i,s:site.text[i],ink}));
+      const heads=slots.filter(({s})=>s[1]>=85 && s[1]<710 && s[2]>60).sort((a,b)=>b.s[4]-a.s[4]);
+      const hero=(heads[0] || slots[0])?.i;
+      const nav=slots.filter(({s})=>s[1]<85 && s[2]>=35).sort((a,b)=>a.s[0]-b.s[0]);
       let contentIndex=0;
-      slots.forEach(([x,y,w,h,size,weight,color,original],i)=>{
+      slots.forEach(({s:[x,y,w,h,size,weight,,original],i,ink:color})=>{
         let label=original;
         if(!exact) {
           const navIndex=nav.findIndex(n=>n.i===i);
-          if(i===hero) label=page.id==='web'?name:page.title;
+          if(cafe && cafeCopy[page.source]?.[i]) label=cafeCopy[page.source][i];
+          else if(i===hero) label=page.id==='web'?name:page.title;
+          else if(words[0]==='Live tables' && original.startsWith('One line of code')) label='No-limit Hold’em';
+          else if(words[0]==='Live tables' && original.startsWith('platform you build')) label='Join waitlist';
           else if(navIndex===0) label=name;
           else if(neutral.test(original)) label=original;
           else if(navIndex>0) label=words[[2,3,6,1][(navIndex-1)%4]];
           else if(w<38 || size<9) {
             // Preserve legible compact symbols and values from the setup.
             if(!/^[0-9.,:%+·×↑↓←→$€ /-]{1,12}$/.test(original)) return;
-          } else label=catalogLabel(page.source,words,name,x,y,contentIndex++);
+          } else label=words[contentIndex++%words.length];
         }
         const fit=Math.max(6,Math.min(size,w/Math.max(1,Doc.measure(label,1,weight))));
-        doc.nodes.push({id:page.id+'-t'+i,parent:page.id,type:'text',name:label.slice(0,60),text:label,x,y,w,h,size:fit,weight,color,lh:1,align:'left',wrap:false});
+        const centered=page.source==='gumroad' && (Math.abs(x+w/2-720)<10 || i===14);
+        doc.nodes.push({id:page.id+'-t'+i,parent:page.id,type:'text',name:label.slice(0,60),text:label,x,y,w,h,size:fit,weight,color,lh:1,align:centered?'center':'left',wrap:false});
       });
     }
     return doc;
   }
-  return {match,build,artwork};
+  return {match,build,artwork,shapeNodes};
 })();

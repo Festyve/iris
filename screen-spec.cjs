@@ -37,7 +37,7 @@ const Screens = (() => {
     const fill = v.fill === null || v.fill === undefined ? null : paint(v.fill);
     if (v.fill && !fill) throw Error('Invalid fill colour (' + v.name + ').');
     out.fill = fill;
-    if (kind === 'rect' && typeof v.art === 'string' && /^[a-z0-9-]+\/(?:v2\/)?\d{1,3}$/.test(v.art)) out.art = v.art;
+    if (kind === 'rect' && typeof v.art === 'string' && /^[a-z0-9-]+\/(?:v[23]\/)?\d{1,3}$/.test(v.art)) out.art = v.art;
     if (kind === 'text') {
       const size = v.size;
       if (typeof v.text !== 'string' || !v.text.length || v.text.length > 800) throw Error('Invalid text in the screen plan.');

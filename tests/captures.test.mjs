@@ -26,3 +26,32 @@ test('each gallery reference is rebranded and all pixels outside listed patches 
   }
   await assert.rejects(capture(root,'../private'),/Unknown/);
 });
+
+test('website image fills reassemble every capture losslessly outside editable type',async()=>{
+  const {rasterSite}=await import('../references/raster.mjs');
+  const sites=JSON.parse(await readFile(new URL('../references/sites.json',import.meta.url)));
+  const stored=JSON.parse(await readFile(new URL('../references/raster-layouts.json',import.meta.url)));
+  for(const [id,site] of Object.entries(sites)){
+    const {layout,images}=await rasterSite(root,id,site);
+    assert.deepEqual(layout,stored[id],id);
+    const expected=PNG.sync.read(await capture(root,id));
+    const assembled=new PNG({width:expected.width,height:expected.height});
+    for(const [i,[x,y,w,h,fill,image]] of layout.shapes.entries()){
+      if(image){
+        const part=PNG.sync.read(Buffer.from(images[id+'/v3/'+i],'base64'));
+        assert.deepEqual([part.width,part.height],[w,h]);
+        PNG.bitblt(part,assembled,0,0,w,h,x,y);
+      }else{
+        const color=Buffer.from(fill.slice(1)+'ff','hex');
+        for(let row=y;row<y+h;row++)assembled.data.fill(color,(row*assembled.width+x)*4,(row*assembled.width+x+w)*4);
+      }
+    }
+    for(const [i] of layout.text){
+      const [x,y,w,h]=site.text[i];
+      if(id==='metalforge')assert.ok(y<224 || x<240,'gallery thumbnail must retain its original lettering');
+      const l=Math.max(0,x-4),t=Math.max(0,y-4);
+      PNG.bitblt(expected,assembled,l,t,Math.min(1440,x+w+4)-l,Math.min(900,y+h+4)-t,l,t);
+    }
+    assert.ok(assembled.data.equals(expected.data),id+' lost artwork pixels');
+  }
+});

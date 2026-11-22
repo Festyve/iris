@@ -6,12 +6,14 @@ import {brands,brandCopy} from './captures.mjs';
 import {Doc} from '../designer.mjs';
 
 const sites=JSON.parse(await readFile(new URL('sites.json',import.meta.url),'utf8'));
+const rasterLayouts=JSON.parse(await readFile(new URL('raster-layouts.json',import.meta.url),'utf8'));
 const source=await readFile(new URL('websites.js',import.meta.url),'utf8');
+const layerBuilder=vm.runInNewContext(source+'\nWebsites',{RasterLayouts:rasterLayouts});
 const libraries=new Map();
 async function library(root) {
   if (!libraries.has(root)) {
     const loading=catalog(root).then(media=>vm.runInNewContext(source+'\nWebsites',
-      {Doc,ReferenceBrands:brands,ReferenceCopy:brandCopy,ReferenceSites:sites,ReferenceMedia:media,ReferenceMatch:Match}));
+      {Doc,RasterLayouts:rasterLayouts,ReferenceBrands:brands,ReferenceCopy:brandCopy,ReferenceSites:sites,ReferenceMedia:media,ReferenceMatch:Match}));
     libraries.set(root,loading);
     loading.catch(()=>libraries.delete(root));
   }
@@ -59,8 +61,11 @@ export async function websiteEdit(raw,note,ask,styleName='') {
       const setup=sites[c.addPage], title=String(c.title || brands[c.addPage]).slice(0,48);
       let id='page-'+(doc.screens.length+1);while(doc.screens.some(s=>s.id===id))id+='a';
       ops.push({op:'addScreen',screen:{id,name:doc.name+' · '+title,vaultSource:c.addPage,w:1440,h:900,fill:setup.bg,layout:'stack'}});
-      setup.shapes.forEach(([x,y,w,h,fill,path],i)=>ops.push({op:'add',parent:id,node:{id:id+'-s'+i,type:'shape',name:'Surface '+(i+1),x,y,w,h,fill,...(path?{art:c.addPage+'/v2/'+i}:{})}}));
-      setup.text.forEach(([x,y,w,h,size,weight,color,text],i)=>ops.push({op:'add',parent:id,node:{id:id+'-t'+i,type:'text',name:text.slice(0,60),x,y,w,h,size,weight,color,text,lh:1,wrap:false}}));
+      for(const node of layerBuilder.shapeNodes(c.addPage,id))ops.push({op:'add',parent:id,node});
+      for(const [i,color] of rasterLayouts[c.addPage].text) {
+        const [x,y,w,h,size,weight,,text]=setup.text[i];
+        ops.push({op:'add',parent:id,node:{id:id+'-t'+i,type:'text',name:text.slice(0,60),x,y,w,h,size,weight,color,text,lh:1,wrap:false}});
+      }
       continue;
     }
     if(palette.has(c.from) && palette.has(c.to) && c.from!==c.to){

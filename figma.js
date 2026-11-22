@@ -89,6 +89,13 @@ async function start(m) {
   if(m.libraryId) {
     const at=VaultSections.position(VaultSections.checkImport(m.libraryId));dx=at.x+64;dy=at.y+102;
   }
+  const imageHashes=new Map();
+  for(const s of [...board.screens,...(prev?prev.screens:[])]) for(const layer of s.layers) {
+    if(!layer.art || !layer.art.includes('/v3/') || imageHashes.has(layer.art))continue;
+    const png=m.images && m.images[layer.art];
+    if(!png)throw Error('The vault artwork is missing. Reopen the updated Iris plugin.');
+    imageHashes.set(layer.art,figma.createImage(figma.base64Decode(png)).hash);
+  }
   const captureHash=m.png?figma.createImage(figma.base64Decode(m.png)).hash:null;
   // A fresh build never reuses frames from an older design on the page.
   if (!prev) { found.frames.clear(); found.nodes.clear(); }
@@ -107,7 +114,7 @@ async function start(m) {
   // Board order of every layer, used to keep Figma's stacking order in step.
   const order = new Map();
   P.screens.forEach(E => { for (let li = E.range[0]; li < E.range[1]; li++) order.set(E.S.id + '/' + P.layers[li].L.id, li); });
-  run = {P, board, prev, design, captureHash, libraryId:m.libraryId, doc: m.doc, dx, dy, fonts, crewLayer, t: 0, speed: m.speed || 1, paused: false, last: Date.now(), lastPost: 0,
+  run = {P, board, prev, design, imageHashes, captureHash, libraryId:m.libraryId, doc: m.doc, dx, dy, fonts, crewLayer, t: 0, speed: m.speed || 1, paused: false, last: Date.now(), lastPost: 0,
     frames: found.frames, nodes: found.nodes, cache: new Map(), order, cursors: [], cursorScale: 1};
   run.timer = setInterval(step, 70);
   post({kind: 'tick', t: 0, state: 'running'});
@@ -231,11 +238,12 @@ function layer(r, f, S, ref, ls, li) {
   }
   const where = exact ? 'final' : [b.x, b.y, b.w, b.h].map(v => Math.round(v * 2) / 2).join(',');
   if (c.box !== where) { c.box = where; n.resize(Math.max(.5, b.w), Math.max(.5, b.h)); n.x = b.x; n.y = b.y; }
-  const paint = ls.fill >= .45 ? ls.fillTo : ls.fillFrom, look = key([paint, L.stroke, L.sw, L.shadow, S.dark]);
+  const paint = ls.fill >= .45 ? ls.fillTo : ls.fillFrom, look = key([L.art, paint, L.stroke, L.sw, L.shadow, S.dark]);
   if (c.look !== look) {
     c.look = look;
     const placeholder = paint === Crew.PLACEHOLDER;
-    n.fills = L.fill || (paint && !placeholder) ? paints(paint) : [];
+    const hash=r.imageHashes.get(L.art);
+    n.fills = hash ? [{type:'IMAGE',imageHash:hash,scaleMode:'FILL'}] : L.fill || (paint && !placeholder) ? paints(paint) : [];
     if (L.stroke || (!L.fill && placeholder)) { n.strokes = [solid(placeholder && !L.fill ? Crew.PLACEHOLDER : L.stroke)]; n.strokeWeight = L.sw || 1; n.strokeAlign = 'CENTER'; } else n.strokes = [];
     n.effects = L.shadow && !placeholder ? [{type: 'DROP_SHADOW', color: S.dark ? {r: 0, g: 0, b: 0, a: .5} : {r: .086, g: .086, b: .19, a: .13}, offset: {x: 0, y: 10}, radius: 30, spread: 0, visible: true, blendMode: 'NORMAL', showShadowBehindNode: false}] : [];
   }

@@ -286,7 +286,7 @@
     status = new Array(P.layers.length).fill(-1); who = new Array(P.layers.length).fill(-1); lastRow.length = 0;
     buildTree(); buildActs(); lastFeedKey = '';
     if (!keepCamera || !userMoved) { fit(true); userMoved = false; }
-    if (isPlugin) { pluginState = 'starting'; parent.postMessage({pluginMessage: {kind: 'build', board, prev: prevBoard || null, doc, count, speed:librarySite?4:speed,png:nextCapture,libraryId:librarySite}}, '*'); nextCapture=null; librarySite=null; }
+    if (isPlugin) { pluginState = 'starting'; parent.postMessage({pluginMessage: {kind: 'build', board, images:buildImages(board,prevBoard), prev: prevBoard || null, doc, count, speed:librarySite?4:speed,png:nextCapture,libraryId:librarySite}}, '*'); nextCapture=null; librarySite=null; }
     setPlayIcon();
   }
 
@@ -471,11 +471,33 @@
   }
 
   const vectorPaths = new Map();
+  const rasterCache=new Map();
+  function rasterImage(id) {
+    if(!rasterCache.has(id)) {
+      const img=new Image();
+      img.src='data:image/png;base64,'+RasterImages[id];
+      rasterCache.set(id,img);
+    }
+    return rasterCache.get(id);
+  }
+  function buildImages(board,prev) {
+    const images={};
+    for(const s of [...board.screens,...(prev?prev.screens:[])]) for(const layer of s.layers) {
+      if(layer.art && RasterImages[layer.art])images[layer.art]=RasterImages[layer.art];
+    }
+    return images;
+  }
   function drawLayer(ref, ls, ox, oy, z, S, over, sa) {
     const L = ref.L, b = ls.box, x = ox + b.x * z, y = oy + b.y * z, w = b.w * z, h = b.h * z;
     const op = (L.opacity === undefined ? 1 : L.opacity) * ls.alpha * sa;
     if (L.kind !== 'line' && (x > W || y > H || x + w < 0 || y + h < 0)) return;
     if (L.kind === 'text') drawText(ls, x, y, w, h, z, op, over);
+    else if (L.art && RasterImages[L.art]) {
+      const img=rasterImage(L.art);
+      if(img.complete && img.naturalWidth) {
+        ctx.save();ctx.globalAlpha=op;ctx.drawImage(img,x,y,w,h);ctx.restore();
+      }
+    }
     else if (Websites.artwork(L.art)) {
       const vector = Websites.artwork(L.art);
       if (!vectorPaths.has(L.art)) vectorPaths.set(L.art,new Path2D(vector.path));
@@ -791,6 +813,8 @@
           const ax = L.align === 'center' ? L.x + L.w / 2 : L.align === 'right' ? L.x + L.w : L.x, anchor = L.align === 'center' ? 'middle' : L.align === 'right' ? 'end' : 'start';
           body += '<text font-family="Inter, sans-serif" font-size="' + L.size + '" font-weight="' + L.weight + '" fill="' + L.fill + '" text-anchor="' + anchor + '"' + (L.size >= 28 ? ' letter-spacing="' + r2(-L.size * .02) + '"' : '') + op + '>' +
             L.text.split('\n').map((s, i) => '<tspan x="' + r2(ax) + '" y="' + r2(L.y + L.size * L.lh * (i + .5)) + '" dominant-baseline="central">' + esc(s) + '</tspan>').join('') + '</text>';
+        } else if (L.art && RasterImages[L.art]) {
+          body+='<image x="'+L.x+'" y="'+L.y+'" width="'+L.w+'" height="'+L.h+'" preserveAspectRatio="none" href="data:image/png;base64,'+RasterImages[L.art]+'"'+op+'/>';
         } else if (Websites.artwork(L.art)) {
           const a=Websites.artwork(L.art);
           body+='<path transform="translate('+L.x+' '+L.y+') scale('+L.w/a.w+' '+L.h/a.h+')" fill-rule="evenodd" fill="'+fillRef(L.fill,0,0,a.w,a.h)+'" d="'+a.path+'"'+op+'/>';
