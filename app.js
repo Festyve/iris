@@ -1,5 +1,5 @@
 const byId=id=>document.getElementById(id);
-const plugin=parent!==window,api='http://127.0.0.1:4739';
+const plugin=parent!==window,api='http://localhost:4739';
 if(plugin)document.body.classList.add('plugin');
 let source=SC.base(),plan={...SC.initial},connected=false,version=0,focus='Title',recording,stream,token='',keepCount=0;
 let customSource=false;

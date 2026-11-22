@@ -108,6 +108,50 @@ const Swarm = (() => {
   return {adjustment,adjust,configs,layout,worker,progress,position,colors,roles};
 })();
 
+// The same tagged pointer and time-based choreography run in Figma and the browser.
+const Shared = (() => {
+  const palette=['#1475F0','#A145C9','#00998F','#E95839','#4764D9','#DA4083','#287D49','#8853CB','#A55C19','#007DB7'];
+  const digitPaths=['M0 0h3v5H0z','M2 0v5','M0 0h3v2.5H0V5h3','M0 0h3v5H0M0 2.5h3','M0 0v2.5h3M3 0v5','M3 0H0v2.5h3V5H0','M3 0H0v5h3V2.5H0','M0 0h3L1 5','M0 0h3v5H0zM0 2.5h3','M3 5V0H0v2.5h3'];
+  function badge(id){
+    const color=palette[id%palette.length],digits=String(id+1).padStart(2,'0');
+    const paths=digits.split('').map((d,i)=>'<path transform="translate('+(19+i*5)+' 16)" d="'+digitPaths[Number(d)]+'"/>').join('');
+    return '<svg xmlns="http://www.w3.org/2000/svg" width="39" height="25" viewBox="0 0 39 25"><path d="M1 1l4 14 3-5 5-2z" fill="'+color+'" stroke="white" stroke-width="1.1"/><rect x="11" y="12" width="27" height="12" rx="3" fill="'+color+'"/><g fill="none" stroke="white" stroke-linecap="round" stroke-linejoin="round" stroke-width="1">'+paths+'</g></svg>';
+  }
+  function timing(id,count){return {enter:1.8*(id/Math.max(1,count-1))+((id*31)%17)/100,duration:9+((id*47)%38)/10}}
+  function motion(id,t,points){
+    const k=Math.min(points.length-2,Math.floor(t*(points.length-1))),u=Math.min(1,(t*(points.length-1)-k)/.73);
+    const s=u*u*(3-2*u),a=points[k],b=points[k+1],curve=Math.sin(Math.PI*u)*.055*(id%2?1:-1);
+    return {x:a.x+(b.x-a.x)*s+(b.y-a.y)*curve,y:a.y+(b.y-a.y)*s-(b.x-a.x)*curve,stage:k,arrived:u>=1};
+  }
+  function route(id,total,targets,w,h){
+    const anchor=(i)=>targets[Math.floor((id/total*targets.length+i*targets.length*.317)%targets.length)];
+    return {indices:[anchor(0),anchor(1),anchor(2)],start:{x:((id*71)%101)/100*w,y:id%2?-h*.025:h*1.025}};
+  }
+  function makeJobs(count,targets,w,h){
+    return Array.from({length:count},(_,id)=>{
+      const routeData=route(id,count,targets,w,h),points=[routeData.start];
+      for(const target of routeData.indices){
+        points.push({x:Math.max(0,Math.min(w,target.x+target.w*(.14+((id*37)%71)/100))),y:Math.max(0,Math.min(h,target.y+target.h*(.14+((id*59)%71)/100)))});
+      }
+      return {id,clock:timing(id,count),points,targets:routeData.indices,visited:0,finished:false};
+    });
+  }
+  function advance(jobs,elapsed,draw,visit){
+    let active=0,done=0;
+    for(const j of jobs){
+      if(j.finished){done++;continue}
+      if(elapsed<j.clock.enter)continue;
+      const t=Math.min(1,(elapsed-j.clock.enter)/j.clock.duration),p=motion(j.id,t,j.points);
+      const reached=t===1?3:p.stage+(p.arrived?1:0);
+      while(j.visited<reached){visit(j.targets[j.visited],j.visited,j.id);j.visited++}
+      draw(j,p,t);
+      if(t===1){done++;j.finished=true}else active++;
+    }
+    return {active,done};
+  }
+  return {badge,timing,motion,makeJobs,advance};
+})();
+
 figma.showUI(__html__, {width:332,height:670,themeColors:true});
 let desk,phone,arrow,last='',direction=Object.assign({},SC.initial),active=false;
 const fonts={Title:{family:'Inter',style:'Black'},normal:{family:'Inter',style:'Regular'}};
@@ -163,7 +207,7 @@ figma.ui.onmessage=async msg=>{
         const img=await f.exportAsync({format:'PNG',constraint:{type:'WIDTH',value:720}});
         figma.ui.postMessage({kind:'fleet-context',id:msg.id,sourceKey:f.id,source:{name:f.name,width:f.width,height:f.height,layers:f.children.slice(0,64).map((n,index)=>({index,name:n.name,type:n.type,x:n.x,y:n.y,w:n.width,h:n.height}))},png:figma.base64Encode(img)});
       }catch(e){figma.ui.postMessage({kind:'fleet-context',id:msg.id,error:e.message})}return}
-    if(msg.kind==='launch-fleet'){await launchFleet([5,25,100].includes(msg.count)?msg.count:100,msg.brief,msg.sourceKey);return}
+    if(msg.kind==='launch-fleet'){await launchFleet([5,25,100].includes(msg.count)?msg.count:100,msg.brief,msg.sourceKey,msg.shared);return}
     if(msg.kind==='pause-fleet'){pauseFleet();return}
     if(msg.kind==='stop-fleet'){stopFleet();return}
     if(msg.kind==='snapshot'){try{const img=await desk.exportAsync({format:'PNG',constraint:{type:'WIDTH',value:720}});figma.ui.postMessage({kind:'snapshot',id:msg.id,png:figma.base64Encode(img)})}catch(e){figma.ui.postMessage({kind:'snapshot',id:msg.id})}return}
@@ -232,6 +276,7 @@ function stepFleet(){
   try{
     if(run.board.removed){stopFleet();return}
     const now=Date.now();run.elapsed+=(now-run.last)/1000;run.last=now;
+    if(run.shared){stepShared(run);return}
     let done=0;
     for(const j of run.jobs){if(j.finished){done++;continue}const t=Swarm.progress(j,run.elapsed);applyGroup(j,t);if(t>=1){j.finished=true;done++}}
     if(done!==run.done){run.done=done;postFleet('running',{done,total:run.jobs.length,frames:run.frames})}
@@ -239,11 +284,12 @@ function stepFleet(){
       run.board.name='Second Cursor · '+run.frames+' finished layouts';nativeRun=null;postFleet('finished',{done,total:done,frames:run.frames});figma.commitUndo()}
   }catch(e){stopFleet();figma.ui.postMessage({kind:'error',text:'Swarm stopped: '+e.message})}
 }
-async function launchFleet(count,brief,sourceKey){
+async function launchFleet(count,brief,sourceKey,shared){
   if(nativeRun||starting)return;
   const source=targetFrame();
   if(!source||source.removed||!source.children.some(n=>n.visible)){throw Error('Select a Figma frame with a visible child layer.')}
   if(sourceKey&&sourceKey!==source.id)throw Error('Source selection changed. Launch again for this frame.');
+  if(shared){launchShared(source,count,brief);return}
   starting=true;
   let board;
   try{
@@ -297,5 +343,58 @@ async function launchFleet(count,brief,sourceKey){
 }
 function pauseFleet(){
   if(!nativeRun)return;nativeRun.paused=!nativeRun.paused;nativeRun.last=Date.now();
-  postFleet(nativeRun.paused?'paused':'running',{done:Math.max(0,nativeRun.done),total:nativeRun.jobs.length,frames:nativeRun.frames});
+  postFleet(nativeRun.paused?'paused':'running',{done:Math.max(0,nativeRun.done),total:nativeRun.jobs.length,frames:nativeRun.frames,shared:nativeRun.shared,active:nativeRun.active});
+}
+
+function launchShared(source,count,brief){
+  const origin=source.absoluteBoundingBox;
+  const board=figma.createFrame();
+  try{
+    board.name='Second Cursor · shared canvas';board.setPluginData('sc-output','yes');board.resize(source.width,source.height);
+    board.x=origin.x+origin.width+140;board.y=origin.y;
+    for(const prev of figma.currentPage.children)if(prev!==board&&prev.getPluginData('sc-output')==='yes'&&Math.abs(prev.x-board.x)<1)board.y=Math.max(board.y,prev.y+prev.height+100);
+    board.fills=[];board.clipsContent=false;
+    const copy=source.clone();board.appendChild(copy);copy.x=0;copy.y=0;copy.name=source.name+' · working copy';
+    // Visiting descendants of instances or component definitions would violate their editing rules.
+    const targets=[],base=board.absoluteBoundingBox;
+    function walk(n,level,index){
+      if(!n.visible||n.locked)return;
+      const b=n.absoluteBoundingBox;
+      if(!b||b.width<1||b.height<1)return;
+      const left=Math.max(0,b.x-base.x),top=Math.max(0,b.y-base.y),right=Math.min(board.width,b.x+b.width-base.x),bottom=Math.min(board.height,b.y+b.height-base.y);
+      if(right<=left||bottom<=top)return;
+      const free=(!n.parent.layoutMode||n.parent.layoutMode==='NONE'||n.layoutPositioning==='ABSOLUTE');
+      targets.push({n,x:left,y:top,w:right-left,h:bottom-top,free,patch:level===0?Swarm.adjustment(brief,index,source.width):null});
+      if(n.children&&n.type!=='INSTANCE'&&n.type!=='COMPONENT'&&n.type!=='COMPONENT_SET')n.children.forEach((child,i)=>walk(child,level+1,i));
+    }
+    copy.children.forEach((n,i)=>walk(n,0,i));
+    if(!targets.length)throw Error('Select a frame containing a visible, unlocked design layer.');
+    const jobs=Shared.makeJobs(count,targets,board.width,board.height);
+    figma.viewport.scrollAndZoomIntoView([board]);
+    const scale=1/Math.max(.01,figma.viewport.zoom);
+    for(const j of jobs){const ptr=figma.createNodeFromSvg(Shared.badge(j.id));board.appendChild(ptr);ptr.name='Cursor '+(j.id+1);ptr.rescale(scale);ptr.visible=false;ptr.locked=true;j.ptr=ptr}
+    const run={board,copy,jobs,frames:1,shared:true,elapsed:0,last:Date.now(),done:0,active:0,paused:false,timer:null};
+    nativeRun=run;run.timer=setInterval(stepFleet,65);postFleet('running',{done:0,active:0,total:count,frames:1,shared:true});
+  }catch(e){if(!board.removed)board.remove();throw e}
+}
+function stepShared(run){
+  const count=Shared.advance(run.jobs,run.elapsed,(j,p,t)=>{
+    const width=39/Math.max(.01,figma.viewport.zoom);
+    if(Math.abs(j.ptr.width-width)>width*.04)j.ptr.rescale(width/j.ptr.width);
+    j.ptr.visible=t<1;j.ptr.x=p.x;j.ptr.y=p.y;
+  },(target,phase)=>{
+    if(target.applied||phase!==1)return;
+    target.applied=true;
+    if(target.free){
+      const n=target.n,p=target.patch;
+      n.x=Math.round(n.x+(p?p.dx*run.board.width:0));n.y=Math.round(n.y+(p?p.dy*run.board.height:0));
+      if(p&&p.scale!==1&&typeof n.rescale==='function')n.rescale(p.scale);
+    }
+  });
+  if(count.done!==run.done||count.active!==run.active){run.done=count.done;run.active=count.active;postFleet('running',{shared:true,active:run.active,done:run.done,total:run.jobs.length,frames:1})}
+  if(run.done===run.jobs.length){
+    clearInterval(run.timer);for(const j of run.jobs)j.ptr.remove();
+    run.board.name='Second Cursor · shared canvas · completed';nativeRun=null;figma.commitUndo();
+    postFleet('finished',{shared:true,done:run.done,total:run.done,active:0,frames:1});
+  }
 }

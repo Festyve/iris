@@ -2,7 +2,7 @@ import http from 'node:http';
 import { randomBytes } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 const secret=randomBytes(24).toString('hex');
-const origin='http://127.0.0.1:4739';
+const origin='http://localhost:4739';
 const designKey=process.env.GEMINI_API_KEY,voiceKey=process.env.ELEVENLABS_API_KEY;
 const model=process.env.GEMINI_MODEL||'gemini-2.5-flash';
 const schema={type:'OBJECT',properties:{
@@ -48,7 +48,7 @@ async function voice(req,res){
 const server=http.createServer(async(req,res)=>{
   res.setHeader('Access-Control-Allow-Origin','*');res.setHeader('Access-Control-Allow-Headers','Authorization, Content-Type');res.setHeader('Access-Control-Allow-Methods','GET, POST, OPTIONS');
   try{
-    if(req.headers.host!=='127.0.0.1:4739')return json(res,403,{error:'Local host required.'});
+    if(!['localhost:4739','127.0.0.1:4739'].includes(req.headers.host))return json(res,403,{error:'Local host required.'});
     if(req.method==='OPTIONS'){res.writeHead(204);return res.end()}
     if(req.method==='GET'&&req.url==='/'){res.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store'});return res.end(await readFile(new URL('./ui.html',import.meta.url)))}
     if(req.headers.authorization!=='Bearer '+secret)return json(res,401,{error:'Invalid session key.'});

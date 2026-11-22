@@ -4,7 +4,9 @@ Edit a print-fair hero on desktop while an editable mobile composition updates b
 
 ## Launch the swarm
 
-Open **ui.html** on a laptop, leave **100 cursors** selected, and click **Launch swarm**. The sample has five layers. Twenty workers each own the same role at different viewport sizes, forming 100 assignments across 20 layouts from 320 to 1440 pixels. Click a layout to zoom in. Pause and resume the run, or cancel to return to the desktop canvas. The 5- and 25-cursor options build smaller sets.
+Open **ui.html**, choose **Shared canvas** and **100 cursors**, then click **Launch swarm**. Numbered, color-tagged cursors enter in waves, visit layer positions, pause, and move to their next assignments. The panel shows the live active count. In Figma the pass runs on one editable working copy of the selected frame. The local pass snaps eligible layer positions to whole pixels. Voice and model planning are optional.
+
+Choose **Responsive grid** to build breakpoint variants. The sample has five layers. Twenty workers each own the same role at different viewport sizes, forming 100 assignments across 20 layouts from 320 to 1440 pixels. Click a layout to zoom in. Pause and resume the run, or cancel to return to the desktop canvas. The 5- and 25-cursor options build smaller sets.
 
 In Figma, select a product frame before running the plugin, or use the sample desktop it creates. Click **Launch swarm**. Colored pointer layers travel to their assignments as the plugin positions, sizes, and reveals editable design layers. The completed frames remain together on the page. Cancel removes only the current unfinished board. The agent arrows are temporary plugin-created layers. They do not require inviting other Figma accounts.
 
