@@ -5,3 +5,10 @@
 #library{margin-top:24px;border-top:1px solid var(--line)}#library .vault-library{background:transparent;padding-inline:0}.task-log{padding-block:16px;overflow-wrap:anywhere}.task-log h2{font:24px Georgia,serif}.task-log ol{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));padding:0;list-style:none;border-top:1px solid var(--line)}.task-log li{padding:10px 8px 0 0;font-size:13px;display:grid;grid-template-columns:14px 1fr;align-items:baseline;column-gap:4px}.task-log b{grid-column:2;font:11px ui-monospace,monospace;color:#505447}.task-log small{display:block;font-size:11px;color:#595a50}.marker{color:#385738}.task-log [data-state=failed] b,.notice{color:#8d291c}.notice{padding:10px;background:#f9e8df;overflow-wrap:anywhere}
 @media(max-width:780px){.mast{height:auto;min-height:54px;flex-wrap:wrap;gap:6px;padding-block:8px}.wordmark{font-size:18px}.mast nav{font-size:12px}.workbench{grid-template-columns:1fr}.sheet{border-left:0;border-top:1px solid var(--line)}.sheet dl{display:flex;flex-wrap:wrap;gap:5px 16px;margin-top:10px}.sheet dl div{border:0;gap:6px}.sheet dl dt{font-weight:bold}.sheet p{margin:8px 0}.task-log ol{grid-template-columns:repeat(2,1fr)}.section-title{padding-top:18px}.proof-sheet{min-height:160px}.section-title h1{font-size:38px}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{scroll-behavior:auto!important;animation-duration:.001ms!important;transition-duration:.001ms!important}}
+/* The launcher has its own strip so it never covers a canvas or import control. */
+#root:has(.workspace){display:flex;flex-direction:column;height:100dvh}
+.mast{flex:none;width:100%}
+.workspace{width:100%;min-height:0;flex:1;overflow-y:auto;scrollbar-gutter:stable;padding-bottom:28px;margin-bottom:68px}
+#root:has(.sc-companion)::after{content:'';position:fixed;inset:auto 0 0;height:68px;border-top:1px solid var(--line);background:var(--paper);pointer-events:none}
+.sc-companion{z-index:60}
+.version-picker{display:block;font-size:13px;margin-top:12px}.version-picker select{display:block;width:100%;margin-top:4px;font:inherit;padding:6px;background:var(--paper);color:var(--ink);border:1px solid var(--line)}

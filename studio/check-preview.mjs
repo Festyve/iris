@@ -7,7 +7,7 @@ export function inspectPreview(html, width) {
     frame.title = 'Checking generated preview';
     frame.setAttribute('aria-hidden', 'true');
     frame.tabIndex = -1;
-    frame.style.cssText = 'position:fixed;top:0;left:-20000px;border:0;height:800px;width:' + width + 'px';
+    frame.style.cssText = 'position:fixed;top:0;left:0;opacity:0;pointer-events:none;z-index:-1;border:0;height:800px;width:' + width + 'px';
     const id = crypto.randomUUID();
     function finish(error) {
       window.removeEventListener('message', receive);
@@ -22,10 +22,24 @@ export function inspectPreview(html, width) {
     }
     const timer = setTimeout(() => finish('Preview verification timed out.'), 8000);
     window.addEventListener('message', receive);
-    const probe = '<script nonce="' + id + '">addEventListener("load",()=>{const control=document.querySelector("[data-primary]");const problem=!document.querySelector("h1")?"Missing page heading":!control||!control.getClientRects().length||control.disabled?"Primary control unavailable":document.documentElement.scrollWidth>innerWidth+1?"Horizontal overflow at "+innerWidth+"px":"";parent.postMessage({probe:'+JSON.stringify(id)+',problem},"*")});<\/script>';
+    function inspect(id, width) {
+      const checkLayout = () => {
+        if (innerWidth !== width) { requestAnimationFrame(checkLayout); return; }
+        const control = document.querySelector('[data-primary]');
+        let problem = '';
+        if (!document.querySelector('h1')) problem = 'Missing page heading';
+        else if (!control || !control.getBoundingClientRect().height || control.disabled) problem = 'Primary control unavailable at ' + width + 'px';
+        else if (document.documentElement.scrollWidth > innerWidth + 1) problem = 'Horizontal overflow at ' + width + 'px';
+        parent.postMessage({ probe: id, problem }, '*');
+      };
+      addEventListener('load', () => requestAnimationFrame(checkLayout));
+    }
+    const probe = '<script nonce="' + id + '">(' + inspect.toString() + ')(' +
+      JSON.stringify(id) + ',' + width + ');<\/script>';
     // Authorize this single-use probe only on the disposable verification copy.
     const inspectionCopy = html.replace("script-src ", "script-src 'nonce-" + id + "' ");
     frame.srcdoc = inspectionCopy.replace(/<\/body>/i, () => probe + '</body>');
     document.body.append(frame);
+    frame.getBoundingClientRect(); // Size the browsing context before its load check.
   });
 }
