@@ -46,4 +46,4 @@ Official references:
 - https://elevenlabs.io/docs/eleven-agents/customization/tools/client-tools
 - https://elevenlabs.io/docs/eleven-agents/customization/authentication
 
-Root `GET /voice/session` now returns `signedUrl` and `connectionType: "websocket"`. Existing WebRTC callers that consume `conversationToken` must migrate before using this endpoint. The live verifier starts two short provider sessions and closes each after initialization, without microphone input or tool execution.
+The Iris browser requests `GET /voice/session?transport=websocket` for its signed URL. Existing WebRTC clients can keep requesting `GET /voice/session` for a conversation token, subject to ElevenLabs account support. The live verifier starts two short provider sessions and closes each after initialization, without microphone input or tool execution.

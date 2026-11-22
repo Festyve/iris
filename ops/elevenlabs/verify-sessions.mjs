@@ -28,7 +28,7 @@ async function connect(url) {
   } finally { socket.close(); }
 }
 for (const [label,id,path,method] of [
-  ['Iris', rootId, '/voice/session', 'GET'],
+  ['Iris', rootId, '/voice/session?transport=websocket', 'GET'],
   ['Studio', studioId, '/eleven-agent/session', 'POST'],
 ]) {
   const response = await fetch('https://api.elevenlabs.io/v1/convai/agents/' + encodeURIComponent(id), {
