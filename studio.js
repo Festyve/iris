@@ -342,7 +342,7 @@
     if (key !== gridKey) {
       const c = document.createElement('canvas'), s = Math.max(1, Math.round(step * dpr));
       c.width = c.height = s; const g = c.getContext('2d');
-      g.fillStyle = '#25252F'; g.beginPath(); g.arc(1.2 * dpr, 1.2 * dpr, .9 * dpr, 0, Math.PI * 2); g.fill();
+      g.fillStyle = '#2A2A2A'; g.beginPath(); g.arc(1.2 * dpr, 1.2 * dpr, .9 * dpr, 0, Math.PI * 2); g.fill();
       gridPattern = ctx.createPattern(c, 'repeat'); gridKey = key;
     }
     const s = Math.round(step * dpr) / dpr, ox = (-cam.x * cam.z) % s, oy = (-cam.y * cam.z) % s;
@@ -369,7 +369,7 @@
 
   function render() {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.fillStyle = '#0E0E13'; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = '#141414'; ctx.fillRect(0, 0, W, H);
     grid();
     if (!P) return;
     const z = cam.z, over = [];
@@ -381,7 +381,7 @@
       const fw = st.w * z, fh = st.h * z, sa = st.alpha;
       const visible = ox < W && oy < H && ox + fw > 0 && oy + fh > -30;
       if (visible) {
-        ctx.globalAlpha = st.labelAlpha * sa; ctx.fillStyle = E.ghost ? '#FF6B6B' : '#8D8DA3'; ctx.font = '600 12px Inter, system-ui, sans-serif'; ctx.textBaseline = 'alphabetic';
+        ctx.globalAlpha = st.labelAlpha * sa; ctx.fillStyle = E.ghost ? '#F24822' : '#B3B3B3'; ctx.font = '500 12px Inter, -apple-system, system-ui, sans-serif'; ctx.textBaseline = 'alphabetic';
         let label = S.name.split(' · ').pop(); const room = Math.max(fw, S.width * z) - 4;
         while (label.length > 1 && ctx.measureText(label).width > room) label = label.slice(0, -2) + '…';
         if (room > 18) ctx.fillText(label, ox, oy - 9);
@@ -579,7 +579,7 @@
     if (best && !drag) {
       const s = best.s, what = s.mode === 'work' ? Crew.describe(P, P.tasks[s.task]).replace(/^(\w+)/, m => doing[m] || m) : s.mode === 'move' ? 'heading to the next task' : 'waiting for work';
       tip.style.setProperty('--who', best.c.color);
-      tip.innerHTML = '<b>' + esc(best.c.name) + '</b> · ' + esc(what) + ' <span style="color:#5E5E72">· ' + best.c.jobs + ' tasks</span>';
+      tip.innerHTML = '<b>' + esc(best.c.name) + '</b> · ' + esc(what) + ' <span style="color:#808080">· ' + best.c.jobs + ' tasks</span>';
       tip.style.left = Math.min(W - 260, best.x + 18) + 'px'; tip.style.top = (best.y - 34) + 'px'; tip.hidden = false;
     } else tip.hidden = true;
   }
@@ -688,13 +688,13 @@
     const r = spark.getBoundingClientRect(), w = Math.max(1, r.width), h = Math.max(1, r.height);
     if (spark.width !== Math.round(w * dpr)) { spark.width = Math.round(w * dpr); spark.height = Math.round(h * dpr); }
     sctx.setTransform(dpr, 0, 0, dpr, 0, 0); sctx.clearRect(0, 0, w, h);
-    sctx.fillStyle = '#16161E'; sctx.fillRect(0, 0, w, h);
+    sctx.fillStyle = '#1E1E1E'; sctx.fillRect(0, 0, w, h);
     if (!P) return;
     const n = P.bins.length, bw = w / n, ph = t / P.total * w;
-    const grad = sctx.createLinearGradient(0, 0, w, 0); grad.addColorStop(0, '#8B6CFF'); grad.addColorStop(.6, '#FF6FB1'); grad.addColorStop(1, '#FFB86B');
+    const grad = '#0D99FF';
     for (let i = 0; i < n; i++) {
       const v = P.bins[i] / Math.max(1, P.busiest), bh = Math.max(1.5, v * (h - 10)), x = i * bw;
-      sctx.fillStyle = x + bw <= ph ? grad : '#2C2C39';
+      sctx.fillStyle = x + bw <= ph ? grad : '#3A3A3A';
       sctx.fillRect(x + .15, h - 5 - bh, Math.max(.6, bw - .3), bh);
     }
     sctx.fillStyle = '#FFFFFF'; sctx.fillRect(Math.min(w - 2, ph), 3, 2, h - 6);
