@@ -245,7 +245,7 @@
           try {nextCapture=await fetchCapture(reference.id);} catch { /* Artwork is bundled locally. */ }
         }
         const next=Doc.clean(Websites.build(note,reference));
-        commit(next,'Built from “'+note+'”',null,'Vault · '+reference.site.title);
+        commit(next,'Built from “'+note+'”',null,'Vault · '+(next.reference?.title || next.name));
         if(connected){setMode('edit');brief.value='';}
       } catch(error){setBusy(false,'Could not build the vault website',error.message);}
       return;

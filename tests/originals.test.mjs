@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
+import {fileURLToPath} from 'node:url';
 import {originals} from '../references/originals.mjs';
 import {websiteDesign,websiteEdit} from '../references/planner.mjs';
 import {Doc} from '../designer.mjs';
@@ -16,7 +17,7 @@ test('all original page references compile with editable layers and existing art
       assert.equal(png.readUInt32BE(20),680);
     }
     for(const role of originals.rolesFor(f)){
-      const {doc}=await websiteDesign(f.name+' '+role,new URL('../vault/',import.meta.url).pathname);
+      const {doc}=await websiteDesign(f.name+' '+role,fileURLToPath(new URL('../vault/',import.meta.url)));
       const board=Screens.checkBoard(Doc.compile(doc));
       assert.equal(board.screens[0].name,f.name+' · '+role);
       for(const n of board.screens[0].layers){
@@ -31,7 +32,7 @@ test('all original page references compile with editable layers and existing art
   assert.equal(ids.size,631);
 });
 test('subjects and named briefs retrieve an original family and can add its pages',async()=>{
-  const {doc}=await websiteDesign('a bouldering gym called "Crux"',new URL('../vault/',import.meta.url).pathname);
+  const {doc}=await websiteDesign('a bouldering gym called "Crux"',fileURLToPath(new URL('../vault/',import.meta.url)));
   assert.equal(doc.name,'Crux');assert.equal(doc.reference.id,'boulder-yard');
   const {ops}=await websiteEdit(doc,'Add a programme page',async()=>({changes:[{addPage:'Programme'}]}));
   assert.equal(ops[0].screen.name,'Crux · Programme');
@@ -39,7 +40,7 @@ test('subjects and named briefs retrieve an original family and can add its page
 });
 
 test('linked reference names retrieve the corresponding vault collections',async()=>{
-  const root=new URL('../vault/',import.meta.url).pathname;
+  const root=fileURLToPath(new URL('../vault/',import.meta.url));
   for(const f of originals.families)for(const [,site,url] of f.sources){
     const {doc}=await websiteDesign(site+' website',root);
     assert.equal(doc.reference.id,f.id,site);

@@ -299,7 +299,7 @@ body:not(.plugin) .plugin-only{display:none!important}
     <span class="mark" aria-hidden="true"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M5 2.5v17.2l4.7-4.3 3.3 7.2 3.3-1.4-3.3-7.1H19.4z"/></svg></span>
     <div><b>Iris</b><small>A crew of cursors that designs</small></div>
   </div>
-  <select id="workflow" aria-label="Build workflow"><option value="guided">Guide me</option><option value="auto">Build end-to-end</option><option value="vault">Vault website</option></select>
+  <select id="workflow" aria-label="Build workflow"><option value="vault" selected>Vault website</option><option value="guided">Guide me</option><option value="auto">Build end-to-end</option></select>
   <form class="prompt" id="prompt" autocomplete="off">
     <button type="button" class="mode" id="mode" aria-pressed="false" title="Starting a new design">New</button>
     <input id="brief" maxlength="1500" aria-label="Describe a product" placeholder="Describe a product — “a budgeting app called Penny”">
@@ -2221,6 +2221,96 @@ const ReferenceMatch = (() => {
 })();
 if (typeof module !== 'undefined') module.exports = ReferenceMatch;
 
+// Brand names for vault builds. Iris never presents a real company: a brief that names one is
+// rebuilt for that company's kind of product under an invented name, and an unnamed brief gets a
+// plain, believable name for its category instead of a label like "Law firm" or "Dentist".
+const BrandNames = (() => {
+  // Well-known companies and products, each mapped to the kind of site it would be.
+  const real = {
+    music: ['spotify', 'apple music', 'soundcloud', 'tidal', 'deezer', 'pandora', 'bandcamp', 'youtube music', 'shazam'],
+    shop: ['nike', 'adidas', 'puma', 'zara', 'h&m', 'uniqlo', 'gucci', 'prada', 'louis vuitton', 'chanel', 'hermes', 'hermès', 'supreme', 'patagonia', 'lululemon', 'ikea', 'etsy', 'amazon', 'ebay', 'shopify', 'walmart', 'target', 'glossier', 'sephora', 'allbirds', 'everlane', 'warby parker', 'apple', 'samsung', 'sony', 'dyson', 'gumroad'],
+    finance: ['stripe', 'paypal', 'venmo', 'cash app', 'square', 'revolut', 'monzo', 'wise', 'robinhood', 'coinbase', 'binance', 'chase', 'wells fargo', 'bank of america', 'mastercard', 'visa', 'american express', 'amex', 'klarna', 'affirm', 'mercury', 'brex', 'ramp', 'plaid', 'wealthsimple'],
+    tech: ['google', 'microsoft', 'meta', 'facebook', 'instagram', 'whatsapp', 'twitter', 'x.com', 'tiktok', 'snapchat', 'linkedin', 'openai', 'chatgpt', 'anthropic', 'claude', 'gemini', 'notion', 'slack', 'figma', 'linear', 'vercel', 'github', 'gitlab', 'atlassian', 'jira', 'trello', 'asana', 'dropbox', 'zoom', 'salesforce', 'hubspot', 'adobe', 'canva', 'raycast', 'arc', 'cursor', 'replit', 'netlify', 'supabase', 'firebase', 'aws', 'oracle', 'ibm', 'intel', 'nvidia', 'tesla', 'spacex', 'discord', 'reddit', 'pinterest', 'dribbble', 'behance', 'framer', 'webflow', 'squarespace', 'wix', 'duolingo', 'grammarly', 'loom', 'calendly', 'airtable', 'miro', 'yahoo', 'bing', 'netflix', 'hulu', 'disney', 'twitch', 'youtube', 'uber', 'lyft', 'doordash'],
+    travel: ['airbnb', 'booking.com', 'expedia', 'tripadvisor', 'marriott', 'hilton', 'hyatt', 'delta', 'united airlines', 'emirates', 'ryanair', 'kayak', 'vrbo'],
+    food: ['starbucks', 'mcdonalds', "mcdonald's", 'chipotle', 'dominos', "domino's", 'kfc', 'subway', 'blue bottle', 'tim hortons', 'dunkin', 'sweetgreen', 'shake shack', 'pret', 'nespresso'],
+    health: ['peloton', 'strava', 'headspace', 'calm', 'equinox', 'whoop', 'oura', 'fitbit', 'nike training'],
+    learn: ['coursera', 'udemy', 'khan academy', 'masterclass', 'skillshare', 'harvard', 'stanford', 'mit'],
+  };
+  const realIndex = Object.entries(real).flatMap(([kind, names]) => names.map(n => [n, kind]))
+    .sort((a, b) => b[0].length - a[0].length);
+  const escape = s => s.replace(/[.*+?^${}()|[\]\\&]/g, '\\$&');
+  // Brands that are also everyday words only count when the brief is essentially just that name.
+  const everyday = new Set(['apple', 'target', 'square', 'visa', 'calm', 'delta', 'arc', 'cursor', 'claude', 'gemini', 'pret', 'subway',
+    'oracle', 'wise', 'chase', 'meta', 'notion', 'slack', 'linear', 'ramp', 'mercury', 'united airlines', 'amazon', 'supreme', 'zoom',
+    'loom', 'miro', 'framer', 'canva', 'puma', 'whoop', 'oura', 'mit', 'pandora', 'tidal', 'discord', 'twitch', 'equinox', 'wix']);
+  const realPatterns = realIndex.map(([n, kind]) => [everyday.has(n)
+    ? new RegExp('^\\s*(?:(?:recreate|copy|clone|make|build|design|like)\\s+)*(?:a\\s+|an\\s+|the\\s+)?' + escape(n) + '(?:\\s+(?:website|site|homepage|landing page|app|store|clone))?\\s*$', 'i')
+    : new RegExp('(?:^|[^a-z0-9])' + escape(n) + '(?:$|[^a-z0-9])', 'i'), kind, n]);
+  // Words that steer the matcher toward the right template for each kind of real company.
+  const brief = {music: 'music streaming app', shop: 'clothing store', finance: 'payments fintech app',
+    tech: 'software platform startup', travel: 'travel and hotel stays', food: 'coffee shop and bakery',
+    health: 'fitness and wellness studio', learn: 'online courses school'};
+
+  // Invented names: short, plain and believable, the way small independent brands are named.
+  const pools = {
+    food: ['Daylight Bakery', 'Corner Loaf', 'Small Batch', 'Saltwater Kitchen', 'Rosemary & Rye', 'Halfmoon Café', 'Oat & Ember', 'Little Harbour'],
+    shop: ['Field Goods', 'Northline Supply', 'Common Thread', 'Linen & Loom', 'Haven Store', 'Wildwood Co.', 'Paper Moon', 'Ashgrove'],
+    tech: ['Lumen', 'Fieldwork', 'Northstack', 'Brightline', 'Quarry', 'Tandem', 'Openframe', 'Relay'],
+    finance: ['Tally', 'Fernbank', 'Copperleaf', 'Steady', 'Harbor Money', 'Ledgerly', 'Keel', 'Plainsum'],
+    health: ['Still Water', 'Good Form', 'Morning Practice', 'Kindred Health', 'Fairweather', 'Open Breath', 'Clearday', 'Root & Rise'],
+    travel: ['Slow Road', 'Coastline Stays', 'Wayfare', 'Blue Hour', 'Far Field', 'Northbound', 'Harbour House', 'Long Weekend'],
+    creative: ['Northwind Studio', 'Field Office', 'Paperplane', 'Common Room', 'Half Light', 'Studio Ardent', 'Open Plan', 'Grey Matter'],
+    music: ['Night Signal', 'Side B', 'Low Tide Records', 'Open Air', 'Second Take', 'Slow Burn', 'Long Play', 'Radio Room'],
+    learn: ['Fieldnotes Academy', 'Open Book', 'Slow School', 'Common Ground', 'First Light', 'Brightwater', 'Chalk & Co.', 'Learnwell'],
+    event: ['Field Day', 'Open House', 'Late Hours', 'Gather', 'Long Table', 'Northern Lights', 'Summer Assembly', 'The Meeting Place'],
+    home: ['Hearth & Home', 'Keystone Homes', 'Fairfield', 'Oakbridge', 'Brick & Beam', 'Willow Lane', 'Stonefield', 'Homeward'],
+    cause: ['Common Good', 'Open Hands', 'Greenway', 'Rising Tide', 'Neighbourly', 'Field Fund', 'Wellspring', 'Bright Futures'],
+    pets: ['Good Dog', 'Paws & Co.', 'Tailwind', 'Happy Hound', 'Whisker & Wag', 'Fetch', 'Little Paws', 'Kindred Pets'],
+    sport: ['Iron Hall', 'Full Stride', 'Home Court', 'Open Lane', 'Summit Club', 'Second Wind', 'Baseline', 'Fair Play'],
+    service: ['Hartwell & Vale', 'Ashby Lowe', 'Carrow Partners', 'Fenwick & Hale', 'Marlow Advisory', 'Kestrel & Co.', 'Brook Street', 'Thornbury'],
+    general: ['Northwind', 'Fieldhouse', 'Clearwater', 'Oakline', 'Brightwell', 'Common Ground', 'Halcyon', 'Westward'],
+  };
+  function hash(s) { let h = 2166136261; for (const c of String(s)) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; }
+
+  // The real company a brief names, or null.
+  function realBrand(note) {
+    for (const [re, kind, name] of realPatterns) if (re.test(note)) return {name, kind};
+    return null;
+  }
+  function isReal(name) { const n = String(name || '').trim().toLowerCase(); return realIndex.some(([r]) => r === n); }
+  // Replace each real company in a brief with words for its kind of product, so templates still fit.
+  function neutralize(note) {
+    let out = String(note);
+    for (const [re, kind] of realPatterns) out = out.replace(re, m => m.replace(/[^\s].*[^\s]|[^\s]/, brief[kind]));
+    return out;
+  }
+  // A short input that reads like a name (e.g. "Northwind Studio") is the name itself.
+  function looksLikeName(note, categoryTest) {
+    const text = String(note).trim();
+    const words = text.split(/\s+/);
+    if (!text || words.length > 3 || /^(a|an|the|my|our|recreate|copy|clone|make|build|design|create|website|site|like|please)\b/i.test(text) || realBrand(text)) return false;
+    if (!(categoryTest && categoryTest(text))) return true;
+    // A category word still reads as a name when every word is capitalised ("Northwind Studio").
+    return words.length >= 2 && words.every(w => /^[A-Z][a-z'’&.-]*$/.test(w) || w === '&');
+  }
+  function invent(note, kind) {
+    const pool = pools[kind] || pools.general;
+    return pool[hash(String(note).toLowerCase()) % pool.length];
+  }
+  // Replace any real company left in a line of copy with a stable invented name.
+  const wordPatterns = realIndex.map(([n]) => [new RegExp('(^|[^A-Za-z0-9])(' + escape(n) + ')(?=$|[^A-Za-z0-9])', 'gi'), n]);
+  function scrub(text) {
+    let out = String(text);
+    for (const [re, n] of wordPatterns) {
+      if (everyday.has(n) && out.trim().toLowerCase() !== n) continue;
+      out = out.replace(re, (m, lead) => lead + invent(n, 'general'));
+    }
+    return out;
+  }
+  return {realBrand, isReal, neutralize, looksLikeName, invent, scrub, pools};
+})();
+if (typeof module !== 'undefined') module.exports = BrandNames;
+
 // Iris Minimal: the general template for custom briefs that no vault capture or original family fits.
 // Every brief gets copy written for its kind of product, one coherent palette and three illustrations
 // from a single vault family, and a layout variant chosen from the brief itself, so different prompts
@@ -2576,14 +2666,38 @@ const Websites = (() => {
   // Named captures rebuild exactly and poker keeps its gallery. Other briefs use an original family
   // when one fits the subject, and every remaining custom brief gets the general Iris Minimal template
   // instead of pouring generic words into another site's capture.
-  function match(note) { const captured=ReferenceMatch.select(note, ReferenceMedia, Object.keys(ReferenceSites));
+  function match(raw) { const captured=ReferenceMatch.select(raw, ReferenceMedia, Object.keys(ReferenceSites));
     if(captured?.named) return captured;
+    // A real company in the brief only steers the kind of site; it never becomes the name.
+    const note=BrandNames.neutralize(raw);
     const minimal=typeof MinimalPages!=='undefined';
     if(minimal && /\bminimal(?:ist)?\b/i.test(note)) return MinimalPages.match(note);
-    const original=OriginalPages.match(note);
+    const original=OriginalPages.match(raw) || OriginalPages.match(note);
     if(original) return original;
     if(ReferenceMatch.poker(note) || !minimal) return captured;
     return MinimalPages.match(note); }
+  // Whether text names a kind of product (so it is a brief, not a brand name).
+  function categoryTest(t) {
+    return (typeof MinimalPages!=='undefined' && MinimalPages.kitFor(t).id!=='general') ||
+      vocabularies.some(v=>v[0].test(t)) || !!OriginalPages.match(t);
+  }
+  const tidy=t=>{t=String(t).trim().replace(/\s+/g,' ').slice(0,40);return t.charAt(0).toUpperCase()+t.slice(1);};
+  // The name a build shows. Explicit names are kept unless they belong to a real company; a short
+  // name-like input is the name; otherwise an invented name fits the template, and original families
+  // keep their own names. Returns null when the template's own name should be used.
+  function nameFor(note,m) {
+    const quoted=note.match(/["“]([^"”]{1,55})["”]/), called=note.match(/\b(?:called|named)\s+([^,.;:!?]{1,55})/i);
+    const explicit=quoted?quoted[1]:called?called[1].replace(/\s+(?:for|with|that|which|who|where|in|on|about|and)\s.*$/i,''):null;
+    const kind=m?.minimal?(m.kit?.id || 'general'):'general';
+    if(m && !m.minimal && !m.original && m.exact) return null;
+    if(m?.original && m.exact && !explicit) return null;
+    if(explicit && explicit.trim()) return !BrandNames.realBrand(explicit) ? tidy(explicit) : m?.original ? null : BrandNames.invent(note,kind);
+    if(BrandNames.looksLikeName(note,categoryTest)) return tidy(note);
+    if(m?.original) return null;
+    if(m && !m.minimal && m.exact) return null;
+    if(m && !m.minimal && ReferenceMatch.poker(note)) return 'River Room';
+    return BrandNames.invent(note,kind);
+  }
   function titleOf(note) {
     const quoted=note.match(/["“]([^"”]{1,55})["”]/);
     const named=quoted || note.match(/\b(?:called|named)\s+(.{1,55})/i);
@@ -2630,12 +2744,22 @@ const Websites = (() => {
   // Companion layouts are existing captures with a collection or detail structure.
   const collections=['metalforge','godly'];
   const details=['apple-liquid-glass','teenage-engineering','poolsuite','ui-chords'];
-  function build(note,m=match(note),captureOnly=false) {
-    if(m?.minimal)return MinimalPages.build(note,m,titleOf(note),captureOnly);
-    if(m?.original)return OriginalPages.build(note,m,titleOf(note),captureOnly);
+  // Final guard: no real company name survives in a built page's copy or names.
+  function scrubDoc(doc) {
+    for (const n of doc.nodes) { if (typeof n.text === 'string') n.text = BrandNames.scrub(n.text); if (typeof n.name === 'string') n.name = BrandNames.scrub(n.name); }
+    for (const s of doc.screens) s.name = BrandNames.scrub(s.name);
+    doc.name = BrandNames.scrub(doc.name);
+    return doc;
+  }
+  function build(raw,m=match(raw),captureOnly=false) { return scrubDoc(buildDoc(raw,m,captureOnly)); }
+  function buildDoc(raw,m,captureOnly) {
+    const picked=nameFor(raw,m), note=BrandNames.neutralize(raw).replace(/\s*\b(?:called|named)\s+[^,.;:!?]{1,55}|["“][^"”]{1,55}["”]/gi,'').trim() || raw;
+    const named=picked ? note+' called "'+picked+'"' : note;
+    if(m?.minimal)return MinimalPages.build(named,m,picked || titleOf(note),captureOnly);
+    if(m?.original)return OriginalPages.build(named,m,picked || m.f.name,captureOnly);
     if(!m || !Object.prototype.hasOwnProperty.call(ReferenceSites,m.id)) throw Error('No usable website setup is available in the vault.');
     const available=new Set(ReferenceMedia.filter(r=>r.path.startsWith('assets/sites/')).map(r=>r.path.slice(13,-4)));
-    const name=m.exact?ReferenceBrands[m.id]:ReferenceMatch.poker(note) && !/called|named|["“]/i.test(note)?'River Room':titleOf(note);
+    const name=picked || ReferenceBrands[m.id] || 'Northwind';
     const words=(vocabularies.find(v=>v[0].test(note)) || [null,general])[1];
     const cafe=/\bcoffee\b|caf[eé]|bakery|espresso/i.test(note) && !m.exact;
     const pages=[{id:'web',source:m.id,title:'Home'}];
@@ -2649,7 +2773,7 @@ const Websites = (() => {
       if(!detail)throw Error('The vault needs a detail setup to build this website.');
       pages.push({id:'detail',source:detail,title:words[8]});
     }
-    const doc={name,reference:{id:m.id,title:m.site.title,url:m.site.url || '',image:m.inspiration?.title || '',fallback:m.fallback,capture:m.exact,
+    const doc={name,reference:{id:m.id,title:ReferenceBrands[m.id] || name,url:m.site.url || '',image:m.inspiration?.title || '',fallback:m.fallback,capture:m.exact,
       setups:pages.map(p=>({screen:p.id,source:p.source})),vaultOnly:true},screens:[],nodes:[]};
     for(const page of pages) {
       const site=ReferenceSites[page.source], exact=page.id==='web' && m.exact;
@@ -2936,7 +3060,7 @@ const RasterImages = {"adelfaure/v3/0":"iVBORw0KGgoAAAANSUhEUgAABaAAAAOECAIAAADY
           try {nextCapture=await fetchCapture(reference.id);} catch { /* Artwork is bundled locally. */ }
         }
         const next=Doc.clean(Websites.build(note,reference));
-        commit(next,'Built from “'+note+'”',null,'Vault · '+reference.site.title);
+        commit(next,'Built from “'+note+'”',null,'Vault · '+(next.reference?.title || next.name));
         if(connected){setMode('edit');brief.value='';}
       } catch(error){setBusy(false,'Could not build the vault website',error.message);}
       return;

@@ -5,7 +5,7 @@ const root = new URL('./', import.meta.url);
 const read = name => readFile(new URL(name, root), 'utf8');
 const [spec, icons, layout, kit, crew, studio, page, main, voice] = await Promise.all(['screen-spec.cjs', 'icons.js', 'layout.js', 'kit.js', 'crew.js', 'studio.js', 'template.html', 'figma.js', 'voice.js'].map(read));
 const {catalog} = await import('./references/catalog.mjs');
-const [sites, media, matcher, websites, minimal] = await Promise.all([read('references/sites.json'), catalog(fileURLToPath(new URL('vault',root))), read('references/match.js'), read('references/websites.js'), read('references/minimal.js')]);
+const [sites, media, matcher, websites, minimal, names] = await Promise.all([read('references/sites.json'), catalog(fileURLToPath(new URL('vault',root))), read('references/match.js'), read('references/websites.js'), read('references/minimal.js'), read('references/names.js')]);
 const literal = data => JSON.stringify(data).replace(/</g,'\\u003c');
 const {brands,brandCopy} = await import('./references/captures.mjs');
 const {rasterSite} = await import('./references/raster.mjs');
@@ -21,7 +21,7 @@ for(const f of originals.families)for(let i=0;i<3;i++){
   const bytes=await readFile(new URL('vault/Originals/art/'+f.id+'-'+i+'.png',root));
   rasterImages[f.id+'/v3/'+i]=bytes.toString('base64');
 }
-const library = ['const OriginalWebSources = '+literal(webSources)+';','const OriginalCollections = '+literal(collections)+';',originalSource,'const RasterLayouts = '+literal(rasterLayouts)+';','const LegacyOutlines = '+await read('references/legacy-outlines.json')+';', 'const ReferenceBrands = '+literal(brands)+';','const ReferenceCopy = '+literal(brandCopy)+';','const ReferenceSites = '+literal(JSON.parse(sites))+';', 'const ReferenceMedia = '+literal(media)+';', matcher, minimal, websites].join('\n');
+const library = ['const OriginalWebSources = '+literal(webSources)+';','const OriginalCollections = '+literal(collections)+';',originalSource,'const RasterLayouts = '+literal(rasterLayouts)+';','const LegacyOutlines = '+await read('references/legacy-outlines.json')+';', 'const ReferenceBrands = '+literal(brands)+';','const ReferenceCopy = '+literal(brandCopy)+';','const ReferenceSites = '+literal(JSON.parse(sites))+';', 'const ReferenceMedia = '+literal(media)+';', matcher, names, minimal, websites].join('\n');
 const engine = [spec, icons, layout, kit, crew, library].join('\n');
 const esbuild = await import('esbuild');
 const native = await esbuild.transform([engine,await read('references/sections.js'), main].join('\n'), {target:'es2017',charset:'utf8',minifyWhitespace:true});

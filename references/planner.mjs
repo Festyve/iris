@@ -10,13 +10,14 @@ const sites=JSON.parse(await readFile(new URL('sites.json',import.meta.url),'utf
 const rasterLayouts=JSON.parse(await readFile(new URL('raster-layouts.json',import.meta.url),'utf8'));
 const source=await readFile(new URL('websites.js',import.meta.url),'utf8');
 const minimalSource=await readFile(new URL('minimal.js',import.meta.url),'utf8');
+export const BrandNames=vm.runInNewContext(await readFile(new URL('names.js',import.meta.url),'utf8')+'\nBrandNames',{});
 export const minimal=vm.runInNewContext(minimalSource+'\nMinimalPages',{Doc,OriginalPages:originals});
-const layerBuilder=vm.runInNewContext(source+'\nWebsites',{RasterLayouts:rasterLayouts});
+const layerBuilder=vm.runInNewContext(source+'\nWebsites',{RasterLayouts:rasterLayouts,BrandNames});
 const libraries=new Map();
 async function library(root) {
   if (!libraries.has(root)) {
     const loading=catalog(root).then(media=>vm.runInNewContext(source+'\nWebsites',
-      {Doc,OriginalPages:originals,MinimalPages:minimal,RasterLayouts:rasterLayouts,ReferenceBrands:brands,ReferenceCopy:brandCopy,ReferenceSites:sites,ReferenceMedia:media,ReferenceMatch:Match}));
+      {Doc,BrandNames,OriginalPages:originals,MinimalPages:minimal,RasterLayouts:rasterLayouts,ReferenceBrands:brands,ReferenceCopy:brandCopy,ReferenceSites:sites,ReferenceMedia:media,ReferenceMatch:Match}));
     libraries.set(root,loading);
     loading.catch(()=>libraries.delete(root));
   }
