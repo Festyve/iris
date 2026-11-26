@@ -51,6 +51,8 @@ button{cursor:pointer;border:0;background:none;padding:0}
 .suggest button{display:flex;width:100%;align-items:center;gap:8px;padding:6px 8px;border-radius:var(--r-sm);color:var(--text);text-align:left}
 .suggest button:hover,.suggest button.on{background:var(--accent);color:#fff}
 .suggest i{width:6px;height:6px;border-radius:50%;flex:none}
+.suggest .tpl-style{margin-left:auto;font:500 10px/1 var(--mono);color:var(--text-4);font-style:normal;letter-spacing:.02em}.suggest button:hover .tpl-style,.suggest button.on .tpl-style{color:#ffffffb3}
+.suggest{max-height:420px;overflow:auto}
 .suggest .hint{padding:6px 8px 4px;font:600 10px/1 var(--mono);color:var(--text-4);letter-spacing:.08em;text-transform:uppercase}
 .mode{flex:none;height:22px;padding:0 7px;border-radius:var(--r-sm);background:var(--surface-3);color:var(--text-2);font:600 10px/22px var(--mono);letter-spacing:.06em;text-transform:uppercase;transition:background .12s,color .12s}
 .mode:hover{color:var(--text)}
@@ -302,7 +304,7 @@ body:not(.plugin) .plugin-only{display:none!important}
   <select id="workflow" aria-label="Build workflow"><option value="vault" selected>Vault website</option><option value="guided">Guide me</option><option value="auto">Build end-to-end</option></select>
   <form class="prompt" id="prompt" autocomplete="off">
     <button type="button" class="mode" id="mode" aria-pressed="false" title="Starting a new design">New</button>
-    <input id="brief" maxlength="1500" aria-label="Describe a product" placeholder="Describe a product — “a budgeting app called Penny”">
+    <input id="brief" maxlength="1500" aria-label="Describe a product" placeholder="Pick a template, or type a name">
     <button type="button" class="icon-btn" id="mic" title="Speak the brief" aria-label="Speak the brief" hidden><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>
     <button type="button" class="icon-btn" id="dice" title="Surprise me" aria-label="Surprise me"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg></button>
     <div class="suggest" id="suggest" hidden></div>

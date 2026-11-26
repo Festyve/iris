@@ -43,3 +43,33 @@ test('everyday words that are also brands do not trigger renaming', () => {
   assert.equal(BrandNames.realBrand('a calm meditation app'), null);
   assert.equal(BrandNames.realBrand('apple')?.kind, 'shop');
 });
+
+import vm from 'node:vm';
+import {readFile} from 'node:fs/promises';
+import {originals} from '../references/originals.mjs';
+import {minimal} from '../references/planner.mjs';
+import {brands, brandCopy} from '../references/captures.mjs';
+import {Doc} from '../designer.mjs';
+import Match from '../references/match.js';
+import {catalog} from '../references/catalog.mjs';
+
+test('every selectable template builds, and a typed title replaces its name everywhere', async () => {
+  const read = name => readFile(new URL('../references/' + name, import.meta.url), 'utf8');
+  const Websites = vm.runInNewContext((await read('websites.js')) + '\nWebsites', {
+    Doc, BrandNames, OriginalPages: originals, MinimalPages: minimal, ReferenceBrands: brands, ReferenceCopy: brandCopy,
+    RasterLayouts: JSON.parse(await read('raster-layouts.json')), ReferenceSites: JSON.parse(await read('sites.json')),
+    ReferenceMedia: await catalog(root), ReferenceMatch: Match});
+  assert.ok(Websites.templates.length >= 12);
+  for (const t of Websites.templates) {
+    const plain = Websites.fromTemplate(t.id);
+    assert.doesNotMatch(plain.name, real, t.id);
+    const titled = Websites.fromTemplate(t.id, 'Moonbeam');
+    assert.equal(titled.name, 'Moonbeam', t.id);
+    assert.ok(titled.nodes.some(n => n.text && n.text.includes('Moonbeam')), t.id + ' shows the typed title');
+    if (plain.name !== 'Moonbeam') assert.ok(!titled.nodes.some(n => n.text && n.text.includes(plain.name)), t.id + ' keeps no old name');
+    assert.ok(titled.screens.every(s => s.name.startsWith('Moonbeam · ')), t.id);
+  }
+  const random = Websites.randomTemplate('Typed Name');
+  assert.equal(random.name, 'Typed Name');
+  assert.ok(Websites.templates.some(t => t.id === random.reference.template));
+});

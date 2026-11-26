@@ -155,5 +155,50 @@ const Websites = (() => {
     }
     return doc;
   }
-  return {match,build,artwork,shapeNodes};
+  // The selectable templates. Each is a vault design under an invented name; "style" says what kind
+  // of site it is. Typing a brief picks one at random and puts the typed text in place of its name.
+  const templates=[
+    {id:'music',label:'Music streaming',style:'Spotify-style',brief:'a music streaming app called "Slow Burn"'},
+    {id:'payments',label:'Payments platform',style:'Stripe-style',brief:'recreate stripe'},
+    {id:'sneakers',label:'Sneaker store',style:'Nike-style',brief:'a sneaker store called "Stride Supply"'},
+    {id:'search',label:'AI search assistant',style:'Google-style',brief:'an AI search assistant startup called "Openframe"'},
+    {id:'coffee',label:'Coffee shop',style:'Café & bakery',brief:'a coffee shop called "Daybreak"'},
+    {id:'launch',label:'Startup launch page',style:'Dark launch',brief:'recreate animata'},
+    {id:'shader',label:'3D shader animation',style:'Motion & WebGL',brief:'recreate scrollshaders'},
+    {id:'retro',label:'Retro desktop',style:'Y2K / retro',brief:'recreate poolsuite'},
+    {id:'cloud',label:'Developer platform',style:'Vercel-style',brief:'recreate vercel'},
+    {id:'app',label:'Productivity app',style:'Raycast-style',brief:'recreate raycast'},
+    {id:'hardware',label:'Hardware store',style:'Product catalogue',brief:'recreate teenage-engineering'},
+    {id:'portfolio',label:'Studio portfolio',style:'Minimal editorial',brief:'a design studio portfolio called "Northwind Studio"'},
+    {id:'firm',label:'Law & advisory firm',style:'Professional services',brief:'a law firm called "Hartwell & Vale"'},
+    {id:'travel',label:'Travel planner',style:'Itineraries',brief:'a Tokyo travel planner'}
+  ];
+  const escapeRe=s=>s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+  // Swap the template's name for a new title everywhere it appears, refitting single-line text.
+  function retitle(doc,title) {
+    const name=String(title).trim().replace(/\s+/g,' ').slice(0,40);
+    if(!name || name===doc.name) return doc;
+    const re=new RegExp(escapeRe(doc.name),'g');
+    for(const n of doc.nodes) {
+      if(typeof n.text==='string' && re.test(n.text)) {
+        n.text=n.text.replace(re,name); n.name=String(n.name||'').replace(re,name).slice(0,60) || n.text.slice(0,60);
+        if(n.wrap===false && n.w && n.size && typeof Doc!=='undefined' && Doc.measure) n.size=Math.max(6,Math.min(n.size,n.w/Math.max(1,Doc.measure(n.text,1,n.weight))));
+      }
+      re.lastIndex=0;
+    }
+    for(const s of doc.screens) s.name=s.name.replace(re,name);
+    doc.name=name;
+    return doc;
+  }
+  function fromTemplate(id,title) {
+    const tpl=templates.find(x=>x.id===id) || templates[0];
+    const doc=build(tpl.brief);
+    doc.reference={...doc.reference,template:tpl.id,templateLabel:tpl.label};
+    return title ? retitle(doc,title) : doc;
+  }
+  function randomTemplate(title,exclude) {
+    const pool=templates.filter(x=>x.id!==exclude);
+    return fromTemplate(pool[Math.floor(Math.random()*pool.length)].id,title);
+  }
+  return {match,build,artwork,shapeNodes,templates,fromTemplate,randomTemplate,retitle};
 })();
