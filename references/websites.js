@@ -175,20 +175,24 @@ const Websites = (() => {
     // else a neutral that suits the background rather than a stock purple.
     const shapeAccent=(fills.filter(f=>satOf(f.c)>.35 && contrastOf(f.c,paper)>2.2).sort((a,b)=>satOf(b.c)*Math.sqrt(b.a)-satOf(a.c)*Math.sqrt(a.a))[0]||{}).c;
     // Desktop-window captures crop to window chrome, so they use panels in a hand-picked accent.
-    const look={poolsuite:{accent:'#D9487A',panels:true},'winamp-ui-sdk':{accent:'#2F5DB8',panels:true}}[id] || {};
+    const look={poolsuite:{accent:'#D9487A',panels:true},'winamp-ui-sdk':{accent:'#2F5DB8',panels:true},
+      raycast:{accent:'#FF6363',role:'Contact'},vercel:{role:'Story'}}[id] || {};
     const accent=look.accent || (layout.accent && contrastOf(layout.accent,paper)>1.8 ? layout.accent : null) || shapeAccent || (dark?'#A1A1AA':'#3F3F46');
     // Artwork crops cut from the capture's own home screenshot at build time (see build.mjs).
     const under=layout.shapes.findIndex(s=>s[5] && s[2]>=1400 && s[3]>=860);
     // Weak crops (sparse, mostly-text captures) become accent gradient panels instead.
     const scores=layout.cropScores||[];
     const imgs=[0,1,2].map(k=>!look.panels && k<(layout.crops||0) && (scores[k]??0)>=.06?id+'/v3/'+(900+k):null);
+    // With two strong crops, repeat them rather than mixing photos with empty panels.
+    const strongImgs=imgs.filter(Boolean);
+    if(strongImgs.length>=2) for(let k=0;k<3;k++) if(!imgs[k]) imgs[k]=strongImgs[k%strongImgs.length];
     const mixHex=(a,b,t)=>'#'+hex2(a).map((v,i)=>Math.round((v+(hex2(b)[i]-v)*t)*255).toString(16).padStart(2,'0')).join('').toUpperCase();
     const panels=[[accent,mixHex(accent,paper,dark?.82:.7)],[mixHex(accent,paper,dark?.35:.25),mixHex(accent,dark?'#000000':'#FFFFFF',.55)],[mixHex(accent,paper,dark?.7:.55),accent]];
     const kit=MinimalPages.kits.find(k=>k.id===(kitIds[id]||MinimalPages.kitFor(note).id)) || MinimalPages.kits[0];
     const f={id,paper,ink,accent,items:kit.items.map(x=>x[0])};
     let seed=0; for(const ch of name+id) seed=(seed*31+ch.charCodeAt(0))>>>0;
     let sid=0; for(const ch of id) sid=(sid*33+ch.charCodeAt(0))>>>0;
-    [['Offer','collection'],[['Story','Contact','Story'][sid%3],'detail']].forEach(([role,pid])=>{
+    [['Offer','collection'],[look.role || ['Story','Contact','Story'][sid%3],'detail']].forEach(([role,pid])=>{
       const p=MinimalPages.page(f,kit,role,name,pid,seed);
       for(const n of p.nodes) if(typeof n.art==='string' && n.art.startsWith(id+'/v3/')) {
         const k=+n.art.split('/').pop()%3;
