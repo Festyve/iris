@@ -6,6 +6,12 @@
 
 **[▶ Watch the demo (1:21)](docs/media/iris-demo.mp4).** Ask Iris out loud for a page from your design vault. The ElevenLabs voice agent answers, and a crew of 100 cursors rebuilds the page as editable layers in Figma. The narration, sound effects and music are ElevenLabs, and the user's lines in the video are spoken by an ElevenLabs voice.
 
+<p align="center">
+  <img src="docs/media/iris-crew-build.gif" alt="A crew of named cursors building the Payments template: the home page, an Accounts page and a Contact page in one palette" width="100%">
+</p>
+
+*Picking **Payments platform**: the crew drags out three frames, fills and types every layer, and finishes a matching three-page site in about ten seconds.*
+
 ## Templates
 
 Pick one of 14 templates from the prompt in the Figma plugin and the crew builds a full site: a home page plus matching pages in the same palette, type and artwork. Every template is a vault design under an invented name, so no real company appears in the output. Type anything instead of picking and Iris builds a random template with your text as the site's name.

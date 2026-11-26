@@ -21,7 +21,9 @@ const Crew = (() => {
     h = Math.imul(h ^ (h >>> 13), 1274126177);
     return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
   }
-  const cursorName = i => names[i % names.length] + (i >= names.length ? ' ' + (Math.floor(i / names.length) + 1) : '');
+  // Past the first round of names, cursors take a last initial ("Jax K.") rather than a number.
+  const initials = 'KMRSTLBDHCPWVGNFAJE';
+  const cursorName = i => names[i % names.length] + (i >= names.length ? ' ' + initials[(Math.floor(i / names.length) - 1) % initials.length] + '.' : '');
   const area = L => L.w * L.h;
   const contains = (a, b) => b.x >= a.x - 1 && b.y >= a.y - 1 && b.x + b.w <= a.x + a.w + 1 && b.y + b.h <= a.y + a.h + 1;
   const textWidth = L => Math.min(L.w, Math.max(...L.text.split('\n').map(s => s.length)) * L.size * (L.weight >= 600 ? .58 : .54));
