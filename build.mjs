@@ -53,10 +53,24 @@ for(const [id,site] of Object.entries(JSON.parse(sites))) {
     const windows=[];
     for(let y=Math.round(gh*.08);y+ch<=gh;y+=2) for(let x=0;x+cw<=gw;x+=2) windows.push([x,y,sum(x,y)]);
     windows.sort((a,b)=>b[2]-a[2]);
+    const overlap=(p,w)=>Math.max(0,Math.min(p[0]+cw,w[0]+cw)-Math.max(p[0],w[0]))*Math.max(0,Math.min(p[1]+ch,w[1]+ch)-Math.max(p[1],w[1]));
     for(const w of windows) {
       if(picks.length===3) break;
-      if(picks.some(p=>Math.max(0,Math.min(p[0]+cw,w[0]+cw)-Math.max(p[0],w[0]))*Math.max(0,Math.min(p[1]+ch,w[1]+ch)-Math.max(p[1],w[1]))>cw*ch*.25)) continue;
+      if(picks.some(p=>overlap(p,w)>cw*ch*.25)) continue;
       picks.push(w);
+    }
+    // When only one or two regions are strong (one big product photo), take further, shifted crops
+    // of those regions instead of falling back to empty panels.
+    const strongEnough=w=>w[2]/(cw*ch)>=.06;
+    const strong=picks.filter(strongEnough);
+    if(strong.length && strong.length<3) {
+      for(const w of windows) {
+        if(strong.length===3 || !strongEnough(w)) continue;
+        if(strong.some(p=>overlap(p,w)>cw*ch*.72)) continue;
+        strong.push(w);
+      }
+      const merged=[...strong,...picks.filter(p=>!strong.includes(p))].slice(0,3);
+      picks.length=0; picks.push(...merged);
     }
     picks.forEach(([x,y],k)=>{
       const out=new PNG({width:cw*C,height:ch*C});
