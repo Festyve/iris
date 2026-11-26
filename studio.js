@@ -579,7 +579,11 @@
     else if (L.art && RasterImages[L.art]) {
       const img=rasterImage(L.art);
       if(img.complete && img.naturalWidth) {
-        ctx.save();ctx.globalAlpha=op;ctx.drawImage(img,x,y,w,h);ctx.restore();
+        ctx.save();ctx.globalAlpha=op;
+        // Cover-fit like Figma's FILL image mode, clipped to the layer's corner radius.
+        const iw=img.naturalWidth, ih=img.naturalHeight, k=Math.max(w/iw,h/ih), sw=w/k, sh=h/k;
+        if(L.r){ctx.beginPath();ctx.roundRect(x,y,w,h,Math.min(L.r*z,w/2,h/2));ctx.clip();}
+        ctx.drawImage(img,(iw-sw)/2,(ih-sh)/2,sw,sh,x,y,w,h);ctx.restore();
       }
     }
     else if (Websites.artwork(L.art)) {
@@ -898,7 +902,8 @@
           body += '<text font-family="Inter, sans-serif" font-size="' + L.size + '" font-weight="' + L.weight + '" fill="' + L.fill + '" text-anchor="' + anchor + '"' + (L.size >= 28 ? ' letter-spacing="' + r2(-L.size * .02) + '"' : '') + op + '>' +
             L.text.split('\n').map((s, i) => '<tspan x="' + r2(ax) + '" y="' + r2(L.y + L.size * L.lh * (i + .5)) + '" dominant-baseline="central">' + esc(s) + '</tspan>').join('') + '</text>';
         } else if (L.art && RasterImages[L.art]) {
-          body+='<image x="'+L.x+'" y="'+L.y+'" width="'+L.w+'" height="'+L.h+'" preserveAspectRatio="none" href="data:image/png;base64,'+RasterImages[L.art]+'"'+op+'/>';
+          {const cid='ic'+gid++;defs+='<clipPath id="'+cid+'"><rect x="'+L.x+'" y="'+L.y+'" width="'+L.w+'" height="'+L.h+'" rx="'+(L.r||0)+'"/></clipPath>';
+          body+='<image x="'+L.x+'" y="'+L.y+'" width="'+L.w+'" height="'+L.h+'" preserveAspectRatio="xMidYMid slice" clip-path="url(#'+cid+')" href="data:image/png;base64,'+RasterImages[L.art]+'"'+op+'/>';}
         } else if (Websites.artwork(L.art)) {
           const a=Websites.artwork(L.art);
           body+='<path transform="translate('+L.x+' '+L.y+') scale('+L.w/a.w+' '+L.h/a.h+')" fill-rule="evenodd" fill="'+fillRef(L.fill,0,0,a.w,a.h)+'" d="'+a.path+'"'+op+'/>';
