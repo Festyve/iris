@@ -1,5 +1,11 @@
 # Iris — a crew of cursors that designs
 
+<p align="center">
+  <a href="docs/media/iris-demo.mp4"><img src="docs/media/iris-demo-poster.jpg" alt="Iris demo: 100 named cursors rebuilding a page from the design vault in Figma" width="860"></a>
+</p>
+
+**[▶ Watch the demo (1:21)](docs/media/iris-demo.mp4).** Ask Iris out loud for a page from your design vault. The ElevenLabs voice agent answers, and a crew of 100 cursors rebuilds the page as editable layers in Figma. The narration, sound effects and music are ElevenLabs, and the user's lines in the video are spoken by an ElevenLabs voice.
+
 New designs build locally. Claude runs when you request an edit. Every time, hundreds of cursors do the work on the canvas, in the browser or live in your Figma file. They drag out frames, draw and fill shapes, round corners, snap cards into place and type every word. On a change they only touch what changes: moving, recolouring, retyping, deleting and adding.
 
 ## Build a website from the vault
