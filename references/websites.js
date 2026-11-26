@@ -111,7 +111,8 @@ const Websites = (() => {
     const words=(vocabularies.find(v=>v[0].test(note)) || [null,general])[1];
     const cafe=/\bcoffee\b|caf[eé]|bakery|espresso/i.test(note) && !m.exact;
     const pages=[{id:'web',source:m.id,title:'Home'}];
-    if(!captureOnly) {
+    const themed=!captureOnly && typeof MinimalPages!=='undefined';
+    if(!captureOnly && !themed) {
       const candidates=ids=>ids.filter(id=>available.has(id) && !pages.some(p=>p.source===id));
       const collection=candidates(cafe?['paco',...collections]:collections)[0];
       if(!collection)throw Error('The vault needs a collection setup to build this website.');
@@ -153,7 +154,48 @@ const Websites = (() => {
         doc.nodes.push({id:page.id+'-t'+i,parent:page.id,type:'text',name:label.slice(0,60),text:label,x,y,w,h,size:fit,weight,color,lh:1,align:centered?'center':'left',wrap:false});
       });
     }
+    if(themed) companions(doc,m.id,name,raw);
     return doc;
+  }
+  // Companion pages for a captured home page. They reuse the capture's background, text colour,
+  // strongest accent and its own imagery, so all three pages read as one site.
+  const hex2=h=>[1,3,5].map(i=>parseInt(h.slice(i,i+2),16)/255);
+  const lumOf=h=>{const c=hex2(h).map(v=>v<=.03928?v/12.92:Math.pow((v+.055)/1.055,2.4));return .2126*c[0]+.7152*c[1]+.0722*c[2];};
+  const satOf=h=>{const c=hex2(h),mx=Math.max(...c),mn=Math.min(...c);return mx?(mx-mn)/mx:0;};
+  const contrastOf=(a,b)=>{const x=lumOf(a),y=lumOf(b);return (Math.max(x,y)+.05)/(Math.min(x,y)+.05);};
+  const kitIds={stripe:'finance',gumroad:'shop',scrollshaders:'tech',animata:'tech',scrolltide:'tech',snapblocks:'tech',uiarc:'tech',vercel:'tech',raycast:'tech',
+    poolsuite:'music','winamp-ui-sdk':'music','ui-chords':'music','teenage-engineering':'shop','apple-liquid-glass':'tech',grainient:'creative',godly:'creative',
+    metalforge:'creative',emilkowal:'creative',rauno:'creative',adelfaure:'creative',horizonx:'tech',paco:'food',siteinspire:'creative',httpster:'creative',
+    cofolios:'creative','viewport-ui':'tech',designspells:'creative'};
+  function companions(doc,id,name,note) {
+    const site=ReferenceSites[id], layout=RasterLayouts[id], paper=/^#[0-9a-f]{6}$/i.test(site.bg||'')?site.bg.toUpperCase():'#FFFFFF';
+    const dark=lumOf(paper)<.25, ink=dark?'#F2F2F4':'#141416';
+    const fills=layout.shapes.filter(s=>!s[5] && /^#[0-9a-f]{6}$/i.test(s[4]||'')).map(s=>({c:s[4].toUpperCase(),a:s[2]*s[3]}));
+    // The page's own dominant colour (measured at build time), else its boldest filled shape,
+    // else a neutral that suits the background rather than a stock purple.
+    const shapeAccent=(fills.filter(f=>satOf(f.c)>.35 && contrastOf(f.c,paper)>2.2).sort((a,b)=>satOf(b.c)*Math.sqrt(b.a)-satOf(a.c)*Math.sqrt(a.a))[0]||{}).c;
+    const accent=(layout.accent && contrastOf(layout.accent,paper)>1.8 ? layout.accent : null) || shapeAccent || (dark?'#A1A1AA':'#3F3F46');
+    // Artwork crops cut from the capture's own home screenshot at build time (see build.mjs).
+    const under=layout.shapes.findIndex(s=>s[5] && s[2]>=1400 && s[3]>=860);
+    // Weak crops (sparse, mostly-text captures) become accent gradient panels instead.
+    const scores=layout.cropScores||[];
+    const imgs=[0,1,2].map(k=>k<(layout.crops||0) && (scores[k]??0)>=.06?id+'/v3/'+(900+k):null);
+    const mixHex=(a,b,t)=>'#'+hex2(a).map((v,i)=>Math.round((v+(hex2(b)[i]-v)*t)*255).toString(16).padStart(2,'0')).join('').toUpperCase();
+    const panels=[[accent,mixHex(accent,paper,dark?.82:.7)],[mixHex(accent,paper,dark?.35:.25),mixHex(accent,dark?'#000000':'#FFFFFF',.55)],[mixHex(accent,paper,dark?.7:.55),accent]];
+    const kit=MinimalPages.kits.find(k=>k.id===(kitIds[id]||MinimalPages.kitFor(note).id)) || MinimalPages.kits[0];
+    const f={id,paper,ink,accent,items:kit.items.map(x=>x[0])};
+    let seed=0; for(const ch of name+id) seed=(seed*31+ch.charCodeAt(0))>>>0;
+    let sid=0; for(const ch of id) sid=(sid*33+ch.charCodeAt(0))>>>0;
+    [['Offer','collection'],[['Story','Contact','Story'][sid%3],'detail']].forEach(([role,pid])=>{
+      const p=MinimalPages.page(f,kit,role,name,pid,seed);
+      for(const n of p.nodes) if(typeof n.art==='string' && n.art.startsWith(id+'/v3/')) {
+        const k=+n.art.split('/').pop()%3;
+        if(imgs[k]) n.art=imgs[k]; else { delete n.art; n.fill={from:panels[k][0],to:panels[k][1],dir:'d'}; }
+      }
+      p.screen.vaultSource=id;
+      doc.screens.push(p.screen); doc.nodes.push(...p.nodes);
+      doc.reference.setups.push({screen:pid,source:id});
+    });
   }
   // The selectable templates. Each is a vault design under an invented name; "style" says what kind
   // of site it is. Typing a brief picks one at random and puts the typed text in place of its name.

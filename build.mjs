@@ -15,6 +15,72 @@ for(const [id,site] of Object.entries(JSON.parse(sites))) {
   rasterLayouts[id]=layout;
   Object.assign(rasterImages,images);
 }
+// Three artwork crops per capture, taken from the most colourful, detailed regions of its home
+// screenshot. Companion pages use them (ids 900–902) so every page shares the capture's own visuals.
+{
+  const {PNG}=await import('pngjs');
+  const {capture}=await import('./references/captures.mjs');
+  for(const [id,layout] of Object.entries(rasterLayouts)) {
+    let im; try { im=PNG.sync.read(await capture(fileURLToPath(new URL('vault',root)),id)); } catch { continue; }
+    const W=im.width, H=im.height, C=24, gw=Math.floor(W/C), gh=Math.floor(H/C);
+    // Paint out every captured label: each row is blended from the pixel left of the box to the one
+    // right of it, which keeps gradients and photos smooth. Text cells are also penalised below.
+    const boxes=(JSON.parse(sites)[id].text||[]).map(([x,y,w,h])=>[Math.max(1,Math.floor(x-3)),Math.max(0,Math.floor(y-3)),Math.ceil(w+6),Math.ceil(h+6)]);
+    for(const [x,y,w,h] of boxes) {
+      const x2=Math.min(W-1,x+w);
+      for(let row=y;row<Math.min(H,y+h);row++) {
+        const a=(row*W+x-1)*4, z=(row*W+x2)*4;
+        for(let col=x;col<x2;col++) { const k=(col-x+1)/(x2-x+1), i=(row*W+col)*4; for(let c=0;c<3;c++) im.data[i+c]=Math.round(im.data[a+c]*(1-k)+im.data[z+c]*k); }
+      }
+    }
+    const textCell=new Uint8Array(gw*gh);
+    for(const [x,y,w,h] of boxes) for(let gy=Math.floor(y/C);gy<=Math.min(gh-1,Math.floor((y+h)/C));gy++) for(let gx=Math.floor(x/C);gx<=Math.min(gw-1,Math.floor((x+w)/C));gx++) textCell[gy*gw+gx]=1;
+    const score=new Float64Array(gw*gh);
+    for(let gy=0;gy<gh;gy++) for(let gx=0;gx<gw;gx++) {
+      // Colour and tonal range score up; dense hard edges (small text) score down.
+      let sat=0,l1=0,l2=0,n=0,edges=0,prev=-1;
+      for(let y=gy*C;y<gy*C+C;y+=2) for(let x=gx*C;x<gx*C+C;x+=2) {
+        const i=(y*W+x)*4, r=im.data[i]/255, g=im.data[i+1]/255, bl=im.data[i+2]/255, mx=Math.max(r,g,bl), mn=Math.min(r,g,bl), l=.3*r+.59*g+.11*bl;
+        sat+=mx?(mx-mn)/mx*mx:0; l1+=l; l2+=l*l; n++;
+        if(prev>=0 && Math.abs(l-prev)>.3) edges++;
+        prev=x+2<gx*C+C?l:-1;
+      }
+      const mean=l1/n, sd=Math.sqrt(Math.max(0,l2/n-mean*mean));
+      score[gy*gw+gx]=sat/n+sd*.7-edges/n*1.6-(textCell[gy*gw+gx]?.35:0);
+    }
+    const cw=Math.round(gw*.34), ch=Math.round(gh*.44), picks=[];
+    const sum=(x,y)=>{let s=0;for(let j=y;j<y+ch;j++)for(let i=x;i<x+cw;i++)s+=score[j*gw+i];return s;};
+    const windows=[];
+    for(let y=Math.round(gh*.08);y+ch<=gh;y+=2) for(let x=0;x+cw<=gw;x+=2) windows.push([x,y,sum(x,y)]);
+    windows.sort((a,b)=>b[2]-a[2]);
+    for(const w of windows) {
+      if(picks.length===3) break;
+      if(picks.some(p=>Math.max(0,Math.min(p[0]+cw,w[0]+cw)-Math.max(p[0],w[0]))*Math.max(0,Math.min(p[1]+ch,w[1]+ch)-Math.max(p[1],w[1]))>cw*ch*.25)) continue;
+      picks.push(w);
+    }
+    picks.forEach(([x,y],k)=>{
+      const out=new PNG({width:cw*C,height:ch*C});
+      PNG.bitblt(im,out,x*C,y*C,cw*C,ch*C,0,0);
+      rasterImages[id+'/v3/'+(900+k)]=PNG.sync.write(out).toString('base64');
+    });
+    // Dominant saturated colour of the page (24 hue bins weighted by saturation × brightness).
+    {
+      const bins=Array.from({length:24},()=>({w:0,r:0,g:0,b:0}));let total=0;
+      for(let i=0;i<im.data.length;i+=4*7){
+        const r=im.data[i]/255,g=im.data[i+1]/255,bl=im.data[i+2]/255,mx=Math.max(r,g,bl),mn=Math.min(r,g,bl),d=mx-mn;
+        if(!mx||d/mx<.35||mx<.25)continue;
+        let h=mx===r?((g-bl)/d)%6:mx===g?(bl-r)/d+2:(r-g)/d+4;h=((h*60)+360)%360;
+        const wgt=d/mx*mx,bin=bins[Math.floor(h/15)];bin.w+=wgt;bin.r+=r*wgt;bin.g+=g*wgt;bin.b+=bl*wgt;total+=wgt;
+      }
+      const best=bins.reduce((a,c)=>c.w>a.w?c:a,bins[0]);
+      const pixels=im.data.length/4/7;
+      if(best.w>pixels*.004) layout.accent='#'+[best.r,best.g,best.b].map(v=>Math.round(v/best.w*255).toString(16).padStart(2,'0')).join('').toUpperCase();
+      else delete layout.accent;
+    }
+    layout.crops=picks.length;
+    layout.cropScores=picks.map(p=>Math.round(p[2]/(cw*ch)*1000)/1000);
+  }
+}
 await writeFile(new URL('references/raster-layouts.json',root),JSON.stringify(rasterLayouts)+'\n');
 const {source:originalSource,collections,originals,webSources}=await import('./references/originals.mjs');
 for(const f of originals.families)for(let i=0;i<3;i++){

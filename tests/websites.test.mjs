@@ -21,8 +21,9 @@ test('every captured site can be rebuilt by name with native text and artwork',a
     assert.equal(doc.reference.id,id); assert.ok(doc.nodes.some(n=>n.type==='text'));
     const b=Screens.checkBoard(Doc.compile(doc));
     assert.equal(b.screens.flatMap(s=>s.layers).length,doc.nodes.length,id);
-    assert.equal(b.screens.length,3);assert.ok(doc.nodes.length>=200,id);
-    for(const s of doc.screens)assert.ok(sites.includes(s.vaultSource+'.png'));
+    assert.equal(b.screens.length,3);assert.ok(doc.nodes.length>=60,id);
+    // Companion pages are themed from the same capture, so every screen shares its source.
+    for(const s of doc.screens)assert.equal(s.vaultSource,id,id);
     assert.ok(b.screens[0].layers.length>=5,id);
     assert.ok(doc.reference.vaultOnly);
   }
@@ -45,6 +46,7 @@ test('initial generation stays local, every shape comes from its named setup, an
   const templates=JSON.parse(await (await import('node:fs/promises')).readFile(new URL('../references/sites.json',import.meta.url)));
   const raster=JSON.parse(await (await import('node:fs/promises')).readFile(new URL('../references/raster-layouts.json',import.meta.url)));
   for(const n of doc.nodes) {
+    if(n.parent!=='web') continue; // Companion pages are composed, not traced.
     const setup=doc.screens.find(s=>s.id===n.parent).vaultSource;
     const rows=n.type==='shape'?raster[setup].shapes:templates[setup].text;
     const row=rows[Number(n.id.match(/\d+$/)[0])];

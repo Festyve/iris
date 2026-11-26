@@ -33,7 +33,9 @@ test('website image fills reassemble every capture losslessly outside editable t
   const stored=JSON.parse(await readFile(new URL('../references/raster-layouts.json',import.meta.url)));
   for(const [id,site] of Object.entries(sites)){
     const {layout,images}=await rasterSite(root,id,site);
-    assert.deepEqual(layout,stored[id],id);
+    // Crop and accent metadata is added by build.mjs for companion pages; the reassembly layout must match exactly.
+    const {accent,crops,cropScores,...base}=stored[id];
+    assert.deepEqual(layout,base,id);
     const expected=PNG.sync.read(await capture(root,id));
     const assembled=new PNG({width:expected.width,height:expected.height});
     for(const [i,[x,y,w,h,fill,image]] of layout.shapes.entries()){

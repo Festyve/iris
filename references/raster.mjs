@@ -89,11 +89,18 @@ export async function rasterSite(root,id,site) {
   for(const [box,name] of preserved)take(box,name);
   const candidates=site.shapes.map(s=>s.slice(0,4))
     .filter(([, ,w,h])=>w>=6 && h>=6 && w*h<original.width*original.height*.65);
+  // Layer names a designer would use, numbered within each kind.
+  const counts={};
+  const describe=([x,y,w,h])=>{
+    const kind=y<90&&h<=60?'Navigation item':h<=72&&w<=380?'Button':h<=90?'Bar':w>=1000?'Section':w<=120&&h<=120?'Icon':'Card';
+    counts[kind]=(counts[kind]||0)+1;
+    return kind+' '+counts[kind];
+  };
   for(const box of candidates.sort((a,b)=>a[2]*a[3]-b[2]*b[3])){
     // Never split a picture across its outer edge.
     if(artwork.some(b=>overlaps(b,box) && !(box[0]>=b[0] && box[1]>=b[1] &&
       box[0]+box[2]<=b[0]+b[2] && box[1]+box[3]<=b[1]+b[3])))continue;
-    take(box,'Component '+(parts.length+1));
+    take(box,describe(box));
   }
   for(const [i,box] of artwork.entries())take(box,'Artwork '+(i+1));
   parts.push({tile:original,box:[0,0,original.width,original.height],name:'Page artwork'});
