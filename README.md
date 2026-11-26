@@ -6,6 +6,68 @@
 
 **[▶ Watch the demo (1:21)](docs/media/iris-demo.mp4).** Ask Iris out loud for a page from your design vault. The ElevenLabs voice agent answers, and a crew of 100 cursors rebuilds the page as editable layers in Figma. The narration, sound effects and music are ElevenLabs, and the user's lines in the video are spoken by an ElevenLabs voice.
 
+## Templates
+
+Pick one of 14 templates from the prompt in the Figma plugin and the crew builds a full site: a home page plus matching pages in the same palette, type and artwork. Every template is a vault design under an invented name, so no real company appears in the output. Type anything instead of picking and Iris builds a random template with your text as the site's name.
+
+Each strip below was built through the plugin in Figma Desktop.
+
+**Music streaming** · Spotify-style · builds *Slow Burn*
+
+<img src="docs/media/templates/01-music-streaming.jpg" alt="Music streaming template: Slow Burn home page and matching pages, built in Figma" width="100%">
+
+**Payments platform** · Stripe-style · builds *Asterpay*
+
+<img src="docs/media/templates/02-payments-platform.jpg" alt="Payments platform template: Asterpay home page and matching pages, built in Figma" width="100%">
+
+**Sneaker store** · Nike-style · builds *Stride Supply*
+
+<img src="docs/media/templates/03-sneaker-store.jpg" alt="Sneaker store template: Stride Supply home page and matching pages, built in Figma" width="100%">
+
+**AI search assistant** · Google-style · builds *Openframe*
+
+<img src="docs/media/templates/04-ai-search-assistant.jpg" alt="AI search assistant template: Openframe home page and matching pages, built in Figma" width="100%">
+
+**Coffee shop** · Café & bakery · builds *Daybreak*
+
+<img src="docs/media/templates/05-coffee-shop.jpg" alt="Coffee shop template: Daybreak home page and matching pages, built in Figma" width="100%">
+
+**Startup launch page** · Dark launch · builds *Kinetic Fold*
+
+<img src="docs/media/templates/06-startup-launch.jpg" alt="Startup launch page template: Kinetic Fold home page and matching pages, built in Figma" width="100%">
+
+**3D shader animation** · Motion & WebGL · builds *Emberlight*
+
+<img src="docs/media/templates/07-3d-shader-animation.jpg" alt="3D shader animation template: Emberlight home page and matching pages, built in Figma" width="100%">
+
+**Retro desktop** · Y2K / retro · builds *Coastwave*
+
+<img src="docs/media/templates/08-retro-desktop.jpg" alt="Retro desktop template: Coastwave home page and matching pages, built in Figma" width="100%">
+
+**Developer platform** · Vercel-style · builds *Cloudmere*
+
+<img src="docs/media/templates/09-developer-platform.jpg" alt="Developer platform template: Cloudmere home page and matching pages, built in Figma" width="100%">
+
+**Productivity app** · Raycast-style · builds *Keybeam*
+
+<img src="docs/media/templates/10-productivity-app.jpg" alt="Productivity app template: Keybeam home page and matching pages, built in Figma" width="100%">
+
+**Hardware store** · Product catalogue · builds *Signal Objects*
+
+<img src="docs/media/templates/11-hardware-store.jpg" alt="Hardware store template: Signal Objects home page and matching pages, built in Figma" width="100%">
+
+**Studio portfolio** · Minimal editorial · builds *Northwind Studio*
+
+<img src="docs/media/templates/12-studio-portfolio.jpg" alt="Studio portfolio template: Northwind Studio home page and matching pages, built in Figma" width="100%">
+
+**Law & advisory firm** · Professional services · builds *Hartwell & Vale*
+
+<img src="docs/media/templates/13-law-advisory-firm.jpg" alt="Law & advisory firm template: Hartwell & Vale home page and matching pages, built in Figma" width="100%">
+
+**Travel planner** · Itineraries · builds *Paper Miles*
+
+<img src="docs/media/templates/14-travel-planner.jpg" alt="Travel planner template: Paper Miles home page and matching pages, built in Figma" width="100%">
+
 New designs build locally. Claude runs when you request an edit. Every time, hundreds of cursors do the work on the canvas, in the browser or live in your Figma file. They drag out frames, draw and fill shapes, round corners, snap cards into place and type every word. On a change they only touch what changes: moving, recolouring, retyping, deleting and adding.
 
 ## Build a website from the vault
