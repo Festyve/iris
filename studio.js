@@ -52,20 +52,46 @@
   const sugg = $('suggest'), brief = $('brief');
   const dots = ['#6E56F8', '#FF5A4E', '#2D6BFF', '#C5F23A', '#EA7212', '#0E9F6E', '#E13F7A'];
   const edits = ['Set accent to #146C94', 'Change headline to Field Notes'];
-  const samples = ['A coffee shop called “Daybreak”','A Tokyo travel planner','Last Showing Billboard', 'Night Platform Atlas', 'Second Sweep Catalogue', 'A poker website called “River Room”', ...Kit.samples];
+  const templates = Websites.templates;
+  const tplButton = (t, i) => '<button type="button" data-t="' + t.id + '"><i style="background:' + dots[i % dots.length] + '"></i>' + esc(t.label) + '<em class="tpl-style">' + esc(t.style) + '</em></button>';
   function fillSuggestions() {
-    const list = mode === 'edit' ? edits : samples;
-    sugg.innerHTML = '<div class="hint">' + (mode === 'edit' ? 'Try a change' : 'Try a brief') + '</div>' + list.map((s, i) => '<button type="button" data-i="' + i + '"><i style="background:' + dots[i % dots.length] + '"></i>' + esc(s) + '</button>').join('');
+    sugg.innerHTML = mode === 'edit'
+      ? '<div class="hint">Try a change</div>' + edits.map((s, i) => '<button type="button" data-i="' + i + '"><i style="background:' + dots[i % dots.length] + '"></i>' + esc(s) + '</button>').join('')
+      : '<div class="hint">Templates · or type a name</div>' + templates.map(tplButton).join('');
   }
   sugg.addEventListener('mousedown', e => e.preventDefault());
-  sugg.addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; brief.value = (mode === 'edit' ? edits : samples)[+b.dataset.i]; sugg.hidden = true; go(); });
-  $('samples').innerHTML = samples.map((x, i) => '<button type="button" data-i="' + i + '">' + esc(x) + '</button>').join('');
-  $('samples').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; setMode('new'); brief.value = samples[+b.dataset.i]; go(); });
+  sugg.addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return; sugg.hidden = true;
+    if (b.dataset.t) { brief.blur(); buildTemplate(b.dataset.t); return; }
+    brief.value = edits[+b.dataset.i]; go();
+  });
+  $('samples').innerHTML = templates.map((t, i) => '<button type="button" data-t="' + t.id + '">' + esc(t.label) + '</button>').join('');
+  $('samples').addEventListener('click', e => { const b = e.target.closest('button'); if (b) buildTemplate(b.dataset.t); });
   brief.addEventListener('focus', () => { fillSuggestions(); sugg.hidden = false; });
   brief.addEventListener('blur', () => { sugg.hidden = true; });
   brief.addEventListener('input', () => { sugg.hidden = !!brief.value.trim(); });
   $('prompt').addEventListener('submit', e => { e.preventDefault(); sugg.hidden = true; brief.blur(); go(); });
-  $('dice').onclick = () => { setMode('new'); const pool = samples.filter(s => s !== brief.value); brief.value = pool[Math.floor(Math.random() * pool.length)]; go(); };
+  let lastTemplate = '';
+  $('dice').onclick = () => { setMode('new'); brief.value = ''; buildTemplate(null); };
+  // A selected template (or a random one when id is null) built from the vault; title replaces its name.
+  async function buildTemplate(id, title) {
+    if (busy || libraryBusy) return;
+    try {
+      const next = id ? Websites.fromTemplate(id, title) : Websites.randomTemplate(title, lastTemplate);
+      lastTemplate = next.reference?.template || '';
+      await commitVault(next, (title ? 'Built “' + title + '” from ' : 'Built from ') + (next.reference?.templateLabel || 'a template'));
+    } catch (error) { setBusy(false, 'Could not build the template', error.message); }
+  }
+  async function commitVault(next, label) {
+    setMode('new');
+    nextCapture = null;
+    if (isPlugin && connected && next.reference?.capture && !next.reference?.original) {
+      try { nextCapture = await fetchCapture(next.reference.id); } catch { /* Artwork is bundled locally. */ }
+    }
+    next = Doc.clean(next);
+    commit(next, label, null, 'Vault · ' + (next.reference?.templateLabel || next.reference?.title || next.name));
+    if (connected) { setMode('edit'); brief.value = ''; }
+  }
 
   function setMode(m) {
     mode = m === 'edit' && doc ? 'edit' : 'new';
@@ -73,7 +99,7 @@
     $('mode').setAttribute('aria-pressed', String(mode === 'edit'));
     $('mode').title = mode === 'edit' ? 'Changing the current design. Click to start a new one.' : 'Starting a new design. Click to change the current one.';
     $('workflow').hidden = mode === 'edit';
-    brief.placeholder = mode === 'edit' ? 'Describe a change, like “Change headline to Field Notes”' : 'Describe a website or product';
+    brief.placeholder = mode === 'edit' ? 'Describe a change, like “Change headline to Field Notes”' : 'Pick a template, or type a name';
     $('build-label').textContent = mode === 'edit' ? 'Apply' : $('workflow').value === 'guided' ? 'Plan' : 'Build';
     brief.setAttribute('aria-label', mode === 'edit' ? 'Describe a change' : 'Describe a product');
     $('prompt').classList.toggle('editing', mode === 'edit');
@@ -238,16 +264,11 @@
     const note = brief.value.trim();
     if (!note) { brief.focus(); return; }
     if(mode==='new' && $('workflow').value==='vault') {
-      try {
-        const reference=Websites.match(note);
-        nextCapture=null;
-        if(isPlugin && connected && reference.exact && !reference.original) {
-          try {nextCapture=await fetchCapture(reference.id);} catch { /* Artwork is bundled locally. */ }
-        }
-        const next=Doc.clean(Websites.build(note,reference));
-        commit(next,'Built from “'+note+'”',null,'Vault · '+reference.site.title);
-        if(connected){setMode('edit');brief.value='';}
-      } catch(error){setBusy(false,'Could not build the vault website',error.message);}
+      // Typed text builds a random template titled with what was typed. Spoken or automated briefs
+      // (voice agent, bridge) still match the vault by subject.
+      if (!automatic) { await buildTemplate(null, note); return; }
+      try { await commitVault(Websites.build(note), 'Built from “'+note+'”'); }
+      catch(error){setBusy(false,'Could not build the vault website',error.message);}
       return;
     }
     if (!connected) {
@@ -1031,6 +1052,6 @@
   else if (saved) { $('token').value = saved; connect(); }
   // Development hook: render a saved design document without calling Claude (open with ?dev&idle).
   if (query.has('dev')) window.irisLoad = d => { revisions = []; rev = -1; commit(Doc.clean(d), 'Loaded “' + (d.name || 'design') + '”', null, null); };
-  if (isPlugin) { parent.postMessage({pluginMessage: {kind: 'ui-ready'}}, '*'); brief.value = Kit.samples[0]; }
+  if (isPlugin) { parent.postMessage({pluginMessage: {kind: 'ui-ready'}}, '*'); brief.value = ''; }
   else $('empty').hidden = false;
 })();

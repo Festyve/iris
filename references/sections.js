@@ -83,11 +83,15 @@ const VaultSections = (() => {
     if(sample){place(sample,'Desktop reference · 1:1',x,margin);x+=sample.width+gap;}
     for(const f of frames){place(f,f===source?'Editable desktop':f.name,x,margin);x+=f.width+gap;}
     const rowY=margin+heading+Math.max(sample?.height||0,...frames.map(f=>f.height))+gap;
-    const header=detail(source,'Navigation',{x:0,y:0,w:source.width,h:Math.min(150,source.height)});
-    const hero=detail(source,'Hero detail',{x:Math.round(source.width*.08),y:Math.round(source.height*.20),w:Math.round(source.width*.84),h:Math.round(source.height*.52)});
-    place(header,'Navigation',margin,rowY);place(hero,'Hero detail',margin+header.width+gap,rowY);
-    const wide=Math.max(x-gap,margin+header.width+gap+hero.width)+margin;
-    section.resizeWithoutConstraints(wide,rowY+heading+Math.max(header.height,hero.height)+margin);
+    // Iris Minimal pages are composed for their own frames, so the capture crops below would only cut them apart.
+    if(r.doc.reference.minimal) section.resizeWithoutConstraints(x-gap+margin,rowY-gap+margin);
+    else {
+      const header=detail(source,'Navigation',{x:0,y:0,w:source.width,h:Math.min(150,source.height)});
+      const hero=detail(source,'Hero detail',{x:Math.round(source.width*.08),y:Math.round(source.height*.20),w:Math.round(source.width*.84),h:Math.round(source.height*.52)});
+      place(header,'Navigation',margin,rowY);place(hero,'Hero detail',margin+header.width+gap,rowY);
+      const wide=Math.max(x-gap,margin+header.width+gap+hero.width)+margin;
+      section.resizeWithoutConstraints(wide,rowY+heading+Math.max(header.height,hero.height)+margin);
+    }
     if(r.libraryId)section.setPluginData(SITE,r.libraryId);
     return section;
   }

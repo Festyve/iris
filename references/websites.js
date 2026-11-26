@@ -11,8 +11,41 @@ const Websites = (() => {
     const row = Object.prototype.hasOwnProperty.call(ReferenceSites,id) && ReferenceSites[id].shapes[Number(index)];
     return row && row[5] ? {w:row[2]/3,h:row[3]/3,path:row[5]} : null;
   }
-  function match(note) { const captured=ReferenceMatch.select(note, ReferenceMedia, Object.keys(ReferenceSites));
-    return captured?.named ? captured : OriginalPages.match(note) || captured; }
+  // Named captures rebuild exactly and poker keeps its gallery. Other briefs use an original family
+  // when one fits the subject, and every remaining custom brief gets the general Iris Minimal template
+  // instead of pouring generic words into another site's capture.
+  function match(raw) { const captured=ReferenceMatch.select(raw, ReferenceMedia, Object.keys(ReferenceSites));
+    if(captured?.named) return captured;
+    // A real company in the brief only steers the kind of site; it never becomes the name.
+    const note=BrandNames.neutralize(raw);
+    const minimal=typeof MinimalPages!=='undefined';
+    if(minimal && /\bminimal(?:ist)?\b/i.test(note)) return MinimalPages.match(note);
+    const original=OriginalPages.match(raw) || OriginalPages.match(note);
+    if(original) return original;
+    if(ReferenceMatch.poker(note) || !minimal) return captured;
+    return MinimalPages.match(note); }
+  // Whether text names a kind of product (so it is a brief, not a brand name).
+  function categoryTest(t) {
+    return (typeof MinimalPages!=='undefined' && MinimalPages.kitFor(t).id!=='general') ||
+      vocabularies.some(v=>v[0].test(t)) || !!OriginalPages.match(t);
+  }
+  const tidy=t=>{t=String(t).trim().replace(/\s+/g,' ').slice(0,40);return t.charAt(0).toUpperCase()+t.slice(1);};
+  // The name a build shows. Explicit names are kept unless they belong to a real company; a short
+  // name-like input is the name; otherwise an invented name fits the template, and original families
+  // keep their own names. Returns null when the template's own name should be used.
+  function nameFor(note,m) {
+    const quoted=note.match(/["“]([^"”]{1,55})["”]/), called=note.match(/\b(?:called|named)\s+([^,.;:!?]{1,55})/i);
+    const explicit=quoted?quoted[1]:called?called[1].replace(/\s+(?:for|with|that|which|who|where|in|on|about|and)\s.*$/i,''):null;
+    const kind=m?.minimal?(m.kit?.id || 'general'):'general';
+    if(m && !m.minimal && !m.original && m.exact) return null;
+    if(m?.original && m.exact && !explicit) return null;
+    if(explicit && explicit.trim()) return !BrandNames.realBrand(explicit) ? tidy(explicit) : m?.original ? null : BrandNames.invent(note,kind);
+    if(BrandNames.looksLikeName(note,categoryTest)) return tidy(note);
+    if(m?.original) return null;
+    if(m && !m.minimal && m.exact) return null;
+    if(m && !m.minimal && ReferenceMatch.poker(note)) return 'River Room';
+    return BrandNames.invent(note,kind);
+  }
   function titleOf(note) {
     const quoted=note.match(/["“]([^"”]{1,55})["”]/);
     const named=quoted || note.match(/\b(?:called|named)\s+(.{1,55})/i);
@@ -59,11 +92,22 @@ const Websites = (() => {
   // Companion layouts are existing captures with a collection or detail structure.
   const collections=['metalforge','godly'];
   const details=['apple-liquid-glass','teenage-engineering','poolsuite','ui-chords'];
-  function build(note,m=match(note),captureOnly=false) {
-    if(m?.original)return OriginalPages.build(note,m,titleOf(note),captureOnly);
+  // Final guard: no real company name survives in a built page's copy or names.
+  function scrubDoc(doc) {
+    for (const n of doc.nodes) { if (typeof n.text === 'string') n.text = BrandNames.scrub(n.text); if (typeof n.name === 'string') n.name = BrandNames.scrub(n.name); }
+    for (const s of doc.screens) s.name = BrandNames.scrub(s.name);
+    doc.name = BrandNames.scrub(doc.name);
+    return doc;
+  }
+  function build(raw,m=match(raw),captureOnly=false) { return scrubDoc(buildDoc(raw,m,captureOnly)); }
+  function buildDoc(raw,m,captureOnly) {
+    const picked=nameFor(raw,m), note=BrandNames.neutralize(raw).replace(/\s*\b(?:called|named)\s+[^,.;:!?]{1,55}|["“][^"”]{1,55}["”]/gi,'').trim() || raw;
+    const named=picked ? note+' called "'+picked+'"' : note;
+    if(m?.minimal)return MinimalPages.build(named,m,picked || titleOf(note),captureOnly);
+    if(m?.original)return OriginalPages.build(named,m,picked || m.f.name,captureOnly);
     if(!m || !Object.prototype.hasOwnProperty.call(ReferenceSites,m.id)) throw Error('No usable website setup is available in the vault.');
     const available=new Set(ReferenceMedia.filter(r=>r.path.startsWith('assets/sites/')).map(r=>r.path.slice(13,-4)));
-    const name=m.exact?ReferenceBrands[m.id]:ReferenceMatch.poker(note) && !/called|named|["“]/i.test(note)?'River Room':titleOf(note);
+    const name=picked || ReferenceBrands[m.id] || 'Northwind';
     const words=(vocabularies.find(v=>v[0].test(note)) || [null,general])[1];
     const cafe=/\bcoffee\b|caf[eé]|bakery|espresso/i.test(note) && !m.exact;
     const pages=[{id:'web',source:m.id,title:'Home'}];
@@ -77,7 +121,7 @@ const Websites = (() => {
       if(!detail)throw Error('The vault needs a detail setup to build this website.');
       pages.push({id:'detail',source:detail,title:words[8]});
     }
-    const doc={name,reference:{id:m.id,title:m.site.title,url:m.site.url || '',image:m.inspiration?.title || '',fallback:m.fallback,capture:m.exact,
+    const doc={name,reference:{id:m.id,title:ReferenceBrands[m.id] || name,url:m.site.url || '',image:m.inspiration?.title || '',fallback:m.fallback,capture:m.exact,
       setups:pages.map(p=>({screen:p.id,source:p.source})),vaultOnly:true},screens:[],nodes:[]};
     for(const page of pages) {
       const site=ReferenceSites[page.source], exact=page.id==='web' && m.exact;
@@ -111,5 +155,50 @@ const Websites = (() => {
     }
     return doc;
   }
-  return {match,build,artwork,shapeNodes};
+  // The selectable templates. Each is a vault design under an invented name; "style" says what kind
+  // of site it is. Typing a brief picks one at random and puts the typed text in place of its name.
+  const templates=[
+    {id:'music',label:'Music streaming',style:'Spotify-style',brief:'a music streaming app called "Slow Burn"'},
+    {id:'payments',label:'Payments platform',style:'Stripe-style',brief:'recreate stripe'},
+    {id:'sneakers',label:'Sneaker store',style:'Nike-style',brief:'a sneaker store called "Stride Supply"'},
+    {id:'search',label:'AI search assistant',style:'Google-style',brief:'an AI search assistant startup called "Openframe"'},
+    {id:'coffee',label:'Coffee shop',style:'Café & bakery',brief:'a coffee shop called "Daybreak"'},
+    {id:'launch',label:'Startup launch page',style:'Dark launch',brief:'recreate animata'},
+    {id:'shader',label:'3D shader animation',style:'Motion & WebGL',brief:'recreate scrollshaders'},
+    {id:'retro',label:'Retro desktop',style:'Y2K / retro',brief:'recreate poolsuite'},
+    {id:'cloud',label:'Developer platform',style:'Vercel-style',brief:'recreate vercel'},
+    {id:'app',label:'Productivity app',style:'Raycast-style',brief:'recreate raycast'},
+    {id:'hardware',label:'Hardware store',style:'Product catalogue',brief:'recreate teenage-engineering'},
+    {id:'portfolio',label:'Studio portfolio',style:'Minimal editorial',brief:'a design studio portfolio called "Northwind Studio"'},
+    {id:'firm',label:'Law & advisory firm',style:'Professional services',brief:'a law firm called "Hartwell & Vale"'},
+    {id:'travel',label:'Travel planner',style:'Itineraries',brief:'a Tokyo travel planner'}
+  ];
+  const escapeRe=s=>s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+  // Swap the template's name for a new title everywhere it appears, refitting single-line text.
+  function retitle(doc,title) {
+    const name=String(title).trim().replace(/\s+/g,' ').slice(0,40);
+    if(!name || name===doc.name) return doc;
+    const re=new RegExp(escapeRe(doc.name),'g');
+    for(const n of doc.nodes) {
+      if(typeof n.text==='string' && re.test(n.text)) {
+        n.text=n.text.replace(re,name); n.name=String(n.name||'').replace(re,name).slice(0,60) || n.text.slice(0,60);
+        if(n.wrap===false && n.w && n.size && typeof Doc!=='undefined' && Doc.measure) n.size=Math.max(6,Math.min(n.size,n.w/Math.max(1,Doc.measure(n.text,1,n.weight))));
+      }
+      re.lastIndex=0;
+    }
+    for(const s of doc.screens) s.name=s.name.replace(re,name);
+    doc.name=name;
+    return doc;
+  }
+  function fromTemplate(id,title) {
+    const tpl=templates.find(x=>x.id===id) || templates[0];
+    const doc=build(tpl.brief);
+    doc.reference={...doc.reference,template:tpl.id,templateLabel:tpl.label};
+    return title ? retitle(doc,title) : doc;
+  }
+  function randomTemplate(title,exclude) {
+    const pool=templates.filter(x=>x.id!==exclude);
+    return fromTemplate(pool[Math.floor(Math.random()*pool.length)].id,title);
+  }
+  return {match,build,artwork,shapeNodes,templates,fromTemplate,randomTemplate,retitle};
 })();
