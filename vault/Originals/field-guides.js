@@ -79,9 +79,12 @@ const FieldGuides=(()=>{
     });
     text('MY TRIPS',29,390,180,13,700,gold);text(place,29,428,182,22,600,paper);
     text('Trip workspace  /  '+place,279,42,785,17,500,teal);
-    text(place+' in three days',276,99,1075,72,700,ink);
-    const labels=['Day 1','Day 2','Day 3'];
-    labels.forEach((s,i)=>{rect('Day tab',280+i*116,219,101,40,i===0?ink:sea,{r:20});text(s,300+i*116,229,72,17,600,i===0?paper:ink);});
+    // Each view gets its own heading; only the itinerary shows the day tabs.
+    text(role==='Routes'?'Getting around '+place:role==='Places'?'Saved places in '+place:place+' in three days',276,99,1075,72,700,ink);
+    if(role==='Itinerary'){
+      const labels=['Day 1','Day 2','Day 3'];
+      labels.forEach((s,i)=>{rect('Day tab',280+i*116,219,101,40,i===0?ink:sea,{r:20});text(s,300+i*116,229,72,17,600,i===0?paper:ink);});
+    }else text(role==='Routes'?'Walking, transit and cycling between your stops':'Everywhere you want to go, in one list',280,224,900,20,400,teal);
     if(role==='Itinerary'){
       text('Day one',280,301,535,40,600,ink);
       stops.forEach((s,i)=>{
